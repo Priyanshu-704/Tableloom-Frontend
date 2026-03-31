@@ -3,7 +3,7 @@ import axios from "axios";
 import handleApiError from "../utils/handleApiError";
 import toServiceResponse from "./serviceResponse";
 
-const apiBaseUrl = import.meta.env.VITE_APP_API_URL || "http://localhost:5000/api";
+const apiBaseUrl = import.meta.env.VITE_APP_API_URL;
 
 export const tenantService = {
   getTenants: async () => {

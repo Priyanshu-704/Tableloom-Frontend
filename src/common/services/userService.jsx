@@ -15,7 +15,7 @@ import {
   isSuperAdminPath,
 } from "../utils/routes.js";
 import toServiceResponse from "./serviceResponse";
-const apiBaseUrl = import.meta.env.VITE_APP_API_URL || "http://localhost:5000/api";
+const apiBaseUrl = import.meta.env.VITE_APP_API_URL;
 const authRequestCache = createRequestCache(5000);
 const externalRequest = async (method, path, data, config = {}) => {
   const response = await axios({

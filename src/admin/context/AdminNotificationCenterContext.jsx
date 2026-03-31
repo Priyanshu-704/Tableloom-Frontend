@@ -49,7 +49,7 @@ const matchesSearch = (notification, search) => {
   return [notification.title, notification.message, notification.type, notification.sender?.name].filter(Boolean).some(value => String(value).toLowerCase().includes(keyword));
 };
 const getSocketUrl = () => {
-  const apiUrl = import.meta.env.VITE_APP_API_URL || "http://localhost:5000/api";
+  const apiUrl = import.meta.env.VITE_APP_API_URL;
   return apiUrl.replace(/\/api\/?$/, "");
 };
 export function AdminNotificationCenterProvider({
@@ -405,6 +405,7 @@ export function AdminNotificationCenterProvider({
       {children}
     </AdminNotificationCenterContext.Provider>;
 }
+// eslint-disable-next-line react-refresh/only-export-components
 export function useAdminNotificationCenter() {
   const context = useContext(AdminNotificationCenterContext);
   if (!context) {
