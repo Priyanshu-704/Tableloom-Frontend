@@ -1,0 +1,496 @@
+import { logger } from "../../common/utils/logger.js";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { Boxes, Plus, RefreshCw, Search, Pencil, Trash2, ArrowUpCircle, AlertTriangle, PackageX, PackageCheck, UtensilsCrossed } from "lucide-react";
+import { inventoryService, menuService } from "../../common/services";
+import { useAdmin } from "../context/AdminContext";
+import { AdminModal } from "../components/common/AdminModal";
+import AdminPagination from "../components/common/AdminPagination";
+import { AdminListSkeleton } from "../components/common/AdminSkeleton";
+import { INVENTORY_ADJUSTMENT_DEFAULTS, INVENTORY_ADJUSTMENT_OPTIONS, INVENTORY_FORM_DEFAULTS, INVENTORY_PAGE_SIZE, INVENTORY_STATUS_OPTIONS, normalizeInventoryRelations } from "../../common/utils/inventory";
+import InventoryStatusBadge from "../components/InventoryStatusBadge.jsx";
+export function InventoryManagement() {
+  const {
+    confirmAction,
+    addNotification
+  } = useAdmin();
+  const [inventoryItems, setInventoryItems] = useState([]);
+  const [menuItems, setMenuItems] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [stats, setStats] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    pages: 1,
+    total: 0
+  });
+  const [filters, setFilters] = useState({
+    search: "",
+    status: "all",
+    category: "all"
+  });
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isAdjustOpen, setIsAdjustOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState(null);
+  const [activeItem, setActiveItem] = useState(null);
+  const [formState, setFormState] = useState(INVENTORY_FORM_DEFAULTS);
+  const [adjustmentState, setAdjustmentState] = useState(INVENTORY_ADJUSTMENT_DEFAULTS);
+  const [saving, setSaving] = useState(false);
+  const loadInventory = useCallback(async () => {
+    try {
+      setLoading(true);
+      const [inventoryResponse, categoryResponse, menuResponse] = await Promise.all([inventoryService.getInventoryItems({
+        page: currentPage,
+        limit: INVENTORY_PAGE_SIZE,
+        search: filters.search.trim() || undefined,
+        status: filters.status,
+        category: filters.category !== "all" ? filters.category : undefined
+      }), menuService.getCategories(true, true), menuService.getMenuItems({
+        activeOnly: true,
+        availableOnly: false,
+        limit: 200
+      })]);
+      setInventoryItems(inventoryResponse.data || []);
+      setStats(inventoryResponse.stats || null);
+      setPagination({
+        page: inventoryResponse.pagination?.page || currentPage,
+        pages: inventoryResponse.pagination?.pages || 1,
+        total: inventoryResponse.pagination?.total || 0
+      });
+      setCategories(categoryResponse.data || []);
+      setMenuItems(menuResponse.data || []);
+    } catch (error) {
+      logger.error("Failed to load inventory:", error);
+      addNotification(error.response?.data?.message || "Failed to load inventory.", "error");
+    } finally {
+      setLoading(false);
+    }
+  }, [currentPage, filters.category, filters.search, filters.status]);
+  useEffect(() => {
+    loadInventory();
+  }, [loadInventory]);
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filters.search, filters.status, filters.category]);
+  const openCreateForm = () => {
+    setEditingItem(null);
+    setFormState(INVENTORY_FORM_DEFAULTS);
+    setIsFormOpen(true);
+  };
+  const openEditForm = item => {
+    setEditingItem(item);
+    setFormState({
+      ingredientName: item.ingredientName || "",
+      sku: item.sku || "",
+      unit: item.unit || "pcs",
+      currentStock: item.currentStock ?? 0,
+      minimumStock: item.minimumStock ?? 5,
+      reorderQuantity: item.reorderQuantity ?? 10,
+      notes: item.notes || "",
+      isActive: item.isActive ?? true,
+      relatedMenuItems: normalizeInventoryRelations(item.relatedMenuItems)
+    });
+    setIsFormOpen(true);
+  };
+  const openAdjustmentForm = item => {
+    setActiveItem(item);
+    setAdjustmentState(INVENTORY_ADJUSTMENT_DEFAULTS);
+    setIsAdjustOpen(true);
+  };
+  const handleSave = async () => {
+    try {
+      setSaving(true);
+      if (editingItem) {
+        await inventoryService.updateInventoryItem(editingItem._id, formState);
+      } else {
+        await inventoryService.createInventoryItem(formState);
+      }
+      setIsFormOpen(false);
+      setEditingItem(null);
+      await loadInventory();
+      addNotification(editingItem ? "Inventory item updated successfully." : "Inventory item created successfully.", "success");
+    } catch (error) {
+      logger.error("Failed to save inventory item:", error);
+      addNotification(error.response?.data?.message || "Failed to save inventory item.", "error");
+    } finally {
+      setSaving(false);
+    }
+  };
+  const handleAdjustment = async () => {
+    if (!activeItem) {
+      return;
+    }
+    try {
+      setSaving(true);
+      await inventoryService.adjustInventoryStock(activeItem._id, adjustmentState);
+      setIsAdjustOpen(false);
+      setActiveItem(null);
+      await loadInventory();
+      addNotification("Inventory adjusted successfully.", "success");
+    } catch (error) {
+      logger.error("Failed to adjust inventory:", error);
+      addNotification(error.response?.data?.message || "Failed to adjust inventory.", "error");
+    } finally {
+      setSaving(false);
+    }
+  };
+  const handleDelete = async item => {
+    const confirmed = await confirmAction({
+      title: "Delete Ingredient Inventory",
+      message: `Delete inventory tracking for ${item.ingredientName || "this ingredient"}?`,
+      confirmLabel: "Delete",
+      tone: "danger"
+    });
+    if (!confirmed) {
+      return;
+    }
+    try {
+      await inventoryService.deleteInventoryItem(item._id);
+      await loadInventory();
+      addNotification("Inventory item deleted successfully.", "success");
+    } catch (error) {
+      logger.error("Failed to delete inventory item:", error);
+      addNotification(error.response?.data?.message || "Failed to delete inventory item.", "error");
+    }
+  };
+  const renderStatsCard = (title, value, Icon, tintClass) => <div className="rounded-lg border border-gray-200 bg-white p-5">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm font-medium text-gray-600">{title}</p>
+          <p className="text-2xl font-bold text-gray-900">{value}</p>
+        </div>
+        <div className={`rounded-lg p-3 ${tintClass}`}>
+          <Icon className="h-6 w-6" />
+        </div>
+      </div>
+    </div>;
+  const toggleRelation = (menuItemId, enabled) => {
+    setFormState(current => {
+      const currentRelations = Array.isArray(current.relatedMenuItems) ? current.relatedMenuItems : [];
+      if (!enabled) {
+        return {
+          ...current,
+          relatedMenuItems: currentRelations.filter(relation => relation.menuItem !== menuItemId)
+        };
+      }
+      if (currentRelations.some(relation => relation.menuItem === menuItemId)) {
+        return current;
+      }
+      return {
+        ...current,
+        relatedMenuItems: [...currentRelations, {
+          menuItem: menuItemId,
+          quantityRequired: 1
+        }]
+      };
+    });
+  };
+  const updateRelationQuantity = (menuItemId, quantityRequired) => {
+    setFormState(current => ({
+      ...current,
+      relatedMenuItems: current.relatedMenuItems.map(relation => relation.menuItem === menuItemId ? {
+        ...relation,
+        quantityRequired: Math.max(Number(quantityRequired || 0), 0)
+      } : relation)
+    }));
+  };
+  const selectedRelationIds = useMemo(() => new Set(formState.relatedMenuItems.map(relation => relation.menuItem)), [formState.relatedMenuItems]);
+  return <div className="space-y-6 p-6">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Inventory Management</h1>
+          <p className="text-gray-600">
+            Track ingredient stock levels and connect them to the menu items that use them.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-3">
+          <button type="button" onClick={loadInventory} className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 transition-colors hover:bg-gray-50">
+            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+            Refresh
+          </button>
+          <button type="button" onClick={openCreateForm} className="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-white transition-colors hover:bg-primary-700">
+            <Plus className="h-4 w-4" />
+            Add Ingredient
+          </button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+        {renderStatsCard("Tracked Items", stats?.totalItems || 0, Boxes, "bg-blue-50 text-blue-600")}
+        {renderStatsCard("In Stock", stats?.inStock || 0, PackageCheck, "bg-emerald-50 text-emerald-600")}
+        {renderStatsCard("Low Stock", stats?.lowStock || 0, AlertTriangle, "bg-sky-50 text-sky-600")}
+        {renderStatsCard("Out of Stock", stats?.outOfStock || 0, PackageX, "bg-rose-50 text-rose-600")}
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 rounded-lg border border-gray-200 bg-white p-4 lg:grid-cols-4">
+        <div className="relative lg:col-span-2">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+          <input type="text" value={filters.search} onChange={event => setFilters(current => ({
+          ...current,
+          search: event.target.value
+        }))} placeholder="Search by ingredient name or SKU" className="w-full rounded-lg border border-gray-300 py-2 pl-10 pr-4" />
+        </div>
+        <select value={filters.status} onChange={event => setFilters(current => ({
+        ...current,
+        status: event.target.value
+      }))} className="rounded-lg border border-gray-300 px-3 py-2">
+          {INVENTORY_STATUS_OPTIONS.map(option => <option key={option.value} value={option.value}>
+              {option.label}
+            </option>)}
+        </select>
+        <select value={filters.category} onChange={event => setFilters(current => ({
+        ...current,
+        category: event.target.value
+      }))} className="rounded-lg border border-gray-300 px-3 py-2">
+          <option value="all">All Categories</option>
+          {categories.map(category => <option key={category._id} value={category._id}>
+              {category.name}
+            </option>)}
+        </select>
+      </div>
+
+      {loading ? <AdminListSkeleton rows={6} /> : inventoryItems.length === 0 ? <div className="rounded-lg border border-gray-200 bg-white p-10 text-center">
+          <Boxes className="mx-auto mb-4 h-12 w-12 text-gray-300" />
+          <h3 className="text-lg font-semibold text-gray-900">No ingredient inventory yet</h3>
+          <p className="mt-1 text-gray-600">
+            Add ingredients and link them to menu items to control menu availability.
+          </p>
+        </div> : <>
+          <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                      Ingredient
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                      Related Menu Items
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                      Stock
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                      Threshold
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                      Status
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                      Availability Impact
+                    </th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200 bg-white">
+                  {inventoryItems.map(item => <tr key={item._id}>
+                      <td className="px-4 py-4">
+                        <div>
+                          <p className="font-medium text-gray-900">{item.ingredientName}</p>
+                          <p className="text-sm text-gray-500">
+                            SKU: {item.sku || "Not set"} • Unit: {item.unit}
+                          </p>
+                        </div>
+                      </td>
+                      <td className="px-4 py-4 text-sm text-gray-600">
+                        <div className="space-y-1">
+                          {(item.relatedMenuItems || []).length > 0 ? item.relatedMenuItems.slice(0, 3).map(relation => <p key={`${item._id}-${relation.menuItem?._id || relation.menuItem}`}>
+                                {relation.menuItem?.name || "Unknown item"} • {relation.quantityRequired} {item.unit}
+                              </p>) : <p>No linked menu items</p>}
+                          {(item.relatedMenuItems || []).length > 3 ? <p className="text-xs text-gray-400">
+                              +{item.relatedMenuItems.length - 3} more
+                            </p> : null}
+                        </div>
+                      </td>
+                      <td className="px-4 py-4">
+                        <p className="font-semibold text-gray-900">
+                          {item.currentStock} {item.unit}
+                        </p>
+                        <p className="text-sm text-gray-500">
+                          Reorder at {item.reorderQuantity} {item.unit}
+                        </p>
+                      </td>
+                      <td className="px-4 py-4 text-sm text-gray-600">
+                        Min {item.minimumStock} {item.unit}
+                      </td>
+                      <td className="px-4 py-4">
+                        <InventoryStatusBadge status={item.stockStatus} />
+                      </td>
+                      <td className="px-4 py-4 text-sm">
+                        <div className="space-y-1">
+                          {(item.relatedMenuItems || []).length > 0 ? item.relatedMenuItems.slice(0, 2).map(relation => <span key={`${item._id}-availability-${relation.menuItem?._id || relation.menuItem}`} className={`mr-2 inline-flex rounded-full px-2.5 py-1 font-semibold ${relation.menuItem?.isAvailable ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"}`}>
+                                {relation.menuItem?.name}: {relation.menuItem?.isAvailable ? "Available" : "Hidden"}
+                              </span>) : <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-1 font-semibold text-slate-700">
+                              No menu links
+                            </span>}
+                        </div>
+                      </td>
+                      <td className="px-4 py-4">
+                        <div className="flex justify-end gap-2">
+                          <button type="button" onClick={() => openAdjustmentForm(item)} className="rounded-lg border border-gray-300 p-2 text-gray-600 transition-colors hover:bg-gray-50" title="Adjust stock">
+                            <ArrowUpCircle className="h-4 w-4" />
+                          </button>
+                          <button type="button" onClick={() => openEditForm(item)} className="rounded-lg border border-gray-300 p-2 text-gray-600 transition-colors hover:bg-gray-50" title="Edit inventory">
+                            <Pencil className="h-4 w-4" />
+                          </button>
+                          <button type="button" onClick={() => handleDelete(item)} className="rounded-lg border border-rose-200 p-2 text-rose-600 transition-colors hover:bg-rose-50" title="Delete inventory">
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>)}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <AdminPagination page={pagination.page} totalPages={pagination.pages} totalItems={pagination.total} pageSize={INVENTORY_PAGE_SIZE} onPageChange={setCurrentPage} />
+        </>}
+
+      <AdminModal isOpen={isFormOpen} title={editingItem ? "Edit Ingredient Inventory" : "Add Ingredient Inventory"} subtitle="Link each ingredient to the menu items that depend on it." onClose={() => {
+      setIsFormOpen(false);
+      setEditingItem(null);
+    }} footer={<div className="flex justify-end gap-3">
+            <button type="button" onClick={() => setIsFormOpen(false)} className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700">
+              Cancel
+            </button>
+            <button type="button" disabled={saving || !formState.ingredientName.trim()} onClick={handleSave} className="rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-60">
+              {saving ? "Saving..." : editingItem ? "Update" : "Create"}
+            </button>
+          </div>}>
+        <div className="grid grid-cols-1 gap-4 p-5 md:grid-cols-2">
+          <label className="space-y-2 md:col-span-2">
+            <span className="text-sm font-medium text-gray-700">Ingredient Name</span>
+            <input type="text" value={formState.ingredientName} onChange={event => setFormState(current => ({
+            ...current,
+            ingredientName: event.target.value
+          }))} className="w-full rounded-lg border border-gray-300 px-3 py-2" placeholder="Tomato, Cheese, Chicken Breast..." />
+          </label>
+          <label className="space-y-2">
+            <span className="text-sm font-medium text-gray-700">SKU</span>
+            <input type="text" value={formState.sku} onChange={event => setFormState(current => ({
+            ...current,
+            sku: event.target.value
+          }))} className="w-full rounded-lg border border-gray-300 px-3 py-2" placeholder="Optional stock code" />
+          </label>
+          <label className="space-y-2">
+            <span className="text-sm font-medium text-gray-700">Unit</span>
+            <input type="text" value={formState.unit} onChange={event => setFormState(current => ({
+            ...current,
+            unit: event.target.value
+          }))} className="w-full rounded-lg border border-gray-300 px-3 py-2" />
+          </label>
+          <label className="space-y-2">
+            <span className="text-sm font-medium text-gray-700">Current Stock</span>
+            <input type="number" min="0" value={formState.currentStock} onChange={event => setFormState(current => ({
+            ...current,
+            currentStock: Number(event.target.value)
+          }))} className="w-full rounded-lg border border-gray-300 px-3 py-2" />
+          </label>
+          <label className="space-y-2">
+            <span className="text-sm font-medium text-gray-700">Minimum Stock</span>
+            <input type="number" min="0" value={formState.minimumStock} onChange={event => setFormState(current => ({
+            ...current,
+            minimumStock: Number(event.target.value)
+          }))} className="w-full rounded-lg border border-gray-300 px-3 py-2" />
+          </label>
+          <label className="space-y-2">
+            <span className="text-sm font-medium text-gray-700">Reorder Quantity</span>
+            <input type="number" min="0" value={formState.reorderQuantity} onChange={event => setFormState(current => ({
+            ...current,
+            reorderQuantity: Number(event.target.value)
+          }))} className="w-full rounded-lg border border-gray-300 px-3 py-2" />
+          </label>
+          <label className="space-y-2 md:col-span-2">
+            <span className="text-sm font-medium text-gray-700">Notes</span>
+            <textarea value={formState.notes} onChange={event => setFormState(current => ({
+            ...current,
+            notes: event.target.value
+          }))} rows="3" className="w-full rounded-lg border border-gray-300 px-3 py-2" placeholder="Supplier, shelf, or stock handling notes" />
+          </label>
+          <div className="space-y-3 md:col-span-2">
+            <div className="flex items-center gap-2">
+              <UtensilsCrossed className="h-4 w-4 text-gray-500" />
+              <span className="text-sm font-medium text-gray-700">Related Menu Items</span>
+            </div>
+            <div className="max-h-72 space-y-3 overflow-y-auto rounded-lg border border-gray-200 p-3">
+              {menuItems.map(menuItem => {
+              const selected = selectedRelationIds.has(menuItem._id);
+              const relation = formState.relatedMenuItems.find(entry => entry.menuItem === menuItem._id);
+              return <div key={menuItem._id} className="rounded-lg border border-gray-200 p-3">
+                    <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                      <label className="flex items-center gap-3">
+                        <input type="checkbox" checked={selected} onChange={event => toggleRelation(menuItem._id, event.target.checked)} />
+                        <div>
+                          <p className="font-medium text-gray-900">{menuItem.name}</p>
+                          <p className="text-sm text-gray-500">
+                            {menuItem.category?.name || "Uncategorized"}
+                          </p>
+                        </div>
+                      </label>
+                      {selected ? <label className="space-y-1">
+                          <span className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                            Required Qty
+                          </span>
+                          <input type="number" min="0" step="0.01" value={relation?.quantityRequired ?? 1} onChange={event => updateRelationQuantity(menuItem._id, event.target.value)} className="w-28 rounded-lg border border-gray-300 px-3 py-2" />
+                        </label> : null}
+                    </div>
+                  </div>;
+            })}
+            </div>
+          </div>
+          <label className="flex items-center gap-3 md:col-span-2">
+            <input type="checkbox" checked={formState.isActive} onChange={event => setFormState(current => ({
+            ...current,
+            isActive: event.target.checked
+          }))} />
+            <span className="text-sm font-medium text-gray-700">
+              Keep this inventory record active
+            </span>
+          </label>
+        </div>
+      </AdminModal>
+
+      <AdminModal isOpen={isAdjustOpen} title="Adjust Stock" subtitle={activeItem?.ingredientName ? `Update stock for ${activeItem.ingredientName}` : "Update stock quantity"} onClose={() => {
+      setIsAdjustOpen(false);
+      setActiveItem(null);
+    }} maxWidth="max-w-2xl" footer={<div className="flex justify-end gap-3">
+            <button type="button" onClick={() => setIsAdjustOpen(false)} className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700">
+              Cancel
+            </button>
+            <button type="button" disabled={saving || !adjustmentState.quantity} onClick={handleAdjustment} className="rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-60">
+              {saving ? "Updating..." : "Apply"}
+            </button>
+          </div>}>
+        <div className="grid grid-cols-1 gap-4 p-5 md:grid-cols-2">
+          <label className="space-y-2">
+            <span className="text-sm font-medium text-gray-700">Adjustment Type</span>
+            <select value={adjustmentState.adjustmentType} onChange={event => setAdjustmentState(current => ({
+            ...current,
+            adjustmentType: event.target.value
+          }))} className="w-full rounded-lg border border-gray-300 px-3 py-2">
+              {INVENTORY_ADJUSTMENT_OPTIONS.map(option => <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>)}
+            </select>
+          </label>
+          <label className="space-y-2">
+            <span className="text-sm font-medium text-gray-700">Quantity</span>
+            <input type="number" min="1" value={adjustmentState.quantity} onChange={event => setAdjustmentState(current => ({
+            ...current,
+            quantity: Number(event.target.value)
+          }))} className="w-full rounded-lg border border-gray-300 px-3 py-2" />
+          </label>
+          <label className="space-y-2 md:col-span-2">
+            <span className="text-sm font-medium text-gray-700">Notes</span>
+            <textarea rows="3" value={adjustmentState.notes} onChange={event => setAdjustmentState(current => ({
+            ...current,
+            notes: event.target.value
+          }))} className="w-full rounded-lg border border-gray-300 px-3 py-2" placeholder="Reason for the stock movement" />
+          </label>
+        </div>
+      </AdminModal>
+    </div>;
+}

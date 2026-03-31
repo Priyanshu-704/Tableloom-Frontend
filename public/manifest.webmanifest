@@ -1,0 +1,23 @@
+{
+  "name": "Tableloom",
+  "short_name": "Tableloom",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#020617",
+  "theme_color": "#082f49",
+  "description": "Restaurant operations, tenant management, and customer ordering in one workspace.",
+  "icons": [
+    {
+      "src": "./tableloom-mark.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "./favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

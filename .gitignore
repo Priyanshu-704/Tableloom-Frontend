@@ -1,0 +1,33 @@
+# Dependencies
+node_modules/
+
+# Build Output
+build/
+dist/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.log
+
+# Environment Variables
+.env
+.env.*          # .env.local, .env.development, etc.
+!.env.example
+
+# Testing
+coverage/
+
+# Editor / OS
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Misc
+*.cache
+.eslintcache
