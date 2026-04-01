@@ -37,32 +37,44 @@ export function AdminHeader({
       <div className="flex h-full">
         <div className="hidden h-full w-72 shrink-0 items-center border-r border-slate-800/60 bg-slate-900/90 px-6 lg:flex">
           <div className="flex min-w-0 items-center gap-4">
-            <BrandBadge logoSrc={settings?.restaurant?.logo || "/tableloom-mark.svg"} name={settings?.restaurant?.name || "Tableloom"} nameClassName="text-xl text-white" />
+            <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-slate-800/80 ring-1 ring-slate-700/80">
+              <img src={settings?.restaurant?.logo || "/tableloom-mark.svg"} alt={settings?.restaurant?.name || "Tableloom"} className="h-8 w-8 object-contain" />
+            </div>
             <div className="min-w-0">
-              <p className="truncate text-[11px] font-semibold uppercase tracking-[0.22em] text-sky-200/80">
+              <p className="truncate text-base font-bold text-white xl:text-lg">
+                {settings?.restaurant?.name || "Tableloom"}
+              </p>
+              <p className="mt-1 truncate text-[11px] font-semibold uppercase tracking-[0.22em] text-sky-200/80">
                 Admin Panel
               </p>
             </div>
           </div>
         </div>
 
-        <div className="flex min-w-0 flex-1 items-center justify-between px-4 sm:px-6">
-          <div className="min-w-0">
+        <div className="flex min-w-0 flex-1 items-center justify-between gap-3 px-3 sm:px-6">
+          <div className="min-w-0 flex-1">
             <div className="mb-1 flex items-center gap-3 lg:hidden">
               <button type="button" onClick={onToggleMobileSidebar} className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-700 bg-slate-900/80 text-slate-100 transition hover:border-slate-500" aria-label={isMobileSidebarOpen ? "Close navigation menu" : "Open navigation menu"} aria-expanded={isMobileSidebarOpen}>
                 {isMobileSidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
               </button>
-              <BrandBadge logoSrc={settings?.restaurant?.logo || "/tableloom-mark.svg"} name={settings?.restaurant?.name || "Tableloom"} size="sm" nameClassName="text-base text-white" />
+              <div className="min-w-0">
+                <div className="flex min-w-0 items-center gap-2">
+                  <BrandBadge logoSrc={settings?.restaurant?.logo || "/tableloom-mark.svg"} name={settings?.restaurant?.name || "Tableloom"} size="sm" nameClassName="text-base text-white" />
+                </div>
+                <p className="mt-1 truncate text-[10px] font-semibold uppercase tracking-[0.22em] text-sky-200/80">
+                  Admin Panel
+                </p>
+              </div>
             </div>
-            <h1 className="truncate text-xl font-bold text-white">
+            <h1 className="truncate text-base font-bold text-white sm:text-xl">
               {settings?.restaurant?.name || "Tableloom"}
             </h1>
-            <p className="truncate text-sm text-slate-300">
+            <p className="truncate text-xs text-slate-300 sm:text-sm">
               {isMonitoringMode ? "Read-only monitoring mode" : `Welcome back, ${user?.name || "Administrator"}`}
             </p>
           </div>
 
-          <div className="flex items-center gap-3 sm:gap-6">
+          <div className="flex shrink-0 items-center gap-2 sm:gap-6">
             {isMonitoringMode ? <div className="hidden items-center gap-2 rounded-full border border-amber-400/30 bg-amber-400/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-amber-200 xl:flex">
                 <Shield className="h-3.5 w-3.5" />
                 Monitoring Only

@@ -407,7 +407,7 @@ export function BillManagement() {
           <select value={filters.status} onChange={event => setFilters(current => ({
           ...current,
           status: event.target.value
-        }))} className="rounded-lg border border-gray-300 px-3 py-2">
+        }))} className="w-full rounded-lg border border-gray-300 px-3 py-2">
             {PAYMENT_STATUS_OPTIONS.map(option => <option key={option.value} value={option.value}>
                 {option.label}
               </option>)}
@@ -416,7 +416,7 @@ export function BillManagement() {
           <select value={filters.billStatus} onChange={event => setFilters(current => ({
           ...current,
           billStatus: event.target.value
-        }))} className="rounded-lg border border-gray-300 px-3 py-2">
+        }))} className="w-full rounded-lg border border-gray-300 px-3 py-2">
             {BILL_STATUS_OPTIONS.map(option => <option key={option.value} value={option.value}>
                 {option.label}
               </option>)}
@@ -425,7 +425,7 @@ export function BillManagement() {
           <select value={filters.paymentMethod} onChange={event => setFilters(current => ({
           ...current,
           paymentMethod: event.target.value
-        }))} className="rounded-lg border border-gray-300 px-3 py-2">
+        }))} className="w-full rounded-lg border border-gray-300 px-3 py-2">
             {PAYMENT_METHOD_OPTIONS.map(option => <option key={option.value} value={option.value}>
                 {option.label}
               </option>)}

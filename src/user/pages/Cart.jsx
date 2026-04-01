@@ -119,7 +119,7 @@ export function Cart() {
         payload: order
       });
     }
-    navigate(`/home/order-status/${order?._id || order?.id || ""}`);
+    navigate(buildCustomerPath(`/home/order-status/${order?._id || order?.id || ""}`));
     notify("Order placed successfully! Our chefs are now preparing your meal.", "success");
   };
   const handleSubmitOrder = async () => {
@@ -182,22 +182,22 @@ export function Cart() {
         </div>
       </div>;
   }
-  return <div className="mx-auto max-w-4xl pb-20">
+  return <div className="mx-auto max-w-4xl pb-24">
       {}
-      <div className="bg-white border-b border-gray-200 p-4 sticky top-0 z-40">
-        <div className="flex items-center justify-between">
+      <div className="sticky top-[4.5rem] z-40 border-b border-gray-200 bg-white p-4 lg:top-0">
+        <div className="flex items-center justify-between gap-3">
           <button onClick={() => navigate(-1)} className="cursor-pointer flex items-center text-gray-600 hover:text-gray-900">
             <ArrowLeft className="h-5 w-5 mr-2" />
             {t("back")}
           </button>
-          <h1 className="text-xl font-bold text-gray-900">{t("yourOrder")}</h1>
-          <div className="w-16" />
+          <h1 className="text-center text-lg font-bold text-gray-900 sm:text-xl">{t("yourOrder")}</h1>
+          <div className="w-10 sm:w-16" />
         </div>
       </div>
 
       {}
-      {cart?.table && <div className="p-4 bg-primary-50 border-b border-primary-100">
-          <div className="flex items-center justify-between">
+      {cart?.table && <div className="border-b border-primary-100 bg-primary-50 p-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-sm text-primary-700 font-medium">Table</p>
               <p className="text-lg font-bold text-primary-900">
@@ -227,7 +227,7 @@ export function Cart() {
                   </div>}
 
                 <div className="flex-1">
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex-1">
                       <h3 className="font-semibold text-gray-900">
                         {item.name}
@@ -248,7 +248,7 @@ export function Cart() {
                       </p>
                     </div>
 
-                    <div className="ml-0 flex items-center space-x-3 sm:ml-4">
+                    <div className="ml-0 flex items-center justify-between rounded-xl bg-slate-50 p-2 sm:ml-4 sm:justify-start sm:bg-transparent sm:p-0 sm:space-x-3">
                       <button onClick={() => handleDecrement(menuItemId, sizeId)} className="cursor-pointer p-1 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors">
                         <Minus className="h-4 w-4" />
                       </button>
@@ -284,7 +284,7 @@ export function Cart() {
       </div>
 
       {}
-      <div className="p-4 bg-white border-t border-gray-200">
+      <div className="border-t border-gray-200 bg-white p-4">
         <label htmlFor="instructions" className="block text-sm font-medium text-gray-700 mb-2">
           {t("specialInstructions")} ({t("optional")})
         </label>
@@ -292,14 +292,14 @@ export function Cart() {
       </div>
 
       {}
-      <div className="p-4 bg-white border-t border-gray-200">
+      <div className="border-t border-gray-200 bg-white p-4">
         <div className="mb-6 rounded-2xl border border-slate-200 bg-slate-50 p-4">
           <label htmlFor="couponCode" className="mb-2 block text-sm font-medium text-gray-700">
             Apply Coupon
           </label>
           <div className="flex flex-col gap-3 sm:flex-row">
             <input id="couponCode" type="text" value={couponCode} onChange={event => setCouponCode(event.target.value)} placeholder="Enter coupon code" className="flex-1 rounded-lg border border-gray-300 px-3 py-2 focus:border-transparent focus:ring-2 focus:ring-primary-500" />
-            <button type="button" onClick={handleApplyDiscount} disabled={isApplyingDiscount || loading} className="cursor-pointer rounded-lg bg-primary-600 px-4 py-2 font-semibold text-white transition-colors hover:bg-primary-700 disabled:bg-gray-400">
+            <button type="button" onClick={handleApplyDiscount} disabled={isApplyingDiscount || loading} className="cursor-pointer w-full rounded-lg bg-primary-600 px-4 py-2 font-semibold text-white transition-colors hover:bg-primary-700 disabled:bg-gray-400 sm:w-auto">
               {isApplyingDiscount ? "Applying..." : "Apply Coupon"}
             </button>
           </div>

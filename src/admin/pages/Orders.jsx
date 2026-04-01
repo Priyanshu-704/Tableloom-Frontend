@@ -175,7 +175,7 @@ export function Orders() {
   if (kitchenView) {
     return <KitchenDisplay onRefreshOrders={loadOrders} />;
   }
-  return <div className="space-y-6 p-6">
+  return <div className="space-y-6 p-4 sm:p-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Orders Management</h1>
@@ -184,7 +184,7 @@ export function Orders() {
           </p>
         </div>
         <div className="flex flex-wrap gap-3">
-          <button type="button" onClick={loadOrders} disabled={loading} className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 transition-colors hover:bg-gray-50 disabled:opacity-60">
+          <button type="button" onClick={loadOrders} disabled={loading} className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 transition-colors hover:bg-gray-50 disabled:opacity-60 sm:w-auto">
             <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
             Refresh
           </button>
@@ -238,7 +238,7 @@ export function Orders() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-8">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-4 xl:grid-cols-8">
         {ORDER_STATUS.map(status => <button key={status.value} type="button" onClick={() => setFilters(current => ({
         ...current,
         status: status.value
@@ -265,7 +265,7 @@ export function Orders() {
           <select value={filters.status} onChange={event => setFilters(current => ({
           ...current,
           status: event.target.value
-        }))} className="rounded-lg border border-gray-300 px-3 py-2 focus:border-transparent focus:ring-2 focus:ring-primary-500">
+        }))} className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-transparent focus:ring-2 focus:ring-primary-500">
             {ORDER_STATUS.map(status => <option key={status.value} value={status.value}>
                 {status.label}
               </option>)}
@@ -274,7 +274,7 @@ export function Orders() {
           <select value={filters.paymentStatus} onChange={event => setFilters(current => ({
           ...current,
           paymentStatus: event.target.value
-        }))} className="rounded-lg border border-gray-300 px-3 py-2 focus:border-transparent focus:ring-2 focus:ring-primary-500">
+        }))} className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-transparent focus:ring-2 focus:ring-primary-500">
             {PAYMENT_STATUS.map(status => <option key={status.value} value={status.value}>
                 {status.label}
               </option>)}

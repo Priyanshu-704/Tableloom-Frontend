@@ -10,6 +10,20 @@ import { menuService } from "../../common/services";
 import { buildAdminPath } from "../../common/utils/routes";
 import { useMonitoringMode } from "../hooks/useMonitoringMode";
 import { MonitoringBanner } from "../components/common/MonitoringBanner";
+
+const renderPriceList = (item) => {
+  const prices = item?.prices || [];
+
+  if (!prices.length) {
+    return "-";
+  }
+
+  return <div className="space-y-1">
+      {prices.map((priceRow, idx) => <div key={`${item._id}-price-${idx}`} className="text-sm">
+          {priceRow.size?.name || "Size"}: ₹{Number(priceRow.price || 0).toFixed(2)}
+        </div>)}
+    </div>;
+};
 export function MenuManagement() {
   const PAGE_SIZE = 10;
   const navigate = useNavigate();
@@ -179,7 +193,7 @@ export function MenuManagement() {
   if (loading) {
     return <AdminPageSkeleton stats={4} filters={4} cards={6} cardHeight="h-48" />;
   }
-  return <div className="p-6 space-y-6">
+  return <div className="space-y-6 p-4 sm:p-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Menu Management</h1>
@@ -188,27 +202,27 @@ export function MenuManagement() {
           </p>
         </div>
         <div className="flex flex-wrap gap-3">
-          <button onClick={() => navigate(buildAdminPath("/menu/categories"))} className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 transition-colors hover:bg-gray-50">
+          <button onClick={() => navigate(buildAdminPath("/menu/categories"))} className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 transition-colors hover:bg-gray-50 sm:w-auto">
             <Tag className="h-4 w-4" />
             <span>Categories</span>
           </button>
-          <button onClick={() => navigate(buildAdminPath("/menu/discounts"))} className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 transition-colors hover:bg-gray-50">
+          <button onClick={() => navigate(buildAdminPath("/menu/discounts"))} className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 transition-colors hover:bg-gray-50 sm:w-auto">
             <Percent className="h-4 w-4" />
             <span>Discounts</span>
           </button>
-          <button onClick={() => navigate(buildAdminPath("/menu/sizes"))} className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 transition-colors hover:bg-gray-50">
+          <button onClick={() => navigate(buildAdminPath("/menu/sizes"))} className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 transition-colors hover:bg-gray-50 sm:w-auto">
             <Ruler className="h-4 w-4" />
             <span>Sizes</span>
           </button>
-          <button onClick={() => navigate(buildAdminPath("/menu/seasonal"))} className="inline-flex items-center gap-2 rounded-xl border border-gray-300 bg-white px-4 py-2 transition-colors hover:bg-gray-50">
+          <button onClick={() => navigate(buildAdminPath("/menu/seasonal"))} className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-gray-300 bg-white px-4 py-2 transition-colors hover:bg-gray-50 sm:w-auto">
             <CalendarRange className="h-4 w-4" />
             <span>Seasonal</span>
           </button>
-          <button onClick={() => navigate(buildAdminPath("/menu/prices"))} className="inline-flex items-center gap-2 rounded-xl border border-gray-300 bg-white px-4 py-2 transition-colors hover:bg-gray-50">
+          <button onClick={() => navigate(buildAdminPath("/menu/prices"))} className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-gray-300 bg-white px-4 py-2 transition-colors hover:bg-gray-50 sm:w-auto">
             <LineChart className="h-4 w-4" />
             <span>Price History</span>
           </button>
-          {!isMonitoringMode && <button onClick={handleAddItem} className="inline-flex items-center gap-2 rounded-xl bg-primary-600 px-4 py-2 text-white transition-colors hover:bg-primary-700">
+          {!isMonitoringMode && <button onClick={handleAddItem} className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary-600 px-4 py-2 text-white transition-colors hover:bg-primary-700 sm:w-auto">
               <Plus className="h-4 w-4" />
               <span>Add Item</span>
             </button>}
@@ -295,7 +309,7 @@ export function MenuManagement() {
             <option value="unavailable">Out of Stock</option>
           </select>
 
-          <div className="flex gap-2">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             <button onClick={handleExportMenu} className="flex-1 rounded-xl border border-gray-300 px-4 py-2 hover:bg-gray-50">
               Export
             </button>
@@ -313,7 +327,54 @@ export function MenuManagement() {
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+      <div className="space-y-4 md:hidden">
+        {menuItems.map(item => <div key={item._id} className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+            <div className="flex items-start gap-3">
+              <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center overflow-hidden rounded-xl bg-gray-200">
+                {item.image ? <img src={item.image} alt={item.name} className="h-full w-full object-cover" /> : <Package className="h-6 w-6 text-gray-400" />}
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h3 className="text-base font-semibold text-gray-900">
+                    {item.name}
+                  </h3>
+                  <span className={`rounded-full px-2 py-1 text-xs font-medium ${item.isAvailable ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}>
+                    {item.isAvailable ? "Available" : "Out of Stock"}
+                  </span>
+                </div>
+                <p className="mt-1 text-sm text-gray-500">
+                  {item.category?.name || "Uncategorized"}
+                </p>
+                <p className="mt-2 line-clamp-2 text-sm text-gray-600">
+                  {item.description || "No description"}
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-4 rounded-xl bg-slate-50 p-3">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+                Prices
+              </p>
+              <div className="mt-2 text-gray-700">
+                {renderPriceList(item)}
+              </div>
+            </div>
+
+            {!isMonitoringMode ? <div className="mt-4 grid grid-cols-3 gap-2">
+                <button onClick={() => handleToggleAvailability(item._id)} className="rounded-xl border border-orange-200 px-3 py-2 text-sm text-orange-700 hover:bg-orange-50" title={item.isAvailable ? "Mark unavailable" : "Mark available"}>
+                  {item.isAvailable ? "Hide" : "Show"}
+                </button>
+                <button onClick={() => handleEditItem(item)} className="rounded-xl border border-blue-200 px-3 py-2 text-sm text-blue-700 hover:bg-blue-50" title="Edit item">
+                  Edit
+                </button>
+                <button onClick={() => handleDeleteItem(item._id)} className="rounded-xl border border-red-200 px-3 py-2 text-sm text-red-700 hover:bg-red-50" title="Delete item">
+                  Delete
+                </button>
+              </div> : null}
+          </div>)}
+      </div>
+
+      <div className="hidden overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm md:block">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-200">
@@ -341,13 +402,7 @@ export function MenuManagement() {
                     </div>
                   </td>
                   <td className="p-4 text-gray-600">{item.category?.name || "-"}</td>
-                  <td className="p-4 text-gray-700">
-                    {(item.prices || []).length > 0 ? <div className="space-y-1">
-                        {item.prices.map((priceRow, idx) => <div key={`${item._id}-price-${idx}`} className="text-sm">
-                            {priceRow.size?.name || "Size"}: ₹{Number(priceRow.price || 0).toFixed(2)}
-                          </div>)}
-                      </div> : "-"}
-                  </td>
+                  <td className="p-4 text-gray-700">{renderPriceList(item)}</td>
                   <td className="p-4">
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${item.isAvailable ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}>
                       {item.isAvailable ? "Available" : "Out of Stock"}

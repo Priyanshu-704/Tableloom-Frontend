@@ -323,14 +323,14 @@ export function Dashboard() {
   if (loading) {
     return <AdminPageSkeleton stats={4} filters={0} cards={4} cardHeight="h-72" headerActions={0} columns="xl:grid-cols-2" />;
   }
-  return <div className="space-y-6 p-6">
+  return <div className="space-y-6 p-4 sm:p-6">
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
         {performanceCards.map(card => <StatsCard key={card.title} {...card} />)}
       </div>
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-        <div className="min-w-0 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-          <div className="mb-4 flex items-center justify-between">
+        <div className="min-w-0 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:p-6">
+          <div className="mb-4 flex items-start justify-between gap-3">
             <div>
               <h2 className="text-lg font-semibold text-gray-900">Order Flow</h2>
               <p className="text-sm text-gray-500">
@@ -352,8 +352,8 @@ export function Dashboard() {
           </div>
         </div>
 
-        <div className="min-w-0 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-          <div className="mb-4 flex items-center justify-between">
+        <div className="min-w-0 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:p-6">
+          <div className="mb-4 flex items-start justify-between gap-3">
             <div>
               <h2 className="text-lg font-semibold text-gray-900">Popular Items</h2>
               <p className="text-sm text-gray-500">
@@ -379,8 +379,8 @@ export function Dashboard() {
       </div>
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-          <div className="mb-4 flex items-center justify-between">
+        <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:p-6">
+          <div className="mb-4 flex items-start justify-between gap-3">
             <div>
               <h2 className="text-lg font-semibold text-gray-900">Recent Activity</h2>
               <p className="text-sm text-gray-500">
@@ -413,7 +413,7 @@ export function Dashboard() {
         </div>
 
         <div className="space-y-6">
-          <div className="min-w-0 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+          <div className="min-w-0 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:p-6">
             <div className="mb-4">
               <h2 className="text-lg font-semibold text-gray-900">Operations Mix</h2>
               <p className="text-sm text-gray-500">
@@ -443,9 +443,9 @@ export function Dashboard() {
             </div>
           </div>
 
-          <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+          <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:p-6">
             <h2 className="text-lg font-semibold text-gray-900">Quick Actions</h2>
-            <div className="mt-4 grid grid-cols-2 gap-4">
+            <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
               <button type="button" onClick={() => navigate(buildAdminPath("/orders"))} className="rounded-2xl border border-primary-200 bg-primary-50 p-4 text-left transition-colors hover:bg-primary-100">
                 <ShoppingCart className="mb-3 h-6 w-6 text-primary-600" />
                 <p className="text-sm font-medium text-primary-700">View Orders</p>

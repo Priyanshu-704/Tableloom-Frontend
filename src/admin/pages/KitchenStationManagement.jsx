@@ -249,15 +249,15 @@ export function KitchenStationManagement() {
       addNotification(message, "error");
     }
   };
-  return <div className="p-6 space-y-6">
-      <div className="flex justify-between items-center">
+  return <div className="space-y-6 p-4 sm:p-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Kitchen Station Management</h1>
           <p className="text-gray-600">
             Create stations and assign menu categories to the right preparation line.
           </p>
         </div>
-        {!isMonitoringMode && <button onClick={handleOpenCreate} className="inline-flex items-center gap-2 bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg">
+        {!isMonitoringMode && <button onClick={handleOpenCreate} className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-white hover:bg-primary-700 sm:w-auto">
             <Plus className="h-4 w-4" />
             Add Station
           </button>}
@@ -269,9 +269,9 @@ export function KitchenStationManagement() {
           {pageError}
         </div>}
 
-      {loading ? <AdminCardGridSkeleton count={4} cardHeight="h-56" columns="lg:grid-cols-2" /> : <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {loading ? <AdminCardGridSkeleton count={4} cardHeight="h-56" columns="lg:grid-cols-2" /> : <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           {stations.map(station => <div key={station._id} className="bg-white rounded-lg border border-gray-200 shadow-sm p-5">
-              <div className="flex items-start justify-between mb-4">
+              <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div className="flex items-start gap-3">
                   <div className="h-10 w-10 rounded-lg flex items-center justify-center" style={{
               backgroundColor: station.colorCode || "#4CAF50"
@@ -286,7 +286,7 @@ export function KitchenStationManagement() {
                   </div>
                 </div>
 
-                {!isMonitoringMode && <div className="flex items-center gap-2">
+                {!isMonitoringMode && <div className="flex items-center gap-2 self-end sm:self-auto">
                     <button onClick={() => handleOpenEdit(station)} className="p-2 text-blue-600 hover:bg-blue-50 rounded" title="Edit">
                       <Edit className="h-4 w-4" />
                     </button>
@@ -329,8 +329,8 @@ export function KitchenStationManagement() {
 
               {!isMonitoringMode && <div>
                 <p className="text-sm font-medium text-gray-700 mb-2">Assign Category</p>
-                <div className="flex gap-2">
-                  <select className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm" defaultValue="" onChange={e => {
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <select className="w-full flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm" defaultValue="" onChange={e => {
               const value = e.target.value;
               if (value) {
                 handleAssignCategory(station._id, value);
@@ -342,7 +342,7 @@ export function KitchenStationManagement() {
                         {category.name}
                       </option>)}
                   </select>
-                  <button className="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700" disabled>
+                  <button className="inline-flex w-full items-center justify-center border border-gray-300 px-3 py-2 text-sm text-gray-700 rounded-lg sm:w-auto" disabled>
                     <Link2 className="h-4 w-4" />
                   </button>
                 </div>
@@ -354,16 +354,16 @@ export function KitchenStationManagement() {
           <ChefHat className="h-12 w-12 text-gray-300 mx-auto mb-4" />
           <h3 className="text-lg font-semibold text-gray-900 mb-2">No kitchen stations yet</h3>
           <p className="text-gray-600 mb-4">Create a station to map categories and route orders.</p>
-          {!isMonitoringMode && <button onClick={handleOpenCreate} className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg">
+          {!isMonitoringMode && <button onClick={handleOpenCreate} className="w-full rounded-lg bg-primary-600 px-4 py-2 text-white hover:bg-primary-700 sm:w-auto">
               Create Station
             </button>}
         </div>}
 
-      {!isMonitoringMode && showForm && <AdminModal isOpen={showForm} title={editingStation ? "Edit Kitchen Station" : "Create Kitchen Station"} subtitle="Configure station details and preparation settings." onClose={resetForm} maxWidth="max-w-xl" footer={<div className="flex justify-end gap-3">
-              <button type="button" onClick={resetForm} className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
+      {!isMonitoringMode && showForm && <AdminModal isOpen={showForm} title={editingStation ? "Edit Kitchen Station" : "Create Kitchen Station"} subtitle="Configure station details and preparation settings." onClose={resetForm} maxWidth="max-w-xl" footer={<div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+              <button type="button" onClick={resetForm} className="w-full rounded-lg border border-gray-300 px-4 py-2 hover:bg-gray-50 sm:w-auto">
                 Cancel
               </button>
-              <button type="submit" form="kitchen-station-form" disabled={isSaving} className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg disabled:opacity-60">
+              <button type="submit" form="kitchen-station-form" disabled={isSaving} className="w-full rounded-lg bg-primary-600 px-4 py-2 text-white hover:bg-primary-700 disabled:opacity-60 sm:w-auto">
                 {isSaving ? "Saving..." : editingStation ? "Update" : "Create"}
               </button>
             </div>}>

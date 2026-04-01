@@ -133,7 +133,7 @@ export function FeedbackManagement() {
       setActiveId("");
     }
   };
-  return <div className="space-y-6 p-6">
+  return <div className="space-y-6 p-4 sm:p-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Feedback Management</h1>
@@ -141,7 +141,7 @@ export function FeedbackManagement() {
             Review customer sentiment, track open issues, and close the loop.
           </p>
         </div>
-        <button type="button" onClick={loadFeedback} className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 transition-colors hover:bg-gray-50">
+        <button type="button" onClick={loadFeedback} className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 transition-colors hover:bg-gray-50 sm:w-auto">
           <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
           Refresh
         </button>
@@ -185,7 +185,7 @@ export function FeedbackManagement() {
         <select value={filters.status} onChange={event => setFilters(current => ({
         ...current,
         status: event.target.value
-      }))} className="rounded-lg border border-gray-300 px-3 py-2">
+      }))} className="w-full rounded-lg border border-gray-300 px-3 py-2">
           {STATUS_OPTIONS.map(option => <option key={option.value} value={option.value}>
               {option.label}
             </option>)}
@@ -193,7 +193,7 @@ export function FeedbackManagement() {
         <select value={filters.sentiment} onChange={event => setFilters(current => ({
         ...current,
         sentiment: event.target.value
-      }))} className="rounded-lg border border-gray-300 px-3 py-2">
+      }))} className="w-full rounded-lg border border-gray-300 px-3 py-2">
           {SENTIMENT_OPTIONS.map(option => <option key={option.value} value={option.value}>
               {option.label}
             </option>)}
@@ -236,8 +236,8 @@ export function FeedbackManagement() {
                     </div> : null}
                 </div>
 
-                <div className="grid min-w-[260px] gap-3">
-                  <select value={entry.status || "new"} onChange={event => updateEntryStatus(entry, event.target.value)} disabled={activeId === entry._id} className="rounded-lg border border-gray-300 px-3 py-2 text-sm">
+                <div className="grid w-full gap-3 lg:min-w-[260px] lg:max-w-sm">
+                  <select value={entry.status || "new"} onChange={event => updateEntryStatus(entry, event.target.value)} disabled={activeId === entry._id} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
                     {STATUS_OPTIONS.filter(option => option.value !== "all").map(option => <option key={option.value} value={option.value}>
                         {option.label}
                       </option>)}

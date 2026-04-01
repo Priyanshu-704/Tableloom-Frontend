@@ -54,14 +54,16 @@ function CustomerLayout() {
       <Outlet />
 
       {}
-      {!hideFooter && <div className="fixed bottom-0 left-0 z-40 flex w-full items-center justify-between gap-3 border-t border-sky-100 bg-white/92 px-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-3 shadow-[0_-12px_30px_rgba(8,47,73,0.08)] backdrop-blur sm:gap-4">
+      {!hideFooter && <div className="fixed bottom-0 left-0 z-40 w-full border-t border-sky-100 bg-white/92 px-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-3 shadow-[0_-12px_30px_rgba(8,47,73,0.08)] backdrop-blur">
+          <div className="mx-auto grid max-w-4xl grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
           {}
-          <button onClick={() => handleCallWaiter(tableNumber, "quick_assist")} disabled={isCalling || Boolean(activeCall)} className="flex min-w-0 items-center justify-center rounded-xl bg-primary-600 px-4 py-2 text-white shadow-md hover:bg-primary-700">
+          <button onClick={() => handleCallWaiter(tableNumber, "quick_assist")} disabled={isCalling || Boolean(activeCall)} className="flex min-w-0 items-center justify-center rounded-xl bg-primary-600 px-4 py-3 text-white shadow-md hover:bg-primary-700">
             {isCalling ? <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div> : <span className="font-semibold text-sm">{t("quickHelp")}</span>}
           </button>
 
           {}
-          <CallWaiterButton tableNumber={tableNumber} onCallWaiter={() => setShowWaiterModal(true)} hasActiveCall={Boolean(activeCall)} className="min-w-0 px-4 py-2" />
+          <CallWaiterButton tableNumber={tableNumber} onCallWaiter={() => setShowWaiterModal(true)} hasActiveCall={Boolean(activeCall)} className="min-w-0 px-4 py-3" />
+        </div>
         </div>}
     </div>;
 }

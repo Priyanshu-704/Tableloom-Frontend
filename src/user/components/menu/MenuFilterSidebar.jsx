@@ -159,7 +159,7 @@ export function MenuFilterSidebar({
       </aside>
 
       {isOpen ? <div className="fixed inset-0 z-50 bg-slate-900/30 lg:hidden" onClick={onClose}>
-          <div className="absolute right-0 top-0 h-full w-full max-w-sm bg-white shadow-xl" onClick={event => event.stopPropagation()}>
+          <div className="absolute bottom-0 left-0 right-0 max-h-[88vh] w-full rounded-t-3xl bg-white shadow-xl" onClick={event => event.stopPropagation()}>
             {sidebarContent}
           </div>
         </div> : null}

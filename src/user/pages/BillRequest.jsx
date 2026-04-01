@@ -307,8 +307,8 @@ export function BillRequest() {
   const hasGeneratedBill = Boolean(billData?.bill?._id);
   const isPaid = (billData?.bill?.paymentStatus || billData?.session?.paymentStatus) === "paid";
   return <div className="min-h-screen bg-gray-50 pb-24">
-      {paymentQrState.isOpen ? <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
+      {paymentQrState.isOpen ? <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4">
+          <div className="w-full max-w-md rounded-t-3xl bg-white p-6 shadow-2xl sm:rounded-2xl">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-bold text-gray-900">Scan To Pay</h2>
               <button type="button" onClick={() => setPaymentQrState({
@@ -373,7 +373,7 @@ export function BillRequest() {
           </div>
         </div> : null}
 
-      <div className="sticky top-0 z-30 border-b border-gray-200 bg-white shadow-sm">
+      <div className="sticky top-[4.5rem] z-30 border-b border-gray-200 bg-white shadow-sm lg:top-0">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-4">
           <button type="button" onClick={() => navigate(buildCustomerPath("/home"))} className="cursor-pointer flex items-center text-gray-600 hover:text-gray-900">
             <ArrowLeft className="mr-2 h-5 w-5" />
@@ -388,7 +388,7 @@ export function BillRequest() {
 
       <div className="mx-auto max-w-3xl space-y-6 p-4">
         <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-          <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
             <div>
               <p className="text-sm font-medium uppercase tracking-[0.18em] text-slate-500">
                 Session Summary
@@ -402,7 +402,7 @@ export function BillRequest() {
               </p>
             </div>
 
-            <div className="text-right">
+            <div className="text-left sm:text-right">
               <p className="text-sm text-gray-500">
                 {hasGeneratedBill ? `Bill #${billData.bill.billNumber || billData.bill._id}` : "Bill preview"}
               </p>
@@ -463,14 +463,14 @@ export function BillRequest() {
           </div>
 
           <div className="mt-4 space-y-3">
-            {(billData?.items || []).map(item => <div key={item.id} className="flex items-center justify-between rounded-xl border border-slate-100 px-4 py-3">
+            {(billData?.items || []).map(item => <div key={item.id} className="flex flex-col gap-2 rounded-xl border border-slate-100 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <p className="font-medium text-gray-900">
                     {item.quantity}x {item.name}
                   </p>
                   {item.size ? <p className="text-sm text-gray-500">Size: {item.size}</p> : null}
                 </div>
-                <p className="font-semibold text-gray-900">
+                <p className="font-semibold text-gray-900 sm:text-right">
                   {formatCurrency(item.totalPrice, currency)}
                 </p>
               </div>)}
@@ -542,7 +542,7 @@ export function BillRequest() {
           </div>
         </div>
 
-        <button type="button" onClick={handlePayment} disabled={isPaying || !billData?.canCompleteSession} className="mb-28 flex w-full cursor-pointer items-center justify-center rounded-xl bg-primary-600 px-6 py-4 font-semibold text-white shadow-lg hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-60">
+        <button type="button" onClick={handlePayment} disabled={isPaying || !billData?.canCompleteSession} className="mb-28 flex w-full cursor-pointer items-center justify-center rounded-xl bg-primary-600 px-6 py-4 text-center font-semibold text-white shadow-lg hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-60">
           <CheckCircle className="mr-2 h-5 w-5" />
           {isPaying ? "Processing..." : selectedPayment === "cash" ? "Await Staff Cash Confirmation" : `Show QR To Pay ${formatCurrency(totalAmount, currency)}`}
         </button>

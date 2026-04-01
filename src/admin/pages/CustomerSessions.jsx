@@ -102,7 +102,7 @@ export function CustomerSessions() {
       setActiveId("");
     }
   };
-  return <div className="space-y-6 p-6">
+  return <div className="space-y-6 p-4 sm:p-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Customer Sessions</h1>
@@ -110,7 +110,7 @@ export function CustomerSessions() {
             Monitor active tables, payment state, and session lifecycle controls.
           </p>
         </div>
-        <button type="button" onClick={loadSessions} className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 transition-colors hover:bg-gray-50">
+        <button type="button" onClick={loadSessions} className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 transition-colors hover:bg-gray-50 sm:w-auto">
           <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
           Refresh
         </button>
@@ -154,7 +154,7 @@ export function CustomerSessions() {
         <select value={filters.mode} onChange={event => setFilters(current => ({
         ...current,
         mode: event.target.value
-      }))} className="rounded-lg border border-gray-300 px-3 py-2">
+      }))} className="w-full rounded-lg border border-gray-300 px-3 py-2">
           {MODE_OPTIONS.map(option => <option key={option.value} value={option.value}>
               {option.label}
             </option>)}
@@ -162,7 +162,7 @@ export function CustomerSessions() {
         <select value={filters.status} onChange={event => setFilters(current => ({
         ...current,
         status: event.target.value
-      }))} className="rounded-lg border border-gray-300 px-3 py-2">
+      }))} className="w-full rounded-lg border border-gray-300 px-3 py-2">
           {STATUS_OPTIONS.map(option => <option key={option.value} value={option.value}>
               {option.label}
             </option>)}
@@ -206,7 +206,7 @@ export function CustomerSessions() {
                   </div>
                 </div>
 
-                <div className="flex flex-wrap gap-2">
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
                   {session.isActive ? <>
                       <button type="button" disabled={activeId === session.sessionId} onClick={() => runAction({
                   sessionId: session.sessionId,
@@ -228,7 +228,7 @@ export function CustomerSessions() {
                         <XCircle className="h-4 w-4" />
                         Cancel
                       </button>
-                    </> : <span className="rounded-lg border border-gray-200 px-4 py-2 text-sm text-gray-500">
+                    </> : <span className="rounded-lg border border-gray-200 px-4 py-2 text-center text-sm text-gray-500 sm:col-span-3">
                       Session closed
                     </span>}
                 </div>

@@ -9,22 +9,39 @@ const renderRows = (items = [], columns = []) => {
     return <div className="rounded-2xl border border-dashed border-slate-200 px-4 py-5 text-sm text-slate-500">No data available.</div>;
   }
 
-  return <div className="overflow-x-auto">
-      <table className="min-w-full divide-y divide-slate-200 text-sm">
-        <thead>
-          <tr className="text-left text-slate-500">
-            {columns.map(column => <th key={column.key} className="pb-3 pr-4">{column.label}</th>)}
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-slate-100">
-          {items.map(item => <tr key={item._id || item.id || JSON.stringify(item)}>
-              {columns.map(column => <td key={column.key} className="py-3 pr-4 text-slate-700">
-                  {column.render ? column.render(item) : item?.[column.key] ?? "-"}
-                </td>)}
-            </tr>)}
-        </tbody>
-      </table>
-    </div>;
+  return <>
+      <div className="space-y-3 md:hidden">
+        {items.map(item => <div key={item._id || item.id || JSON.stringify(item)} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <div className="space-y-2">
+              {columns.map(column => <div key={column.key} className="flex flex-col gap-1">
+                  <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">
+                    {column.label}
+                  </span>
+                  <span className="text-sm text-slate-700 break-words">
+                    {column.render ? column.render(item) : item?.[column.key] ?? "-"}
+                  </span>
+                </div>)}
+            </div>
+          </div>)}
+      </div>
+
+      <div className="hidden overflow-x-auto md:block">
+        <table className="min-w-full divide-y divide-slate-200 text-sm">
+          <thead>
+            <tr className="text-left text-slate-500">
+              {columns.map(column => <th key={column.key} className="pb-3 pr-4">{column.label}</th>)}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {items.map(item => <tr key={item._id || item.id || JSON.stringify(item)}>
+                {columns.map(column => <td key={column.key} className="py-3 pr-4 text-slate-700">
+                    {column.render ? column.render(item) : item?.[column.key] ?? "-"}
+                  </td>)}
+              </tr>)}
+          </tbody>
+        </table>
+      </div>
+    </>;
 };
 
 export function TenantOverview() {
@@ -71,14 +88,14 @@ export function TenantOverview() {
   }
 
   if (!overview?.tenant) {
-    return <div className="p-6 text-sm text-slate-600">Tenant not found.</div>;
+    return <div className="p-4 text-sm text-slate-600 sm:p-6">Tenant not found.</div>;
   }
 
   const { tenant, summary, settings, workspace } = overview;
   const canVerify = tenant?.onboarding?.verificationStatus === "pending" || tenant?.status === "pending";
 
-  return <div className="space-y-6 p-6">
-      <div className="flex flex-col gap-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm lg:flex-row lg:items-center lg:justify-between">
+  return <div className="space-y-6 p-4 sm:p-6">
+      <div className="flex flex-col gap-4 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm lg:flex-row lg:items-center lg:justify-between sm:p-6">
         <div>
           <button className="inline-flex items-center gap-2 text-sm font-medium text-sky-700 hover:text-sky-800" onClick={() => navigate(buildPlatformAdminPath("/tenant-management"))} type="button">
             <ArrowLeft className="h-4 w-4" />
@@ -89,7 +106,7 @@ export function TenantOverview() {
             Route: /{tenant.slug}/{tenant.key} · Plan: {tenant.subscription?.plan || "starter"} · Status: {tenant.onboarding?.verificationStatus || tenant.status}
           </p>
         </div>
-        {canVerify ? <button className="inline-flex items-center gap-2 rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-60" disabled={verifying} onClick={handleVerify} type="button">
+        {canVerify ? <button className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-60 lg:w-auto" disabled={verifying} onClick={handleVerify} type="button">
             {verifying ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
             Verify Tenant
           </button> : null}

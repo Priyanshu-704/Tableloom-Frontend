@@ -31,9 +31,9 @@ export function AdminModal({
   if (!isOpen) {
     return null;
   }
-  return <div className="fixed inset-0 z-50 overflow-y-auto overscroll-contain bg-slate-900/15 px-3 py-4 backdrop-blur-[2px] sm:p-4" onClick={onClose}>
-      <div className="flex min-h-full items-start justify-center sm:items-center">
-        <div className={`flex max-h-[calc(100dvh-2rem)] w-full flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl sm:max-h-[85vh] ${maxWidth} ${contentClassName}`.trim()} onClick={event => event.stopPropagation()}>
+  return <div className="fixed inset-0 z-50 overflow-y-auto overscroll-contain bg-slate-900/15 px-0 py-0 backdrop-blur-[2px] sm:p-4" onClick={onClose}>
+      <div className="flex min-h-full items-end justify-center sm:items-center">
+        <div className={`flex max-h-[92dvh] w-full flex-col overflow-hidden rounded-t-[1.75rem] border border-gray-200 bg-white shadow-2xl sm:max-h-[85vh] sm:rounded-2xl ${maxWidth} ${contentClassName}`.trim()} onClick={event => event.stopPropagation()}>
         <div className="flex items-start justify-between gap-4 border-b border-gray-200 px-4 py-4 sm:px-5">
           <div className="min-w-0">
             <h2 className="text-lg font-semibold text-gray-900">{title}</h2>

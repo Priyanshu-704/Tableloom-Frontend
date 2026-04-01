@@ -61,12 +61,12 @@ export function OrderHistory() {
   }
   return <div className="min-h-screen bg-gray-50 p-4 pb-24">
       <div className="mx-auto max-w-3xl space-y-4">
-        <div className="sticky top-0 z-20 flex items-center justify-between rounded-2xl border border-gray-200 bg-white px-4 py-4 shadow-sm">
+        <div className="sticky top-[4.5rem] z-20 flex items-center justify-between gap-3 rounded-2xl border border-gray-200 bg-white px-4 py-4 shadow-sm lg:top-0">
           <button type="button" onClick={() => navigate(buildCustomerPath("/home"))} className="flex items-center text-gray-600 hover:text-gray-900">
             <ArrowLeft className="mr-2 h-5 w-5" />
             Back
           </button>
-          <h1 className="text-xl font-bold text-gray-900">Order History</h1>
+          <h1 className="text-center text-lg font-bold text-gray-900 sm:text-xl">Order History</h1>
           <button type="button" onClick={() => loadOrders(true)} className="rounded-lg p-2 text-gray-600 hover:bg-gray-100 hover:text-primary-600">
             <RefreshCw className={`h-5 w-5 ${refreshing ? "animate-spin" : ""}`} />
           </button>
@@ -107,7 +107,7 @@ export function OrderHistory() {
                     </div>
                   </div>
 
-                  <div className="text-right">
+                  <div className="text-left sm:text-right">
                     <div className="text-lg font-bold text-primary-600">
                       {formatPrice(order?.totalAmount || order?.total)}
                     </div>

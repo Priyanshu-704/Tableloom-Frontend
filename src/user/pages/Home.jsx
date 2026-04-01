@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Receipt, Info, History } from "lucide-react";
+import { Receipt, Info, History, Utensils } from "lucide-react";
 import { useTranslation } from "../hooks/useTranslation";
 import { useNavigate } from "react-router-dom";
 import { useNotification } from "../../common/NotificationContext";
@@ -66,16 +66,16 @@ export function Home() {
     }
     navigate(buildCustomerPath("/home/orders"));
   };
-  return <div className="min-h-screen bg-gradient-to-br from-primary-50 to-orange-100">
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-md mx-auto text-center">
+  return <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-orange-100 pb-24">
+      <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
+        <div className="mx-auto max-w-md text-center">
           {}
-          <div className="mb-12">
+          <div className="mb-10 rounded-[2rem] bg-white/80 px-5 py-8 shadow-sm ring-1 ring-white/70 backdrop-blur sm:px-8">
             <BrandBadge logoSrc={settings?.restaurant?.logo || "/tableloom-mark.svg"} name={settings?.restaurant?.name || "Tableloom"} size="lg" className="justify-center mb-4" nameClassName="text-4xl text-gray-900" />
             <p className="text-gray-600 mb-4">
               {t("welcomeTo")} {t("digitalOrderingSystem")}
             </p>
-            <div className="bg-white rounded-lg p-4 shadow-sm inline-block">
+            <div className="inline-block rounded-2xl bg-primary-50 p-4 shadow-sm">
               <p className="text-sm text-gray-600">{t("youAreAt")}</p>
               <p className="text-2xl font-bold text-primary-600">
                 {t("table")} {tableNumber}
@@ -84,27 +84,27 @@ export function Home() {
           </div>
 
           {}
-          <div className="grid grid-cols-2 gap-4 mb-8">
+          <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
             {}
-            <button onClick={() => navigate(buildCustomerPath("/home/menu"))} className="bg-primary-600 hover:bg-primary-700 text-white p-6 rounded-2xl shadow-lg transition-all duration-200 transform hover:scale-105 flex flex-col items-center justify-center">
+            <button onClick={() => navigate(buildCustomerPath("/home/menu"))} className="flex min-h-36 flex-col items-center justify-center rounded-3xl bg-primary-600 p-6 text-white shadow-lg transition-all duration-200 hover:scale-[1.01] hover:bg-primary-700">
               <Utensils className="h-8 w-8 mb-2" />
               <span className="font-semibold">{t("startOrdering")}</span>
             </button>
 
             {}
-            <button onClick={() => navigate(buildCustomerPath("/home/bill"))} className="bg-green-600 hover:bg-green-700 text-white p-6 rounded-2xl shadow-lg transition-all duration-200 transform hover:scale-105 flex flex-col items-center justify-center">
+            <button onClick={() => navigate(buildCustomerPath("/home/bill"))} className="flex min-h-36 flex-col items-center justify-center rounded-3xl bg-green-600 p-6 text-white shadow-lg transition-all duration-200 hover:scale-[1.01] hover:bg-green-700">
               <Receipt className="h-8 w-8 mb-2" />
               <span className="font-semibold">{t("requestBill")}</span>
             </button>
 
             {}
-            <button onClick={() => navigate(buildCustomerPath("/home/restaurant-info"))} className="bg-blue-600 hover:bg-blue-700 text-white p-6 rounded-2xl shadow-lg transition-all duration-200 transform hover:scale-105 flex flex-col items-center justify-center">
+            <button onClick={() => navigate(buildCustomerPath("/home/restaurant-info"))} className="flex min-h-36 flex-col items-center justify-center rounded-3xl bg-blue-600 p-6 text-white shadow-lg transition-all duration-200 hover:scale-[1.01] hover:bg-blue-700">
               <Info className="h-8 w-8 mb-2" />
               <span className="font-semibold">{t("restaurantInfo")}</span>
             </button>
 
             {}
-            <button onClick={handleViewOrderHistory} className="bg-purple-600 hover:bg-purple-700 text-white p-6 rounded-2xl shadow-lg transition-all duration-200 transform hover:scale-105 flex flex-col items-center justify-center">
+            <button onClick={handleViewOrderHistory} className="flex min-h-36 flex-col items-center justify-center rounded-3xl bg-purple-600 p-6 text-white shadow-lg transition-all duration-200 hover:scale-[1.01] hover:bg-purple-700">
               <History className="h-8 w-8 mb-2" />
               <span className="font-semibold">{t("orderHistory")}</span>
             </button>
@@ -139,7 +139,7 @@ export function Home() {
               </div>
 
               <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <button type="button" onClick={() => navigate(`/home/order-status/${latestOrder._id || latestOrder.id || ""}`)} className="cursor-pointer rounded-xl bg-primary-600 px-4 py-3 font-semibold text-white hover:bg-primary-700">
+                <button type="button" onClick={() => navigate(buildCustomerPath(`/home/order-status/${latestOrder._id || latestOrder.id || ""}`))} className="cursor-pointer rounded-xl bg-primary-600 px-4 py-3 font-semibold text-white hover:bg-primary-700">
                   View Current Order
                 </button>
                 <button type="button" onClick={() => navigate(buildCustomerPath("/home/orders"))} className="cursor-pointer rounded-xl border border-slate-300 bg-white px-4 py-3 font-semibold text-slate-700 hover:bg-slate-50">

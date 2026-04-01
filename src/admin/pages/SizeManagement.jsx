@@ -125,15 +125,15 @@ export function SizeManagement() {
   if (loading && sizes.length === 0) {
     return <AdminPageSkeleton stats={3} filters={2} cards={4} cardHeight="h-40" />;
   }
-  return <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
+  return <div className="space-y-6 p-4 sm:p-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Size Management</h1>
           <p className="text-gray-600">
             Manage menu sizes and their reusable codes.
           </p>
         </div>
-        <button onClick={handleOpenCreate} className="flex items-center gap-2 bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg">
+        <button onClick={handleOpenCreate} className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-white hover:bg-primary-700 sm:w-auto">
           <Plus className="h-4 w-4" />
           Add Size
         </button>
@@ -144,59 +144,88 @@ export function SizeManagement() {
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
           <input type="text" value={searchTerm} onChange={event => setSearchTerm(event.target.value)} placeholder="Search by size name or code" className="w-full rounded-lg border border-gray-300 py-2 pl-10 pr-4" />
         </div>
-        <select value={statusFilter} onChange={event => setStatusFilter(event.target.value)} className="rounded-lg border border-gray-300 px-3 py-2">
+        <select value={statusFilter} onChange={event => setStatusFilter(event.target.value)} className="w-full rounded-lg border border-gray-300 px-3 py-2">
           <option value="all">All statuses</option>
           <option value="active">Active only</option>
           <option value="inactive">Inactive only</option>
         </select>
       </div>
 
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-        <table className="w-full">
-          <thead className="bg-gray-50 border-b border-gray-200">
-            <tr>
-              <th className="text-left p-4 font-semibold text-gray-900">
-                Name
-              </th>
-              <th className="text-left p-4 font-semibold text-gray-900">
-                Code
-              </th>
-              <th className="text-left p-4 font-semibold text-gray-900">
-                Status
-              </th>
-              <th className="text-right p-4 font-semibold text-gray-900">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredSizes.map(size => <tr key={size._id} className="border-b border-gray-100">
-                <td className="p-4">
-                  <div className="flex items-center gap-2 text-gray-900">
-                    <Ruler className="h-4 w-4 text-gray-400" />
-                    {size.name}
+      {filteredSizes.length > 0 && <>
+          <div className="space-y-4 md:hidden">
+            {filteredSizes.map(size => <div key={size._id} className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-gray-900">
+                      <Ruler className="h-4 w-4 text-gray-400" />
+                      <h2 className="font-semibold">{size.name}</h2>
+                    </div>
+                    <p className="text-sm text-gray-600">Code: {size.code}</p>
+                    <span className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${size.isActive ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}>
+                      {size.isActive ? "Active" : "Inactive"}
+                    </span>
                   </div>
-                </td>
-                <td className="p-4 text-gray-700">{size.code}</td>
-                <td className="p-4">
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${size.isActive ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}>
-                    {size.isActive ? "Active" : "Inactive"}
-                  </span>
-                </td>
-                <td className="p-4">
-                  <div className="flex items-center justify-end gap-2">
-                    <button onClick={() => handleOpenEdit(size)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg" title="Edit size">
-                      <Edit className="h-4 w-4" />
-                    </button>
-                    <button onClick={() => handleToggleStatus(size._id)} className="p-2 text-orange-600 hover:bg-orange-50 rounded-lg" title="Toggle status">
-                      {size.isActive ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </button>
-                  </div>
-                </td>
-              </tr>)}
-          </tbody>
-        </table>
-      </div>
+                </div>
+                <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  <button onClick={() => handleOpenEdit(size)} className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-blue-200 px-4 py-2 text-sm text-blue-700 hover:bg-blue-50" title="Edit size">
+                    <Edit className="h-4 w-4" />
+                    Edit
+                  </button>
+                  <button onClick={() => handleToggleStatus(size._id)} className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-orange-200 px-4 py-2 text-sm text-orange-700 hover:bg-orange-50" title="Toggle status">
+                    {size.isActive ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    {size.isActive ? "Deactivate" : "Activate"}
+                  </button>
+                </div>
+              </div>)}
+          </div>
+
+          <div className="hidden overflow-hidden rounded-lg border border-gray-200 bg-white md:block">
+            <table className="w-full">
+              <thead className="border-b border-gray-200 bg-gray-50">
+                <tr>
+                  <th className="p-4 text-left font-semibold text-gray-900">
+                    Name
+                  </th>
+                  <th className="p-4 text-left font-semibold text-gray-900">
+                    Code
+                  </th>
+                  <th className="p-4 text-left font-semibold text-gray-900">
+                    Status
+                  </th>
+                  <th className="p-4 text-right font-semibold text-gray-900">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredSizes.map(size => <tr key={size._id} className="border-b border-gray-100">
+                    <td className="p-4">
+                      <div className="flex items-center gap-2 text-gray-900">
+                        <Ruler className="h-4 w-4 text-gray-400" />
+                        {size.name}
+                      </div>
+                    </td>
+                    <td className="p-4 text-gray-700">{size.code}</td>
+                    <td className="p-4">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${size.isActive ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}>
+                        {size.isActive ? "Active" : "Inactive"}
+                      </span>
+                    </td>
+                    <td className="p-4">
+                      <div className="flex items-center justify-end gap-2">
+                        <button onClick={() => handleOpenEdit(size)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg" title="Edit size">
+                          <Edit className="h-4 w-4" />
+                        </button>
+                        <button onClick={() => handleToggleStatus(size._id)} className="p-2 text-orange-600 hover:bg-orange-50 rounded-lg" title="Toggle status">
+                          {size.isActive ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>)}
+              </tbody>
+            </table>
+          </div>
+        </>}
 
       {filteredSizes.length === 0 && <div className="text-center py-16 bg-white border border-gray-200 rounded-lg">
           <Ruler className="h-12 w-12 text-gray-300 mx-auto mb-4" />
@@ -206,16 +235,16 @@ export function SizeManagement() {
           <p className="text-gray-600 mb-4">
             Try clearing the filters or create a new size.
           </p>
-          <button onClick={handleOpenCreate} className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg">
+          <button onClick={handleOpenCreate} className="w-full rounded-lg bg-primary-600 px-4 py-2 text-white hover:bg-primary-700 sm:w-auto">
             Create Size
           </button>
         </div>}
 
-      {showModal && <AdminModal isOpen={showModal} title={editingSize ? "Edit Size" : "Create Size"} subtitle="Manage reusable menu sizes and codes." onClose={resetForm} maxWidth="max-w-lg" footer={<div className="flex justify-end gap-3">
-              <button type="button" onClick={resetForm} className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
+      {showModal && <AdminModal isOpen={showModal} title={editingSize ? "Edit Size" : "Create Size"} subtitle="Manage reusable menu sizes and codes." onClose={resetForm} maxWidth="max-w-lg" footer={<div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+              <button type="button" onClick={resetForm} className="w-full rounded-lg border border-gray-300 px-4 py-2 hover:bg-gray-50 sm:w-auto">
                 Cancel
               </button>
-              <button type="submit" form="size-form" disabled={saving} className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg disabled:opacity-60 flex items-center">
+              <button type="submit" form="size-form" disabled={saving} className="inline-flex w-full items-center justify-center rounded-lg bg-primary-600 px-4 py-2 text-white hover:bg-primary-700 disabled:opacity-60 sm:w-auto">
                 {saving && <Loader className="h-4 w-4 animate-spin mr-2" />}
                 {editingSize ? "Update Size" : "Create Size"}
               </button>

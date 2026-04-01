@@ -242,7 +242,7 @@ export function WaiterCalls() {
     });
   };
   const dashboardStats = dashboard?.statistics || {};
-  return <div className="space-y-6 p-6">
+  return <div className="space-y-6 p-4 sm:p-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Waiter Calls</h1>
@@ -251,7 +251,7 @@ export function WaiterCalls() {
             quickly.
           </p>
         </div>
-        <button type="button" onClick={loadCalls} disabled={loading} className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 transition-colors hover:bg-gray-50 disabled:opacity-60">
+        <button type="button" onClick={loadCalls} disabled={loading} className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 transition-colors hover:bg-gray-50 disabled:opacity-60 sm:w-auto">
           <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
           Refresh
         </button>
@@ -295,7 +295,7 @@ export function WaiterCalls() {
         <select value={filters.status} onChange={event => setFilters(current => ({
         ...current,
         status: event.target.value
-      }))} className="rounded-lg border border-gray-300 px-3 py-2">
+      }))} className="w-full rounded-lg border border-gray-300 px-3 py-2">
           {STATUS_OPTIONS.map(option => <option key={option.value} value={option.value}>
               {option.label}
             </option>)}
@@ -303,7 +303,7 @@ export function WaiterCalls() {
         <select value={filters.callType} onChange={event => setFilters(current => ({
         ...current,
         callType: event.target.value
-      }))} className="rounded-lg border border-gray-300 px-3 py-2">
+      }))} className="w-full rounded-lg border border-gray-300 px-3 py-2">
           {CALL_TYPE_OPTIONS.map(option => <option key={option.value} value={option.value}>
               {option.label}
             </option>)}
@@ -311,7 +311,7 @@ export function WaiterCalls() {
         <select value={filters.priority} onChange={event => setFilters(current => ({
         ...current,
         priority: event.target.value
-      }))} className="rounded-lg border border-gray-300 px-3 py-2">
+      }))} className="w-full rounded-lg border border-gray-300 px-3 py-2">
           {PRIORITY_OPTIONS.map(option => <option key={option.value} value={option.value}>
               {option.label}
             </option>)}
@@ -384,21 +384,21 @@ export function WaiterCalls() {
                       </div> : null}
                   </div>
 
-                  <div className="flex flex-wrap gap-2">
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
                     {canAssign && <button type="button" disabled={activeId === call.callId} onClick={() => setAssignModal({
                   isOpen: true,
                   callId: call.callId,
                   staffId: call.assignedTo?._id || ""
-                })} className="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm transition-colors hover:bg-gray-50 disabled:opacity-60">
+                })} className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm transition-colors hover:bg-gray-50 disabled:opacity-60">
                         <UserCheck className="h-4 w-4" />
                         Assign
                       </button>}
 
-                    {canAcknowledge && <button type="button" disabled={activeId === call.callId} onClick={() => runCallAction(call.callId, () => waiterCallService.acknowledgeCall(call.callId, 5), "Call acknowledged successfully")} className="rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-700 disabled:opacity-60">
+                    {canAcknowledge && <button type="button" disabled={activeId === call.callId} onClick={() => runCallAction(call.callId, () => waiterCallService.acknowledgeCall(call.callId, 5), "Call acknowledged successfully")} className="w-full rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-700 disabled:opacity-60">
                         Acknowledge
                       </button>}
 
-                    {canStart && <button type="button" disabled={activeId === call.callId} onClick={() => runCallAction(call.callId, () => waiterCallService.updateCallStatus(call.callId, "in_progress", "Started from admin waiter call dashboard"), "Call moved to in progress")} className="rounded-lg border border-violet-200 px-4 py-2 text-sm text-violet-700 transition-colors hover:bg-violet-50 disabled:opacity-60">
+                    {canStart && <button type="button" disabled={activeId === call.callId} onClick={() => runCallAction(call.callId, () => waiterCallService.updateCallStatus(call.callId, "in_progress", "Started from admin waiter call dashboard"), "Call moved to in progress")} className="w-full rounded-lg border border-violet-200 px-4 py-2 text-sm text-violet-700 transition-colors hover:bg-violet-50 disabled:opacity-60">
                         Start
                       </button>}
 
@@ -406,7 +406,7 @@ export function WaiterCalls() {
                   isOpen: true,
                   callId: call.callId,
                   resolutionNotes: ""
-                })} className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-700 disabled:opacity-60">
+                })} className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-700 disabled:opacity-60">
                         <CheckCircle2 className="h-4 w-4" />
                         Complete
                       </button>}
@@ -422,15 +422,15 @@ export function WaiterCalls() {
       isOpen: false,
       callId: "",
       staffId: ""
-    })} maxWidth="max-w-xl" footer={<div className="flex justify-end gap-3">
+    })} maxWidth="max-w-xl" footer={<div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
             <button type="button" onClick={() => setAssignModal({
         isOpen: false,
         callId: "",
         staffId: ""
-      })} className="rounded-lg border border-gray-300 px-4 py-2 transition-colors hover:bg-gray-50">
+      })} className="w-full rounded-lg border border-gray-300 px-4 py-2 transition-colors hover:bg-gray-50 sm:w-auto">
               Cancel
             </button>
-            <button type="button" onClick={submitAssignCall} disabled={activeId === assignModal.callId} className="rounded-lg bg-primary-600 px-4 py-2 font-medium text-white transition-colors hover:bg-primary-700 disabled:opacity-60">
+            <button type="button" onClick={submitAssignCall} disabled={activeId === assignModal.callId} className="w-full rounded-lg bg-primary-600 px-4 py-2 font-medium text-white transition-colors hover:bg-primary-700 disabled:opacity-60 sm:w-auto">
               Assign Call
             </button>
           </div>}>
@@ -454,15 +454,15 @@ export function WaiterCalls() {
       isOpen: false,
       callId: "",
       resolutionNotes: ""
-    })} maxWidth="max-w-xl" footer={<div className="flex justify-end gap-3">
+    })} maxWidth="max-w-xl" footer={<div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
             <button type="button" onClick={() => setCompleteModal({
         isOpen: false,
         callId: "",
         resolutionNotes: ""
-      })} className="rounded-lg border border-gray-300 px-4 py-2 transition-colors hover:bg-gray-50">
+      })} className="w-full rounded-lg border border-gray-300 px-4 py-2 transition-colors hover:bg-gray-50 sm:w-auto">
               Cancel
             </button>
-            <button type="button" onClick={submitCompleteCall} disabled={activeId === completeModal.callId} className="rounded-lg bg-emerald-600 px-4 py-2 font-medium text-white transition-colors hover:bg-emerald-700 disabled:opacity-60">
+            <button type="button" onClick={submitCompleteCall} disabled={activeId === completeModal.callId} className="w-full rounded-lg bg-emerald-600 px-4 py-2 font-medium text-white transition-colors hover:bg-emerald-700 disabled:opacity-60 sm:w-auto">
               Complete Call
             </button>
           </div>}>

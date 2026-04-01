@@ -64,8 +64,8 @@ export function WaiterModal({
     }
     handleSubmit(selectedReason, customMessage);
   };
-  return <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white mt-[100px] no-scrollbar mb-10 rounded-2xl max-w-md w-full max-h-[80vh] overflow-y-auto">
+  return <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4">
+      <div className="no-scrollbar mb-0 mt-0 max-h-[88vh] w-full max-w-md overflow-y-auto rounded-t-3xl bg-white sm:mb-10 sm:mt-[100px] sm:rounded-2xl">
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <h2 className="text-xl font-bold text-gray-900">{t("callWaiter")}</h2>
           <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
@@ -86,7 +86,7 @@ export function WaiterModal({
             </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 mb-6">
+          <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
             {REASON_OPTIONS.map(option => {
             const Icon = option.icon;
             const isSelected = selectedReason === option.id;

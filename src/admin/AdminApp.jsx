@@ -105,8 +105,8 @@ const TenantRegistration = lazy(() => import("./pages/TenantRegistration").then(
   default: m.TenantRegistration
 })));
 const LoadingScreen = () => <div className="min-h-screen bg-gray-50 p-6">
-    <div className="mx-auto max-w-7xl space-y-6">
-      <div className="flex items-center justify-between rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+    <div className="mx-auto max-w-7xl space-y-6 px-4 py-4 sm:px-6 sm:py-6">
+      <div className="flex flex-col gap-4 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-3">
           <SkeletonBlock className="h-7 w-40" />
           <SkeletonBlock className="h-4 w-56" />
@@ -144,7 +144,7 @@ function AdminLayout() {
         <div className="flex">
           <Sidebar isMobileSidebarOpen={isMobileSidebarOpen} onCloseMobileSidebar={() => setIsMobileSidebarOpen(false)} />
           <AdminNotificationDrawer />
-          <main className="mt-16 min-w-0 flex-1 lg:ml-72">
+          <main className="mt-16 min-w-0 flex-1 pb-6 lg:ml-72 lg:pb-8">
             <Outlet />
           </main>
         </div>

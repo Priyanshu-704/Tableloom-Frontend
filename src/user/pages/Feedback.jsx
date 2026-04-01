@@ -136,14 +136,14 @@ export function Feedback() {
 
       <div className="grid gap-6 lg:grid-cols-[1.2fr,0.8fr]">
         <form onSubmit={handleSubmit} className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h2 className="text-lg font-semibold text-gray-900">
                 {isEditing ? "Edit Feedback" : "Leave Feedback"}
               </h2>
               <p className="text-sm text-gray-500">Rate your experience and add comments.</p>
             </div>
-            {isEditing ? <button type="button" onClick={resetForm} className="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700">
+            {isEditing ? <button type="button" onClick={resetForm} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 sm:w-auto">
                 Cancel
               </button> : null}
           </div>
@@ -219,7 +219,7 @@ export function Feedback() {
                         {entry.status || "new"}
                       </p>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="grid w-full grid-cols-2 gap-2 sm:w-auto sm:flex">
                       <button type="button" onClick={() => startEdit(entry)} className="rounded-lg border border-gray-300 p-2 text-gray-700">
                         <Edit3 className="h-4 w-4" />
                       </button>

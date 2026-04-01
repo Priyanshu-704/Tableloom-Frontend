@@ -75,15 +75,15 @@ export function Header() {
   };
   return <header className="sticky top-0 z-50 border-b border-sky-100 bg-white/88 shadow-sm backdrop-blur">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-          <button type="button" onClick={() => navigate(buildCustomerPath("/home"))} className="flex min-w-0 items-center text-left">
+        <div className="flex min-h-16 flex-wrap items-center justify-between gap-3 py-3 sm:flex-nowrap sm:py-2">
+          <button type="button" onClick={() => navigate(buildCustomerPath("/home"))} className="flex min-w-0 flex-1 items-center text-left sm:flex-none">
             <BrandBadge logoSrc={settings?.restaurant?.logo || "/tableloom-mark.svg"} name={settings?.restaurant?.name || "Tableloom"} size="sm" nameClassName="max-w-[8rem] text-base text-slate-900 sm:max-w-[14rem] sm:text-xl" />
             {tableNumber && <span className="ml-2 rounded-full bg-primary-100 px-2 py-1 text-xs text-primary-700 shadow-sm sm:ml-4 sm:text-sm">
                 {t("table")} {tableNumber}
               </span>}
           </button>
 
-          <div className="flex items-center gap-1 sm:gap-4">
+          <div className="flex w-full items-center justify-end gap-1 sm:w-auto sm:gap-3">
             <LanguageSwitcher />
 
             <div className="relative">
@@ -94,12 +94,12 @@ export function Header() {
                   </span>}
               </button>
 
-              {showNotifications && <div className="absolute right-0 z-50 mt-2 w-[min(92vw,24rem)] rounded-2xl border border-sky-100 bg-white shadow-xl shadow-sky-100/50">
+              {showNotifications && <div className="absolute right-0 z-50 mt-2 w-[min(96vw,24rem)] rounded-2xl border border-sky-100 bg-white shadow-xl shadow-sky-100/50">
                   <div className="flex flex-wrap items-center justify-between gap-2 border-b border-sky-100 p-4">
                     <h3 className="font-semibold text-gray-900">
                       {t("notifications")}
                     </h3>
-                    <div className="flex items-center gap-3 text-sm">
+                    <div className="flex w-full flex-wrap items-center gap-3 text-sm sm:w-auto">
                       <button onClick={markAllNotificationsRead} className="text-primary-600 hover:text-primary-700">
                         Mark all read
                       </button>

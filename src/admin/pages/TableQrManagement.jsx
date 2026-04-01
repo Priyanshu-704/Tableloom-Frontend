@@ -51,30 +51,30 @@ export function TableQrManagement() {
       return String(table.number || "").toLowerCase().includes(keyword) || String(table.tableName || "").toLowerCase().includes(keyword) || String(table.location || "").toLowerCase().includes(keyword);
     });
   }, [search, tables]);
-  return <div className="space-y-6 p-6">
+  return <div className="space-y-5 p-4 sm:p-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">QR Update</h1>
-          <p className="text-gray-600">
+          <p className="text-sm leading-6 text-gray-600">
             Regenerate, print, refresh, and batch-manage table QR codes.
           </p>
         </div>
-        <Button type="button" variant="outline" onClick={() => setShowBatch(true)}>
+        <Button type="button" variant="outline" onClick={() => setShowBatch(true)} className="w-full sm:w-auto">
           <Layers className="h-4 w-4" />
           Batch QR Operations
         </Button>
       </div>
 
       <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-        <div className="relative max-w-md">
+        <div className="relative w-full max-w-md">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-          <Input value={search} onChange={event => setSearch(event.target.value)} placeholder="Search table number, name, or location" className="pl-10" />
+          <Input value={search} onChange={event => setSearch(event.target.value)} placeholder="Search table number, name, or location" className="h-11 pl-10" />
         </div>
       </div>
 
       {loading ? <AdminCardGridSkeleton count={6} cardHeight="h-48" /> : <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
           {filteredTables.map(table => <div key={table.id} className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-              <div className="flex items-start justify-between">
+              <div className="flex items-start justify-between gap-3">
                 <div>
                   <h2 className="text-lg font-semibold text-gray-900">
                     Table {table.number}
@@ -88,13 +88,18 @@ export function TableQrManagement() {
                 </div>
               </div>
 
-              <div className="mt-4 rounded-xl bg-gray-50 px-4 py-3 text-sm text-gray-600">
-                Token expiry:{" "}
-                {table.tokenExpiry ? new Date(table.tokenExpiry).toLocaleDateString() : "Not available"}
+              <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                <div className="rounded-xl bg-gray-50 px-4 py-3 text-sm text-gray-600">
+                  Token expiry:{" "}
+                  {table.tokenExpiry ? new Date(table.tokenExpiry).toLocaleDateString() : "Not available"}
+                </div>
+                <div className="rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                  Route: <span className="font-medium text-slate-900">QR linked</span>
+                </div>
               </div>
 
               <div className="mt-4 flex justify-end">
-                <Button type="button" onClick={() => setSelectedTable(table)}>
+                <Button type="button" onClick={() => setSelectedTable(table)} className="w-full sm:w-auto">
                   <QrCode className="h-4 w-4" />
                   Manage QR
                 </Button>
@@ -102,7 +107,7 @@ export function TableQrManagement() {
             </div>)}
         </div>}
 
-      {selectedTable ? <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      {selectedTable ? <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4">
           <QRManagement table={selectedTable} onClose={() => setSelectedTable(null)} onSuccess={message => {
         addNotification(message, "success");
         setSelectedTable(null);

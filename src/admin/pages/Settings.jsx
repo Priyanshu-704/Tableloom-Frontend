@@ -598,7 +598,7 @@ export function Settings() {
     }
     return renderProfileTab();
   };
-  return <div className="p-6 space-y-6">
+  return <div className="space-y-6 p-4 sm:p-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
@@ -613,7 +613,7 @@ export function Settings() {
 
       {isMonitoringMode && <MonitoringBanner message="Settings are visible in monitoring mode, but profile, password, and restaurant configuration changes are disabled." />}
 
-      <div className="grid grid-cols-1 lg:grid-cols-[260px_minmax(0,1fr)] gap-6">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[260px_minmax(0,1fr)]">
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 h-fit">
           <nav className="space-y-1">
             {tabs.map(tab => {

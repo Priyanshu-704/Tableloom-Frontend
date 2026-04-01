@@ -264,13 +264,13 @@ export function Menu() {
       });
     }
   };
-  return <div className="mx-auto max-w-7xl px-4 pb-24 pt-4 lg:px-6">
+  return <div className="mx-auto max-w-7xl px-4 pb-24 pt-3 lg:px-6">
       <div className="grid gap-6 lg:grid-cols-[20rem_minmax(0,1fr)]">
         <MenuFilterSidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} filterOptions={filterOptions} filters={filters} onFiltersChange={updateFilters} onClearFilters={clearFilters} />
 
         <div className="min-w-0">
-          <div className="sticky top-0 z-30 -mx-4 space-y-3 border-b border-slate-200 bg-gray-50/95 px-4 pb-3 pt-2 backdrop-blur lg:mx-0 lg:px-0">
-            <div className="flex items-center gap-3 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="sticky top-[4.5rem] z-30 -mx-4 space-y-3 border-b border-slate-200 bg-gray-50/95 px-4 pb-3 pt-2 backdrop-blur lg:top-0 lg:mx-0 lg:px-0">
+            <div className="flex flex-col gap-3 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
                 <input type="text" placeholder={t("searchMenuItems")} value={filters.searchTerm} onChange={event => updateFilters({
@@ -278,7 +278,7 @@ export function Menu() {
               })} className="w-full rounded-xl border border-gray-300 py-3 pl-10 pr-4 focus:border-transparent focus:ring-2 focus:ring-primary-500" disabled={isLoading} />
               </div>
 
-              <button type="button" onClick={() => setIsSidebarOpen(true)} className="inline-flex items-center gap-2 rounded-xl border border-slate-300 px-4 py-3 text-sm font-medium text-slate-700 lg:hidden">
+              <button type="button" onClick={() => setIsSidebarOpen(true)} className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-300 px-4 py-3 text-sm font-medium text-slate-700 sm:w-auto lg:hidden">
                 <SlidersHorizontal className="h-4 w-4" />
                 Filters {activeFilterCount > 0 ? `(${activeFilterCount})` : ""}
               </button>
@@ -324,7 +324,7 @@ export function Menu() {
                 {sortedCategoryKeys.map(category => <section key={category} ref={element => {
               categoryRefs.current[category] = element;
             }} data-category={category}>
-                    <h2 className="sticky top-[8.9rem] z-20 mb-4 border-b border-slate-200 bg-gray-50/95 py-3 text-2xl font-bold text-gray-900 backdrop-blur">
+                    <h2 className="sticky top-[10.6rem] z-20 mb-4 border-b border-slate-200 bg-gray-50/95 py-3 text-xl font-bold text-gray-900 backdrop-blur sm:text-2xl lg:top-[5.35rem]">
                       {category}
                     </h2>
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">

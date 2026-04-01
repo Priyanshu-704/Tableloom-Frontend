@@ -133,10 +133,10 @@ export function MenuItem({
     return Number(item.prices?.[0]?.price || item.price || 0);
   };
   return <>
-    <div className="relative overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm transition-shadow hover:shadow-md">
-      <div className="flex">
+    <div className="relative overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition-shadow hover:shadow-md">
+      <div className="flex flex-col sm:flex-row">
         {}
-        <div className="w-24 h-24 flex-shrink-0">
+        <div className="h-40 w-full flex-shrink-0 sm:h-24 sm:w-24">
           <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
         </div>
 
@@ -164,8 +164,8 @@ export function MenuItem({
               {item.sizes[0].name} - {formatPrice(item.sizes[0].price)}
             </div>}
 
-          <div className="flex items-center justify-between">
-            <div>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
               <span className="text-lg font-bold text-primary-600">
                 {formatPrice(getDisplayPrice())}
               </span>
@@ -175,7 +175,7 @@ export function MenuItem({
             </div>
 
             {}
-            {checkingStatus || isSubmitting ? <div className="w-20 h-10 bg-gray-100 rounded-lg animate-pulse"></div> : cartItemInfo.quantity > 0 ? <div className="flex items-center space-x-2">
+            {checkingStatus || isSubmitting ? <div className="h-10 w-full rounded-lg bg-gray-100 animate-pulse sm:w-20"></div> : cartItemInfo.quantity > 0 ? <div className="flex w-full items-center justify-between rounded-xl bg-primary-50 px-3 py-2 sm:w-auto sm:justify-start sm:bg-transparent sm:px-0 sm:py-0 sm:space-x-2">
                 <button onClick={handleDecrement} disabled={isSubmitting} className="p-1 rounded-full bg-primary-100 text-primary-600 hover:bg-primary-200 transition-colors disabled:opacity-50">
                   <Minus className="h-4 w-4" />
                 </button>
@@ -185,7 +185,7 @@ export function MenuItem({
                 <button onClick={handleIncrement} disabled={isSubmitting} className="p-1 rounded-full bg-primary-100 text-primary-600 hover:bg-primary-200 transition-colors disabled:opacity-50">
                   <Plus className="h-4 w-4" />
                 </button>
-              </div> : <button onClick={handleAdd} disabled={checkingStatus || isSubmitting || item.sizes?.length === 0} className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+              </div> : <button onClick={handleAdd} disabled={checkingStatus || isSubmitting || item.sizes?.length === 0} className="w-full rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto">
                 {item.sizes?.length === 0 ? "Not Available" : t("addToCart")}
               </button>}
           </div>
@@ -206,8 +206,8 @@ export function MenuItem({
         </div> : null}
     </div>
 
-    {showSizeSelector ? <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4" onClick={() => setShowSizeSelector(false)}>
-        <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl" onClick={event => event.stopPropagation()}>
+    {showSizeSelector ? <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/40 p-0 sm:items-center sm:p-4" onClick={() => setShowSizeSelector(false)}>
+        <div className="w-full max-w-md rounded-t-3xl bg-white shadow-2xl sm:rounded-2xl" onClick={event => event.stopPropagation()}>
           <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
             <div>
               <h3 className="text-lg font-semibold text-slate-900">{item.name}</h3>

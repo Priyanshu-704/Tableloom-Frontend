@@ -183,7 +183,7 @@ export function Analytics() {
   if (loading) {
     return <AdminPageSkeleton stats={4} filters={2} cards={4} cardHeight="h-72" columns="md:grid-cols-2" />;
   }
-  return <div className="space-y-6 p-6">
+  return <div className="space-y-6 p-4 sm:p-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Analytics & Reports</h1>
@@ -192,12 +192,12 @@ export function Analytics() {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          <select value={timeRange} onChange={event => setTimeRange(event.target.value)} className="rounded-lg border border-gray-300 px-3 py-2 text-sm">
+        <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center">
+          <select value={timeRange} onChange={event => setTimeRange(event.target.value)} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm sm:w-auto">
             <option value="today">Today</option>
             <option value="30days">Last 30 Days</option>
           </select>
-          <button type="button" onClick={exportReport} className="flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-white transition-colors hover:bg-primary-700">
+          <button type="button" onClick={exportReport} className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-white transition-colors hover:bg-primary-700 sm:w-auto">
             <Download className="h-4 w-4" />
             <span>Export Report</span>
           </button>
@@ -224,8 +224,8 @@ export function Analytics() {
       </div>
 
       <div className="rounded-2xl border border-gray-200 bg-white shadow-sm">
-        <div className="border-b border-gray-200 px-6">
-          <nav className="flex flex-wrap gap-8">
+        <div className="border-b border-gray-200 px-4 sm:px-6">
+          <nav className="grid grid-cols-2 gap-2 py-3 sm:flex sm:flex-wrap sm:gap-8 sm:py-0">
             {[{
             id: "overview",
             label: "Overview",
@@ -244,7 +244,7 @@ export function Analytics() {
             icon: Clock
           }].map(tab => {
             const Icon = tab.icon;
-            return <button key={tab.id} type="button" onClick={() => setActiveTab(tab.id)} className={`flex items-center gap-2 border-b-2 px-1 py-4 text-sm font-medium transition-colors ${activeTab === tab.id ? "border-primary-500 text-primary-600" : "border-transparent text-gray-500 hover:text-gray-700"}`}>
+            return <button key={tab.id} type="button" onClick={() => setActiveTab(tab.id)} className={`flex items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-medium transition-colors sm:justify-start sm:rounded-none sm:border-x-0 sm:border-t-0 sm:border-b-2 sm:px-1 sm:py-4 ${activeTab === tab.id ? "border-primary-500 bg-primary-50 text-primary-600 sm:bg-transparent" : "border-gray-200 text-gray-500 hover:text-gray-700 sm:border-transparent"}`}>
                   <Icon className="h-4 w-4" />
                   <span>{tab.label}</span>
                 </button>;
@@ -252,7 +252,7 @@ export function Analytics() {
           </nav>
         </div>
 
-        <div className="p-6">
+        <div className="p-4 sm:p-6">
           {activeTab === "overview" ? <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
               <MetricCard title="Sessions" icon={Users} items={[["Total sessions", analytics?.sessions?.totalSessions || 0], ["Active sessions", analytics?.sessions?.activeSessions || 0], ["Completed sessions", analytics?.sessions?.completedSessions || 0], ["Average session time", formatMinutes(analytics?.sessions?.averageSessionTime || 0)]]} />
               <MetricCard title="Tables & Feedback" icon={Calendar} items={[["Available tables", analytics?.tables?.available || 0], ["Occupied tables", analytics?.tables?.occupied || 0], ["Occupancy rate", `${Number(analytics?.tables?.occupancyRate || 0).toFixed(1)}%`], ["NPS score", Math.round(analytics?.feedback?.nps?.score || 0)]]} />
@@ -284,7 +284,7 @@ function MetricCard({
   const iconElement = React.createElement(Icon, {
     className: "mr-2 h-5 w-5 text-primary-600"
   });
-  return <div className="rounded-2xl border border-gray-200 bg-gray-50 p-6">
+  return <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4 sm:p-6">
       <h3 className="mb-4 flex items-center text-lg font-semibold text-gray-900">
         {iconElement}
         {title}
@@ -302,9 +302,27 @@ function DataTable({
   columns = [],
   rows = []
 }) {
-  return <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+  return <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:p-6">
       <h3 className="mb-4 text-lg font-semibold text-gray-900">{title}</h3>
-      <div className="overflow-x-auto">
+
+      <div className="space-y-3 md:hidden">
+        {rows.length ? rows.map((row, rowIndex) => <div key={`${title}-mobile-${rowIndex}`} className="rounded-2xl border border-gray-200 bg-slate-50 p-4">
+              <div className="space-y-2">
+                {columns.map((column, cellIndex) => <div key={`${title}-mobile-${rowIndex}-${cellIndex}`} className="flex flex-col gap-1">
+                    <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">
+                      {column}
+                    </span>
+                    <span className="text-sm text-slate-900 break-words">
+                      {row[cellIndex] ?? "-"}
+                    </span>
+                  </div>)}
+              </div>
+            </div>) : <div className="rounded-2xl border border-dashed border-gray-200 px-4 py-8 text-center text-sm text-gray-500">
+            No report data available
+          </div>}
+      </div>
+
+      <div className="hidden overflow-x-auto md:block">
         <table className="w-full min-w-[520px]">
           <thead>
             <tr className="border-b border-gray-200">

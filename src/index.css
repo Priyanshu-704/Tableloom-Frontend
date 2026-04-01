@@ -111,3 +111,32 @@ select {
 .admin-scope [aria-disabled="true"] {
   cursor: not-allowed;
 }
+
+.admin-scope .overflow-x-auto {
+  -webkit-overflow-scrolling: touch;
+  scrollbar-gutter: stable both-edges;
+}
+
+.admin-scope table {
+  min-width: max-content;
+}
+
+.admin-scope input,
+.admin-scope select,
+.admin-scope textarea {
+  max-width: 100%;
+}
+
+@media (max-width: 767px) {
+  .admin-scope {
+    overflow-x: clip;
+  }
+
+  .admin-scope table {
+    min-width: 40rem;
+  }
+
+  .admin-scope .recharts-responsive-container {
+    min-width: 0 !important;
+  }
+}

@@ -3,6 +3,7 @@ import { LayoutDashboard, BarChart3, ClipboardList, ChefHat, CookingPot, Users, 
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAdmin } from "../../context/AdminContext";
 import { useAuth } from "../../../common/context/AuthContext";
+import { useSettings } from "../../../common/context/SettingsContext";
 import { buildAdminPath, buildPlatformAdminPath, isSuperAdminMonitoringPath } from "../../../common/utils/routes";
 const normalizePermission = permission => String(permission || "").trim().replace(/[\s-]+/g, "_").toUpperCase();
 const navigationSections = [{
@@ -218,6 +219,9 @@ export function Sidebar({
     user,
     permissions
   } = useAuth();
+  const {
+    settings
+  } = useSettings();
   const isMonitoringMode = isSuperAdminMonitoringPath(location.pathname, user?.role);
   const visibleSections = useMemo(() => {
     if (!user) {
@@ -259,8 +263,25 @@ export function Sidebar({
     onCloseMobileSidebar?.();
   }, [location.pathname]);
 
-  const renderNavigation = () => <nav className="space-y-6 pb-10">
-      {visibleSections.map(section => <div key={section.id}>
+  const renderNavigation = () => <div className="space-y-6 pb-10">
+      <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="flex items-center gap-3">
+          <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-slate-100 ring-1 ring-slate-200">
+            <img src={settings?.restaurant?.logo || "/tableloom-mark.svg"} alt={settings?.restaurant?.name || "Tableloom"} className="h-8 w-8 object-contain" />
+          </div>
+          <div className="min-w-0">
+            <p className="truncate text-sm font-bold text-slate-900">
+              {settings?.restaurant?.name || "Tableloom"}
+            </p>
+            <p className="mt-1 truncate text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">
+              Admin Panel
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <nav className="space-y-6">
+        {visibleSections.map(section => <div key={section.id}>
           <p className="mb-3 px-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">
             {section.title}
           </p>
@@ -286,7 +307,8 @@ export function Sidebar({
         })}
           </div>
         </div>)}
-    </nav>;
+      </nav>
+    </div>;
 
   if (!visibleSections.length) {
     return <aside className="fixed left-0 top-16 bottom-0 z-40 hidden w-72 border-r border-slate-200 bg-slate-50/95 lg:block">
@@ -308,9 +330,9 @@ export function Sidebar({
   return <>
       <div className={`fixed inset-0 z-40 bg-slate-950/45 backdrop-blur-sm transition-opacity lg:hidden ${isMobileSidebarOpen ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"}`} onClick={() => onCloseMobileSidebar?.()} />
 
-      <aside className={`fixed left-0 top-16 bottom-0 z-50 w-[min(88vw,20rem)] border-r border-slate-200 bg-slate-50/98 shadow-xl transition-transform lg:hidden ${isMobileSidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
+      <aside className={`fixed left-0 top-16 bottom-0 z-50 w-[min(90vw,21rem)] border-r border-slate-200 bg-slate-50/98 shadow-xl transition-transform lg:hidden ${isMobileSidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
         <div className="flex h-full flex-col">
-          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-5">
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-4 sm:px-4 sm:py-5">
             {renderNavigation()}
           </div>
         </div>

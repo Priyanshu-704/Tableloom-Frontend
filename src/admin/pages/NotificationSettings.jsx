@@ -124,7 +124,7 @@ export function NotificationSettings() {
       setRunningCheck(false);
     }
   };
-  return <div className="space-y-6 p-6">
+  return <div className="space-y-6 p-4 sm:p-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Notification Settings</h1>
         <p className="text-gray-600">

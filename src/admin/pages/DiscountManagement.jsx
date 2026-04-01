@@ -64,7 +64,7 @@ export function DiscountManagement() {
       isActive: coupon.isActive ?? true
     });
   };
-  return <div className="space-y-6 p-6">
+  return <div className="space-y-6 p-4 sm:p-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Discount Management</h1>

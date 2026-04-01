@@ -232,7 +232,7 @@ export function Notifications() {
       setActiveId("");
     }
   };
-  return <div className="space-y-6 p-6">
+  return <div className="space-y-6 p-4 sm:p-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Notifications</h1>
@@ -242,19 +242,19 @@ export function Notifications() {
           </p>
         </div>
         <div className="flex flex-wrap gap-3">
-          {!isMonitoringMode && <button type="button" onClick={() => runNotificationAction("mark-all", () => notificationAdminService.markAllAsRead(), "All notifications marked as read")} disabled={loading || activeId === "mark-all"} className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 transition-colors hover:bg-gray-50 disabled:opacity-60">
+          {!isMonitoringMode && <button type="button" onClick={() => runNotificationAction("mark-all", () => notificationAdminService.markAllAsRead(), "All notifications marked as read")} disabled={loading || activeId === "mark-all"} className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 transition-colors hover:bg-gray-50 disabled:opacity-60 sm:w-auto">
               <CheckCheck className="h-4 w-4" />
               Mark All Read
             </button>}
-          {!isMonitoringMode && hasPermission("notification_announce") && <button type="button" onClick={() => setShowAnnouncementModal(true)} className="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 font-medium text-white transition-colors hover:bg-primary-700">
+          {!isMonitoringMode && hasPermission("notification_announce") && <button type="button" onClick={() => setShowAnnouncementModal(true)} className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-primary-600 px-4 py-2 font-medium text-white transition-colors hover:bg-primary-700 sm:w-auto">
               <Megaphone className="h-4 w-4" />
               New Announcement
             </button>}
-          {!isMonitoringMode && hasPermission("notification_announce") && <button type="button" onClick={cleanupExpired} disabled={activeId === "cleanup"} className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 transition-colors hover:bg-gray-50 disabled:opacity-60">
+          {!isMonitoringMode && hasPermission("notification_announce") && <button type="button" onClick={cleanupExpired} disabled={activeId === "cleanup"} className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 transition-colors hover:bg-gray-50 disabled:opacity-60 sm:w-auto">
               <Trash2 className="h-4 w-4" />
               Cleanup
             </button>}
-          <button type="button" onClick={loadNotifications} disabled={loading} className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 transition-colors hover:bg-gray-50 disabled:opacity-60">
+          <button type="button" onClick={loadNotifications} disabled={loading} className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 transition-colors hover:bg-gray-50 disabled:opacity-60 sm:w-auto">
             <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
             Refresh
           </button>
@@ -301,7 +301,7 @@ export function Notifications() {
         <select value={filters.status} onChange={event => setFilters(current => ({
         ...current,
         status: event.target.value
-      }))} className="rounded-lg border border-gray-300 px-3 py-2">
+      }))} className="w-full rounded-lg border border-gray-300 px-3 py-2">
           {STATUS_OPTIONS.map(option => <option key={option.value} value={option.value}>
               {option.label}
             </option>)}
@@ -309,7 +309,7 @@ export function Notifications() {
         <select value={filters.type} onChange={event => setFilters(current => ({
         ...current,
         type: event.target.value
-      }))} className="rounded-lg border border-gray-300 px-3 py-2">
+      }))} className="w-full rounded-lg border border-gray-300 px-3 py-2">
           {TYPE_OPTIONS.map(option => <option key={option.value} value={option.value}>
               {option.label}
             </option>)}
@@ -317,7 +317,7 @@ export function Notifications() {
         <select value={filters.priority} onChange={event => setFilters(current => ({
         ...current,
         priority: event.target.value
-      }))} className="rounded-lg border border-gray-300 px-3 py-2">
+      }))} className="w-full rounded-lg border border-gray-300 px-3 py-2">
           {PRIORITY_OPTIONS.map(option => <option key={option.value} value={option.value}>
               {option.label}
             </option>)}
@@ -379,7 +379,7 @@ export function Notifications() {
                       </div> : null}
                   </div>
 
-                  {!isMonitoringMode && <div className="flex flex-wrap gap-2">
+                  {!isMonitoringMode && <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
                       {item.status === "unread" && <button type="button" disabled={activeId === item._id} onClick={() => runNotificationAction(item._id, () => notificationAdminService.markAsRead(item._id), "Notification marked as read")} className="rounded-lg border border-gray-300 px-4 py-2 text-sm transition-colors hover:bg-gray-50 disabled:opacity-60">
                           Mark Read
                         </button>}
@@ -401,11 +401,11 @@ export function Notifications() {
       if (!sendingAnnouncement) {
         setShowAnnouncementModal(false);
       }
-    }} maxWidth="max-w-2xl" footer={<div className="flex justify-end gap-3">
-            <button type="button" onClick={() => setShowAnnouncementModal(false)} disabled={sendingAnnouncement} className="rounded-lg border border-gray-300 px-4 py-2 transition-colors hover:bg-gray-50 disabled:opacity-60">
+    }} maxWidth="max-w-2xl" footer={<div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+            <button type="button" onClick={() => setShowAnnouncementModal(false)} disabled={sendingAnnouncement} className="w-full rounded-lg border border-gray-300 px-4 py-2 transition-colors hover:bg-gray-50 disabled:opacity-60 sm:w-auto">
               Cancel
             </button>
-            <button type="button" onClick={submitAnnouncement} disabled={sendingAnnouncement} className="rounded-lg bg-primary-600 px-4 py-2 font-medium text-white transition-colors hover:bg-primary-700 disabled:opacity-60">
+            <button type="button" onClick={submitAnnouncement} disabled={sendingAnnouncement} className="w-full rounded-lg bg-primary-600 px-4 py-2 font-medium text-white transition-colors hover:bg-primary-700 disabled:opacity-60 sm:w-auto">
               {sendingAnnouncement ? "Sending..." : "Send Announcement"}
             </button>
           </div>}>
