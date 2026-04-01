@@ -66,7 +66,7 @@ export function ForcePasswordUpdate() {
       setIsSubmitting(false);
     }
   };
-  return <AdminAuthShell settings={settings} eyebrow="First Login Required" title="Update your temporary password" description={`${user?.name || "Staff member"}, replace the temporary password before entering ${settings?.restaurant?.name || "the admin panel"}.`} sideTitle="Temporary passwords should lead into a confident first-use experience." sideDescription="This first-login step now matches the rest of the auth flow so new staff do not hit an abrupt or confusing screen." highlights={[{
+  return <AdminAuthShell settings={settings} eyebrow="First Login Required" title="Update your temporary password" description={`${user?.name || "Staff member"}, replace the temporary password before entering ${settings?.restaurant?.name || "the admin panel"}.`} mobileAuthMode="formOnly" sideTitle="Temporary passwords should lead into a confident first-use experience." sideDescription="This first-login step now matches the rest of the auth flow so new staff do not hit an abrupt or confusing screen." highlights={[{
       title: "Safer onboarding",
       description: "Temporary credentials are replaced before staff continue into the dashboard."
     }, {

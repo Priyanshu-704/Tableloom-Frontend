@@ -56,7 +56,7 @@ export function ForgotPassword() {
     setEmail("");
     setError("");
   };
-  return <AdminAuthShell settings={settings} eyebrow={success ? "Email Sent" : "Password Reset"} title={success ? "Check your inbox" : "Reset your password"} description={success ? "A reset link has been generated for your account. You can head back to login after opening the email." : "Enter the email address linked to your staff account and we’ll send you a secure password reset link."} sideTitle="Recovery should feel reassuring, not confusing." sideDescription="These screens guide staff back into the system quickly while keeping password recovery clear and secure." highlights={[{
+  return <AdminAuthShell settings={settings} eyebrow={success ? "Email Sent" : "Password Reset"} title={success ? "Check your inbox" : "Reset your password"} description={success ? "A reset link has been generated for your account. You can head back to login after opening the email." : "Enter the email address linked to your staff account and we’ll send you a secure password reset link."} mobileAuthMode="formOnly" sideTitle="Recovery should feel reassuring, not confusing." sideDescription="These screens guide staff back into the system quickly while keeping password recovery clear and secure." highlights={[{
       title: "Secure links",
       description: "Reset links are short-lived so temporary emails do not stay valid for long."
     }, {

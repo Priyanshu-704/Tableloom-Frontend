@@ -133,7 +133,7 @@ export function ResetPassword() {
       </div>;
   }
   if (!tokenValid && !isVerifying) {
-    return <AdminAuthShell settings={settings} eyebrow="Reset Link" title="This reset link is no longer valid" description="Request a fresh password reset email to continue. Expired or already-used links are blocked for security." sideTitle="Short-lived links keep account recovery safer." sideDescription="If a link expires or has already been used, we guide staff back into a clean reset flow instead of leaving them stuck.">
+    return <AdminAuthShell settings={settings} eyebrow="Reset Link" title="This reset link is no longer valid" description="Request a fresh password reset email to continue. Expired or already-used links are blocked for security." mobileAuthMode="formOnly" sideTitle="Short-lived links keep account recovery safer." sideDescription="If a link expires or has already been used, we guide staff back into a clean reset flow instead of leaving them stuck.">
           <div className="text-center">
             <AlertCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />
             <h2 className="text-xl font-semibold text-gray-900 mb-2">
@@ -154,7 +154,7 @@ export function ResetPassword() {
       </AdminAuthShell>;
   }
   if (success) {
-    return <AdminAuthShell settings={settings} eyebrow="Password Updated" title="Your new password is ready" description="The password change was successful. You can sign in again with the updated credentials." sideTitle="A short reset flow helps staff get back to work quickly." sideDescription="Once the password is changed, the user is redirected back into the login flow with a clean session.">
+    return <AdminAuthShell settings={settings} eyebrow="Password Updated" title="Your new password is ready" description="The password change was successful. You can sign in again with the updated credentials." mobileAuthMode="formOnly" sideTitle="A short reset flow helps staff get back to work quickly." sideDescription="Once the password is changed, the user is redirected back into the login flow with a clean session.">
           <div className="text-center">
             <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
             <h2 className="text-xl font-semibold text-gray-900 mb-2">
@@ -172,7 +172,7 @@ export function ResetPassword() {
           </div>
       </AdminAuthShell>;
   }
-  return <AdminAuthShell settings={settings} eyebrow="Create Password" title="Set a new password" description="Choose a strong password that meets the system rules, then confirm it to finish the reset." sideTitle="Make recovery feel deliberate and secure." sideDescription="The reset screen now gives clearer feedback while a user types, so they know exactly what still needs attention.">
+  return <AdminAuthShell settings={settings} eyebrow="Create Password" title="Set a new password" description="Choose a strong password that meets the system rules, then confirm it to finish the reset." mobileAuthMode="formOnly" sideTitle="Make recovery feel deliberate and secure." sideDescription="The reset screen now gives clearer feedback while a user types, so they know exactly what still needs attention.">
           <form className="space-y-6" onSubmit={handleSubmit}>
             {error && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm flex items-start">
                 <AlertCircle className="h-5 w-5 mr-2 mt-0.5 flex-shrink-0" />

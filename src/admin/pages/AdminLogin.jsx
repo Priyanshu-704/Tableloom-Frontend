@@ -51,7 +51,7 @@ export function AdminLogin() {
       setIsLoading(false);
     }
   };
-  return <AdminAuthShell settings={settings} eyebrow="Admin Portal" title="Sign in to your restaurant workspace" description="Use your staff credentials to manage orders, tables, kitchen flow, and day-to-day operations." sideTitle="A cleaner service dashboard starts with a calmer sign-in flow." sideDescription="This admin space is designed for staff speed: quick access, clearer focus, and fewer distractions during service." highlights={[{
+  return <AdminAuthShell settings={settings} eyebrow="Admin Portal" title="Sign in to your restaurant workspace" description="Use your staff credentials to manage orders, tables, kitchen flow, and day-to-day operations." mobileAuthMode="preview" mobilePrimaryActionLabel="Login To Admin Panel" mobileBackActionLabel="Back to overview" sideTitle="A cleaner service dashboard starts with a calmer sign-in flow." sideDescription="This admin space is designed for staff speed: quick access, clearer focus, and fewer distractions during service." highlights={[{
       title: "Live operations",
       description: "Track orders, table status, and kitchen updates without leaving the workflow."
     }, {

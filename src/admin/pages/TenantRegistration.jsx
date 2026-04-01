@@ -76,6 +76,7 @@ export function TenantRegistration() {
     <AdminAuthShell
       lockViewport
       contentScrollable
+      mobileAuthMode="formOnly"
       settings={settings}
       eyebrow="Platform Onboarding"
       title="Register Your Restaurant Workspace"
