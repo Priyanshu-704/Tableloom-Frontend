@@ -74,7 +74,6 @@ export function TenantRegistration() {
 
   return (
     <AdminAuthShell
-      lockViewport
       contentScrollable
       mobileAuthMode="formOnly"
       settings={settings}
@@ -96,7 +95,7 @@ export function TenantRegistration() {
         },
       ]}
     >
-      <form className="space-y-5" onSubmit={handleSubmit}>
+      <form className="space-y-4 sm:space-y-5" onSubmit={handleSubmit}>
         {error ? (
           <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
             {error}
@@ -133,7 +132,7 @@ export function TenantRegistration() {
         </div>
 
         <div className="rounded-[1.75rem] border border-slate-200 bg-slate-50/80 p-4 sm:p-5">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-3">
             <div>
               <p className="text-sm font-semibold text-slate-900">
                 Tenant Route Setup
@@ -143,7 +142,7 @@ export function TenantRegistration() {
                 customer links, and table QR scans.
               </p>
             </div>
-            <div className="rounded-2xl bg-slate-900 px-3 py-2 text-left text-xs font-medium text-white sm:text-right">
+            <div className="w-full rounded-2xl bg-slate-900 px-3 py-3 text-left text-xs font-medium text-white">
               <span className="block text-[10px] uppercase tracking-[0.2em] text-sky-200">
                 Route Preview
               </span>
@@ -153,61 +152,61 @@ export function TenantRegistration() {
             </div>
           </div>
 
-        <div className="mt-4 grid gap-4 sm:grid-cols-2 sm:gap-5">
-          <label className={labelClassName}>
-            Preferred Workspace Slug
-            <input
-              className={inputClassName}
-              placeholder="Example: tableloom-restaurant"
-              value={form.slug}
-              onChange={(event) => handleChange("slug", event.target.value)}
-            />
-            <p className={hintClassName}>
-              Lowercase letters, numbers, and hyphens only.
-            </p>
-          </label>
+          <div className="mt-4 grid gap-4 sm:grid-cols-2 sm:gap-5">
+            <label className={labelClassName}>
+              Preferred Workspace Slug
+              <input
+                className={inputClassName}
+                placeholder="Example: tableloom-restaurant"
+                value={form.slug}
+                onChange={(event) => handleChange("slug", event.target.value)}
+              />
+              <p className={hintClassName}>
+                Lowercase letters, numbers, and hyphens only.
+              </p>
+            </label>
 
-          <label className={labelClassName}>
-            Preferred Workspace Key
-            <input
-              className={inputClassName}
-              placeholder="Example: main01"
-              value={form.key}
-              onChange={(event) => handleChange("key", event.target.value)}
-            />
-            <p className={hintClassName}>
-              Short unique key without spaces. This pairs with the slug in the
-              QR URL.
-            </p>
-          </label>
-        </div>
+            <label className={labelClassName}>
+              Preferred Workspace Key
+              <input
+                className={inputClassName}
+                placeholder="Example: main01"
+                value={form.key}
+                onChange={(event) => handleChange("key", event.target.value)}
+              />
+              <p className={hintClassName}>
+                Short unique key without spaces. This pairs with the slug in the
+                QR URL.
+              </p>
+            </label>
+          </div>
         </div>
 
         <div className="grid gap-5 sm:grid-cols-2">
-            <label className={labelClassName}>
-              Admin Full Name
-              <input
-                className={inputClassName}
-                placeholder="Example: Ayesha Khan"
-                value={form.adminName}
-                onChange={(event) =>
-                  handleChange("adminName", event.target.value)
-                }
-              />
-            </label>
+          <label className={labelClassName}>
+            Admin Full Name
+            <input
+              className={inputClassName}
+              placeholder="Example: Ayesha Khan"
+              value={form.adminName}
+              onChange={(event) =>
+                handleChange("adminName", event.target.value)
+              }
+            />
+          </label>
 
-            <label className={labelClassName}>
-              Admin Email Address
-              <input
-                className={inputClassName}
-                placeholder="Example: admin@yourrestaurant.com"
-                type="email"
-                value={form.adminEmail}
-                onChange={(event) =>
-                  handleChange("adminEmail", event.target.value)
-                }
-              />
-            </label>
+          <label className={labelClassName}>
+            Admin Email Address
+            <input
+              className={inputClassName}
+              placeholder="Example: admin@yourrestaurant.com"
+              type="email"
+              value={form.adminEmail}
+              onChange={(event) =>
+                handleChange("adminEmail", event.target.value)
+              }
+            />
+          </label>
         </div>
 
         <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 sm:px-5">
@@ -272,7 +271,7 @@ export function TenantRegistration() {
           {submitting ? "Submitting..." : "Submit Registration Request"}
         </button>
 
-        <div className="text-center text-sm text-slate-500">
+        <div className="pb-1 text-center text-sm text-slate-500">
           Already have admin credentials?{" "}
           <Link
             className="font-medium text-sky-700 hover:text-sky-800"
