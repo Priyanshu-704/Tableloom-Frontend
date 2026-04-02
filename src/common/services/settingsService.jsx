@@ -48,9 +48,26 @@ export const settingsService = {
       handleApiError(error, "Failed to fetch settings");
     }
   },
-  updateSettings: async (payload = {}) => {
+  updateSettings: async (payload = {}, imageFile = null) => {
     try {
-      const response = await axiosInstance.put("/settings", payload);
+      const hasImage = Boolean(imageFile);
+      const requestBody = hasImage ? new FormData() : payload;
+
+      if (hasImage) {
+        Object.entries(payload || {}).forEach(([key, value]) => {
+          requestBody.append(
+            key,
+            typeof value === "object" ? JSON.stringify(value) : value,
+          );
+        });
+        requestBody.append("image", imageFile);
+      }
+
+      const response = await axiosInstance.put("/settings", requestBody, hasImage ? {
+        headers: {
+          "Content-Type": "multipart/form-data"
+        }
+      } : undefined);
       settingsRequestCache.clear();
       return toServiceResponse(response, {
         data: {},

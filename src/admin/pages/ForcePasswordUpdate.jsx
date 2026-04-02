@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { Shield, Lock, Loader2, Eye, EyeOff } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 import { Button } from "../../common/components/ui/button";
 import { Input } from "../../common/components/ui/input";
 import { useAdmin } from "../context/AdminContext";
@@ -8,14 +7,13 @@ import { useAuth } from "../../common/context/AuthContext";
 import { userService } from "../../common/services";
 import { useSettings } from "../../common/context/SettingsContext";
 import { AdminAuthShell } from "../components/layout/AdminAuthShell";
-import { buildAdminPath } from "../../common/utils/routes";
 export function ForcePasswordUpdate() {
-  const navigate = useNavigate();
   const {
     addNotification
   } = useAdmin();
   const {
-    user
+    user,
+    logout
   } = useAuth();
   const {
     settings
@@ -57,9 +55,7 @@ export function ForcePasswordUpdate() {
         return;
       }
       addNotification("Password updated successfully. Please sign in again.", "success");
-      navigate(buildAdminPath("/login"), {
-        replace: true
-      });
+      await logout();
     } catch {
       addNotification("Failed to update password", "error");
     } finally {

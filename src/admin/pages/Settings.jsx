@@ -158,6 +158,7 @@ export function Settings() {
   const [isLoadingSettings, setIsLoadingSettings] = useState(canManageSettings);
   const [isSavingSection, setIsSavingSection] = useState("");
   const [adminSettings, setAdminSettings] = useState(DEFAULT_SETTINGS);
+  const [logoFile, setLogoFile] = useState(null);
   const [profileForm, setProfileForm] = useState({
     name: "",
     email: ""
@@ -222,11 +223,12 @@ export function Settings() {
       }
       try {
         setIsLoadingSettings(true);
-        const response = await settingsService.getAdminSettings();
-        const nextSettings = mergeSettings(response?.data || {});
-        setAdminSettings(nextSettings);
-      } catch {
-        setAdminSettings(DEFAULT_SETTINGS);
+      const response = await settingsService.getAdminSettings();
+      const nextSettings = mergeSettings(response?.data || {});
+      setAdminSettings(nextSettings);
+      setLogoFile(null);
+    } catch {
+      setAdminSettings(DEFAULT_SETTINGS);
       } finally {
         setIsLoadingSettings(false);
       }
@@ -333,13 +335,14 @@ export function Settings() {
     }
     try {
       setIsSavingSection(section);
-      const response = await settingsService.updateSettings(adminSettings);
+      const response = await settingsService.updateSettings(adminSettings, logoFile);
       if (!response?.success) {
         addNotification(response?.message || "Failed to update settings", "error");
         return;
       }
       const mergedSettings = mergeSettings(response?.data || adminSettings);
       setAdminSettings(mergedSettings);
+      setLogoFile(null);
       applySettings(response?.publicSettings || mergedSettings);
       addNotification("Settings updated successfully", "success");
     } catch {
@@ -447,6 +450,30 @@ export function Settings() {
       <div className="mt-4">
         <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
         <textarea value={adminSettings?.restaurant?.description || ""} onChange={event => updateNestedSettings("restaurant", "description", event.target.value)} className={textareaClass} placeholder="Describe the restaurant" />
+      </div>
+
+      <div className="mt-4 rounded-2xl border border-gray-200 bg-gray-50 p-4">
+        <label className="block text-sm font-medium text-gray-700 mb-3">Tenant Logo</label>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+          <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-2xl border border-gray-200 bg-white">
+            {adminSettings?.restaurant?.logo ? <img src={adminSettings.restaurant.logo} alt={`${adminSettings?.restaurant?.name || "Restaurant"} logo`} className="h-full w-full object-contain p-2" /> : <span className="text-xs text-gray-400">No logo</span>}
+          </div>
+          <div className="flex-1">
+            <input type="file" accept="image/*" onChange={event => {
+            const file = event.target.files?.[0];
+            if (!file) {
+              return;
+            }
+            if (file.size > 5 * 1024 * 1024) {
+              addNotification("Logo size should be less than 5MB", "error");
+              return;
+            }
+            setLogoFile(file);
+            updateNestedSettings("restaurant", "logo", URL.createObjectURL(file));
+          }} className="block w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 file:mr-4 file:rounded-lg file:border-0 file:bg-primary-50 file:px-3 file:py-2 file:text-sm file:font-medium file:text-primary-700" />
+            <p className="mt-2 text-xs text-gray-500">Upload a PNG, JPG, GIF, or WebP logo. This branding will appear across tenant panels and the customer app.</p>
+          </div>
+        </div>
       </div>
 
       <div className="mt-6 flex justify-end">

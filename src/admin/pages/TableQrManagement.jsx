@@ -1,13 +1,12 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Layers, Loader2, QrCode, Search } from "lucide-react";
+import { Layers, QrCode, Search } from "lucide-react";
 import { Input } from "../../common/components/ui/input";
 import { Button } from "../../common/components/ui/button";
 import tableService from "../../common/services/TableService";
-import { QRManagement } from "./QRManagement";
 import { QRBatchOperations } from "./QRBatchOperations";
 import { useAdmin } from "../context/AdminContext";
-import { AdminModal } from "../components/common/AdminModal";
 import { AdminCardGridSkeleton } from "../components/common/AdminSkeleton";
+import { QrManagementOverlay } from "../components/tables/QrManagementOverlay";
 export function TableQrManagement() {
   const {
     addNotification
@@ -107,8 +106,7 @@ export function TableQrManagement() {
             </div>)}
         </div>}
 
-      {selectedTable ? <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4">
-          <QRManagement table={selectedTable} onClose={() => setSelectedTable(null)} onSuccess={message => {
+      {selectedTable ? <QrManagementOverlay table={selectedTable} onClose={() => setSelectedTable(null)} onSuccess={message => {
         addNotification(message, "success");
         setSelectedTable(null);
         tableService.getTables().then(response => {
@@ -125,8 +123,7 @@ export function TableQrManagement() {
           }));
           setTables(rows);
         }).catch(() => {});
-      }} />
-        </div> : null}
+      }} /> : null}
 
       <AdminModal isOpen={showBatch} title="Batch QR Operations" subtitle="Perform operations on multiple QR codes." onClose={() => setShowBatch(false)} maxWidth="max-w-2xl">
         <QRBatchOperations tables={tables} onClose={() => setShowBatch(false)} onSuccess={message => {
