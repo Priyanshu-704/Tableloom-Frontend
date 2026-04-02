@@ -209,7 +209,30 @@ export function QRBatchOperations({
       </html>
     `);
     printWindow.document.close();
-    printWindow.print();
+
+    const triggerPrint = () => {
+      printWindow.focus();
+      printWindow.print();
+    };
+
+    const imageLoadPromises = Array.from(printWindow.document.images).map((image) => {
+      if (image.complete) {
+        return Promise.resolve();
+      }
+
+      return new Promise((resolve) => {
+        image.addEventListener('load', resolve, { once: true });
+        image.addEventListener('error', resolve, { once: true });
+      });
+    });
+
+    Promise.all(imageLoadPromises)
+      .then(() => {
+        window.setTimeout(triggerPrint, 150);
+      })
+      .catch(() => {
+        window.setTimeout(triggerPrint, 150);
+      });
   };
   const handleExecute = () => {
     switch (operation) {

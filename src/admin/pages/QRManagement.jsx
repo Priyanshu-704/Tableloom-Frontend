@@ -256,7 +256,30 @@ export function QRManagement({ table, onClose, onSuccess }) {
       </html>
     `);
     printWindow.document.close();
-    printWindow.print();
+
+    const triggerPrint = () => {
+      printWindow.focus();
+      printWindow.print();
+    };
+
+    const imageLoadPromises = Array.from(printWindow.document.images).map((image) => {
+      if (image.complete) {
+        return Promise.resolve();
+      }
+
+      return new Promise((resolve) => {
+        image.addEventListener("load", resolve, { once: true });
+        image.addEventListener("error", resolve, { once: true });
+      });
+    });
+
+    Promise.all(imageLoadPromises)
+      .then(() => {
+        window.setTimeout(triggerPrint, 150);
+      })
+      .catch(() => {
+        window.setTimeout(triggerPrint, 150);
+      });
   };
 
   const handleCopyQRUrl = async () => {
@@ -350,7 +373,7 @@ export function QRManagement({ table, onClose, onSuccess }) {
   );
 
   return (
-    <div className="max-h-[92vh] w-full overflow-hidden rounded-t-[2rem] bg-white shadow-xl sm:max-w-5xl sm:rounded-[2rem]">
+    <div className="max-h-[92dvh] w-full overflow-hidden rounded-t-[1.75rem] border border-gray-200 bg-white shadow-2xl sm:max-h-[85vh] sm:max-w-5xl sm:rounded-2xl">
       <div className="sticky top-0 z-10 border-b border-slate-200 bg-white/95 px-4 py-4 backdrop-blur sm:px-6">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-start gap-3">
