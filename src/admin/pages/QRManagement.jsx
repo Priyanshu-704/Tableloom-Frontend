@@ -373,7 +373,7 @@ export function QRManagement({ table, onClose, onSuccess }) {
   );
 
   return (
-    <div className="max-h-[92dvh] w-full overflow-hidden rounded-t-[1.75rem] border border-gray-200 bg-white shadow-2xl sm:max-h-[85vh] sm:max-w-5xl sm:rounded-2xl">
+    <div className="flex max-h-[92dvh] w-full flex-col overflow-hidden rounded-[1.75rem] border border-gray-200 bg-white shadow-2xl sm:max-h-[85vh] sm:rounded-2xl">
       <div className="sticky top-0 z-10 border-b border-slate-200 bg-white/95 px-4 py-4 backdrop-blur sm:px-6">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-start gap-3">
@@ -426,7 +426,8 @@ export function QRManagement({ table, onClose, onSuccess }) {
         </div>
       </div>
 
-      <div className="space-y-5 overflow-y-auto px-4 py-4 sm:px-6 sm:py-6">
+      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-6">
+        <div className="space-y-5">
         <div
           className={`rounded-[1.5rem] border p-4 sm:p-5 ${tokenStatusMeta.wrapper}`}
         >
@@ -704,6 +705,7 @@ export function QRManagement({ table, onClose, onSuccess }) {
             </section>
           </div>
         )}
+        </div>
       </div>
 
       <div className="sticky bottom-0 border-t border-slate-200 bg-slate-50 px-4 py-4 sm:px-6">

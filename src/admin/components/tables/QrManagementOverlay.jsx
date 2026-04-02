@@ -9,8 +9,8 @@ export function QrManagementOverlay({
     return null;
   }
   return <div className="fixed inset-0 z-50 overflow-y-auto overscroll-contain bg-slate-900/15 px-0 py-0 backdrop-blur-[2px] sm:p-4" onClick={onClose}>
-      <div className="flex min-h-full items-end justify-center sm:items-center">
-        <div className="w-full" onClick={event => event.stopPropagation()}>
+      <div className="flex min-h-full items-center justify-center py-4">
+        <div className="w-full sm:max-w-5xl" onClick={event => event.stopPropagation()}>
           <QRManagement table={table} onClose={onClose} onSuccess={onSuccess} />
         </div>
       </div>
