@@ -19,6 +19,7 @@ import { logger } from "../../common/utils/logger.js";
 import tableService from "../../common/services/TableService";
 import Select from "../components/common/Select";
 import { useAdmin } from "../context/AdminContext";
+import { withTenantQueryParams } from "../../common/utils/qrImage";
 
 const QR_SIZE_OPTIONS = [
   { value: "small", label: "Small (150x150)" },
@@ -96,7 +97,10 @@ export function QRManagement({ table, onClose, onSuccess }) {
   const [activeTab, setActiveTab] = useState("preview");
   const [tokenStatus, setTokenStatus] = useState(null);
   const [copied, setCopied] = useState(false);
-  const [tableState, setTableState] = useState(table);
+  const [tableState, setTableState] = useState({
+    ...table,
+    qrCode: withTenantQueryParams(table?.qrCode),
+  });
 
   useEffect(() => {
     const previousOverflow = document.body.style.overflow;
@@ -127,7 +131,10 @@ export function QRManagement({ table, onClose, onSuccess }) {
   }, [table.id]);
 
   useEffect(() => {
-    setTableState(table);
+    setTableState({
+      ...table,
+      qrCode: withTenantQueryParams(table?.qrCode),
+    });
     loadTokenStatus();
   }, [loadTokenStatus, table]);
 
@@ -139,6 +146,7 @@ export function QRManagement({ table, onClose, onSuccess }) {
         setTableState((current) => ({
           ...current,
           ...response.data,
+          qrCode: withTenantQueryParams(response.data?.qrCode),
         }));
         await loadTokenStatus();
         onSuccess?.("QR code regenerated successfully");
@@ -278,6 +286,7 @@ export function QRManagement({ table, onClose, onSuccess }) {
         setTableState((current) => ({
           ...current,
           ...response.data,
+          qrCode: withTenantQueryParams(response.data?.qrCode || current.qrCode),
         }));
         await loadTokenStatus();
         onSuccess?.("Token refreshed successfully");

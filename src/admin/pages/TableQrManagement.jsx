@@ -8,6 +8,7 @@ import { useAdmin } from "../context/AdminContext";
 import { AdminCardGridSkeleton } from "../components/common/AdminSkeleton";
 import { QrManagementOverlay } from "../components/tables/QrManagementOverlay";
 import { AdminModal } from "../components/common/AdminModal";
+import { withTenantQueryParams } from "../../common/utils/qrImage";
 export function TableQrManagement() {
   const { addNotification } = useAdmin();
   const [tables, setTables] = useState([]);
@@ -20,13 +21,13 @@ export function TableQrManagement() {
       try {
         setLoading(true);
         const response = await tableService.getTables();
-        const rows = (response?.data || []).map((table) => ({
+        const rows = (response?.data?.data || []).map((table) => ({
           id: table._id,
           number: table.tableNumber,
           tableName: table.tableName,
           capacity: table.capacity,
           location: table.location,
-          qrCode: table.qrCode,
+          qrCode: withTenantQueryParams(table.qrCode),
           qrUrl: table.qrUrl,
           tokenExpiry: table.tokenExpiry,
           tokenDaysRemaining: table.tokenDaysRemaining,
@@ -153,13 +154,13 @@ export function TableQrManagement() {
             tableService
               .getTables()
               .then((response) => {
-                const rows = (response?.data || []).map((table) => ({
+                const rows = (response?.data?.data || []).map((table) => ({
                   id: table._id,
                   number: table.tableNumber,
                   tableName: table.tableName,
                   capacity: table.capacity,
                   location: table.location,
-                  qrCode: table.qrCode,
+                  qrCode: withTenantQueryParams(table.qrCode),
                   qrUrl: table.qrUrl,
                   tokenExpiry: table.tokenExpiry,
                   tokenDaysRemaining: table.tokenDaysRemaining,

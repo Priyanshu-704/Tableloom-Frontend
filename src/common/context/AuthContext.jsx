@@ -8,6 +8,7 @@ let profileBootstrapResult = null;
 let permissionBootstrapPromise = null;
 let permissionBootstrapResult = null;
 const normalizePermission = permission => String(permission || "").trim().replace(/[\s-]+/g, "_").toUpperCase();
+const hasFullAdminAccess = role => ["super_admin", "admin"].includes(String(role || "").toLowerCase());
 export const AuthProvider = ({
   children
 }) => {
@@ -86,7 +87,7 @@ export const AuthProvider = ({
   };
   const hasPermission = perm => {
     if (!perm) return true;
-    if (user?.role === "super_admin") return true;
+    if (hasFullAdminAccess(user?.role)) return true;
     const normalizedTarget = normalizePermission(perm);
     return permissions.some(userPermission => normalizePermission(userPermission) === normalizedTarget);
   };

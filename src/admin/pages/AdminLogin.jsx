@@ -4,7 +4,11 @@ import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../../common/context/AuthContext";
 import { useSettings } from "../../common/context/SettingsContext";
 import { AdminAuthShell } from "../components/layout/AdminAuthShell";
-import { buildAdminPath, resolveAdminHomePath } from "../../common/utils/routes";
+import {
+  buildAdminPath,
+  extractTenantFromPath,
+  resolveAdminHomePath,
+} from "../../common/utils/routes";
 export function AdminLogin() {
   const [credentials, setCredentials] = useState({
     email: "",
@@ -20,6 +24,11 @@ export function AdminLogin() {
   const {
     settings
   } = useSettings();
+  const tenantContext =
+    typeof window !== "undefined"
+      ? extractTenantFromPath(window.location.pathname)
+      : null;
+  const isPlatformLogin = !tenantContext;
   const handleSubmit = async e => {
     e.preventDefault();
     if (!credentials.email || !credentials.password) {
@@ -41,6 +50,10 @@ export function AdminLogin() {
           setError("You don't have permission to access admin portal");
           return;
         }
+        if (isPlatformLogin && role !== "super_admin") {
+          setError("Only the super admin can sign in at this URL. Restaurant staff must use their tenant admin panel login URL.");
+          return;
+        }
         navigate(resolveAdminHomePath(role));
       } else {
         setError(response.message || "Login failed");
@@ -51,12 +64,12 @@ export function AdminLogin() {
       setIsLoading(false);
     }
   };
-  return <AdminAuthShell settings={settings} eyebrow="Admin Portal" title="Sign in to your restaurant workspace" description="Use your staff credentials to manage orders, tables, kitchen flow, and day-to-day operations." mobileAuthMode="preview" mobilePrimaryActionLabel="Login To Admin Panel" mobileBackActionLabel="Back to overview" sideTitle="A cleaner service dashboard starts with a calmer sign-in flow." sideDescription="This admin space is designed for staff speed: quick access, clearer focus, and fewer distractions during service." highlights={[{
+  return <AdminAuthShell settings={settings} eyebrow={isPlatformLogin ? "Platform Admin" : "Admin Portal"} title={isPlatformLogin ? "Sign in to the platform admin panel" : "Sign in to your restaurant workspace"} description={isPlatformLogin ? "This login is reserved for the super admin. Restaurant admins and staff should sign in from their tenant workspace admin URL." : "Use your staff credentials to manage orders, tables, kitchen flow, and day-to-day operations."} mobileAuthMode="preview" mobilePrimaryActionLabel="Login To Admin Panel" mobileBackActionLabel="Back to overview" sideTitle={isPlatformLogin ? "Platform oversight starts from a separate, protected admin login." : "A cleaner service dashboard starts with a calmer sign-in flow."} sideDescription={isPlatformLogin ? "Use this page only for super admin access. Tenant admins, managers, chefs, and waiters should use their own restaurant workspace admin panel." : "This admin space is designed for staff speed: quick access, clearer focus, and fewer distractions during service."} highlights={[{
       title: "Live operations",
-      description: "Track orders, table status, and kitchen updates without leaving the workflow."
+      description: isPlatformLogin ? "Super admin access is separated from tenant staff sign-in for safer workspace control." : "Track orders, table status, and kitchen updates without leaving the workflow."
     }, {
       title: "Role-aware access",
-      description: "Admins, managers, waiters, and chefs land in the right area after sign in."
+      description: isPlatformLogin ? "Tenant users should log in only from their own workspace admin URL." : "Admins, managers, waiters, and chefs land in the right area after sign in."
     }]}>
         <form className="space-y-6" onSubmit={handleSubmit}>
             {error && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
@@ -99,12 +112,14 @@ export function AdminLogin() {
               </Link>
             </div>
 
-            <div className="text-center text-sm text-slate-500">
-              New restaurant?{" "}
-              <Link to={buildAdminPath("/tenant-registration")} className="font-medium text-sky-700 hover:text-sky-800">
-                Register your tenant
-              </Link>
-            </div>
+            {isPlatformLogin ? <div className="text-center text-sm text-slate-500">
+                New restaurant?{" "}
+                <Link to={buildAdminPath("/tenant-registration")} className="font-medium text-sky-700 hover:text-sky-800">
+                  Register your tenant
+                </Link>
+              </div> : <div className="rounded-xl border border-sky-100 bg-sky-50 px-4 py-3 text-sm text-sky-800">
+                Use your restaurant-specific admin URL to sign in. Platform admin login is only for the super admin.
+              </div>}
 
             <button type="submit" disabled={isLoading} className="w-full bg-primary-600 hover:bg-primary-700 disabled:bg-gray-400 text-white font-semibold py-3 px-4 rounded-lg flex items-center justify-center">
               {isLoading ? <>

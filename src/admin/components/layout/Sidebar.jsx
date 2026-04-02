@@ -6,6 +6,7 @@ import { useAuth } from "../../../common/context/AuthContext";
 import { useSettings } from "../../../common/context/SettingsContext";
 import { buildAdminPath, buildPlatformAdminPath, isSuperAdminMonitoringPath } from "../../../common/utils/routes";
 const normalizePermission = permission => String(permission || "").trim().replace(/[\s-]+/g, "_").toUpperCase();
+const hasFullAdminAccess = role => ["super_admin", "admin"].includes(String(role || "").toLowerCase());
 const navigationSections = [{
   id: "platform",
   title: "Platform",
@@ -235,7 +236,7 @@ export function Sidebar({
         if (user.role === "super_admin" && !isMonitoringMode && !item.roles?.includes("super_admin")) {
           return false;
         }
-        if (user.role === "super_admin" || !item.requiredPermission) {
+        if (hasFullAdminAccess(user.role) || !item.requiredPermission) {
           return true;
         }
         const requiredPermissions = Array.isArray(item.requiredPermission) ? item.requiredPermission : [item.requiredPermission];

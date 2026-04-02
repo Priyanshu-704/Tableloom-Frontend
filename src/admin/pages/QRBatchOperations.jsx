@@ -4,6 +4,7 @@ import { Download, RefreshCw, AlertTriangle, CheckCircle, Printer, FileText, Gri
 import tableService from '../../common/services/TableService';
 import Select from '../components/common/Select';
 import { useAdmin } from '../context/AdminContext';
+import { withTenantQueryParams } from '../../common/utils/qrImage';
 export function QRBatchOperations({
   tables,
   onClose,
@@ -24,7 +25,21 @@ export function QRBatchOperations({
     current: 0,
     total: 0
   });
-  const tablesWithQR = tables.filter(t => t.qrCode);
+  const tablesWithQR = tables.filter(t => t.qrCode).map(t => ({
+    ...t,
+    qrCode: withTenantQueryParams(t.qrCode)
+  }));
+  const selectedTableData = tablesWithQR.filter(t => selectedTables.includes(t.id));
+  const getPreviewWidth = size => {
+    switch (size) {
+      case 'small':
+        return '150px';
+      case 'large':
+        return '350px';
+      default:
+        return '250px';
+    }
+  };
   const handleSelectAll = () => {
     if (selectAll) {
       setSelectedTables([]);
@@ -97,8 +112,11 @@ export function QRBatchOperations({
     }
   };
   const handleBatchPrint = () => {
-    const selectedTableData = tables.filter(t => selectedTables.includes(t.id));
     const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      addNotification('Please allow popups to print QR codes.', 'warning');
+      return;
+    }
     printWindow.document.write(`
       <html>
         <head>
@@ -144,7 +162,7 @@ export function QRBatchOperations({
             <div class="page">
               <div class="${printLayout === 'multiple' ? 'grid' : ''}">
                 ${printLayout === 'multiple' ? `
-                  ${[table, ...selectedTableData.slice(index + 1, index + 3)].map(t => `
+                  ${selectedTableData.slice(index, index + 4).map(t => `
                     <div class="qr-item">
                       <div class="table-number">Table ${t.number}</div>
                       ${t.tableName ? `<div style="color: #666; margin-bottom: 10px;">${t.tableName}</div>` : ''}
@@ -186,7 +204,7 @@ export function QRBatchOperations({
                 `}
               </div>
             </div>
-          `).join('')}
+          `).filter((_, index) => printLayout !== 'multiple' || index % 4 === 0).join('')}
         </body>
       </html>
     `);
@@ -296,6 +314,30 @@ export function QRBatchOperations({
               </label>
             </>}
         </div>
+
+        {operation === 'print' && <div className="mb-6">
+            <div className="mb-3 flex items-center justify-between">
+              <h3 className="font-medium text-gray-900">Print Preview</h3>
+              <span className="text-sm text-gray-500">{selectedTableData.length} selected</span>
+            </div>
+            <div className="max-h-80 overflow-y-auto rounded-lg border border-gray-200 bg-gray-50 p-4">
+              {selectedTableData.length > 0 ? <div className={`grid gap-4 ${printLayout === 'multiple' ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1'}`}>
+                  {selectedTableData.map(table => <div key={`print-preview-${table.id}`} className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+                      <div className="mb-3">
+                        <div className="font-medium text-gray-900">Table {table.number}</div>
+                        <div className="text-sm text-gray-500">{table.tableName || table.location || 'Ready to print'}</div>
+                      </div>
+                      <div className="flex min-h-[220px] items-center justify-center rounded-lg border border-dashed border-gray-200 bg-gray-50 p-4">
+                        {table.qrCode ? <img src={table.qrCode} alt={`QR Code for Table ${table.number}`} className="h-auto max-w-full" style={{
+                    width: getPreviewWidth(qrSize)
+                  }} /> : <div className="text-sm text-gray-400">QR preview not available</div>}
+                      </div>
+                    </div>)}
+                </div> : <div className="py-10 text-center text-sm text-gray-500">
+                  Select tables to preview their QR codes before printing.
+                </div>}
+            </div>
+          </div>}
 
         {}
         {loading && <div className="mb-6">

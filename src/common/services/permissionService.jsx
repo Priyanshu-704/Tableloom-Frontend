@@ -18,6 +18,8 @@ const getCurrentUser = () => {
     return null;
   }
 };
+const hasFullAdminAccess = role =>
+  ["super_admin", "admin"].includes(String(role || "").toLowerCase());
 const generateDisplayNames = () => {
   if (!permissionState.permissions) {
     return;
@@ -98,6 +100,10 @@ export const permissionService = {
   },
   getMyPermissions: async () => {
     try {
+      const currentUser = getCurrentUser();
+      if (hasFullAdminAccess(currentUser?.role)) {
+        return (await permissionService.getAllPermissionsList()) || [];
+      }
       return await permissionRequestCache.run("permissions-me", async () => {
         const response = await axiosInstance.get("/permissions/me");
         return response?.data?.data?.permissions || [];
@@ -140,6 +146,9 @@ export const permissionService = {
     }
   },
   hasPermission: async permission => {
+    if (hasFullAdminAccess(getCurrentUser()?.role)) {
+      return true;
+    }
     const myPerms = await permissionService.getMyPermissions();
     return myPerms.includes(permission);
   },

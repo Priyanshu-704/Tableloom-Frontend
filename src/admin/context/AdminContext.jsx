@@ -3,6 +3,7 @@ import React, { createContext, useContext, useReducer, useEffect, useRef, useSta
 import { userService } from "../../common/services";
 import { useNavigate, useLocation } from "react-router-dom";
 import { buildAdminPath, stripAdminRoutePrefix } from "../../common/utils/routes";
+import { getApiMessage } from "../../common/utils/handleApiError";
 import { ConfirmationDialog } from "../components/common/ConfirmationDialog";
 const AdminContext = createContext();
 const initialState = {
@@ -182,10 +183,14 @@ export function AdminProvider({
       }
     });
   };
-  const addNotification = (message, type = "info") => {
+  const addNotification = (message, type = "info", fallbackMessage = "") => {
+    const resolvedMessage = getApiMessage(
+      message,
+      fallbackMessage || (type === "success" ? "Action completed successfully" : "Something went wrong"),
+    );
     const notification = {
       id: Date.now(),
-      message,
+      message: resolvedMessage,
       type,
       timestamp: new Date().toISOString()
     };
@@ -260,6 +265,7 @@ export function AdminProvider({
       <ConfirmationDialog isOpen={confirmationState.isOpen} title={confirmationState.title} message={confirmationState.message} confirmLabel={confirmationState.confirmLabel} cancelLabel={confirmationState.cancelLabel} tone={confirmationState.tone} onCancel={() => closeConfirmation(false)} onConfirm={() => closeConfirmation(true)} />
     </AdminContext.Provider>;
 }
+// eslint-disable-next-line react-refresh/only-export-components
 export function useAdmin() {
   const context = useContext(AdminContext);
   if (!context) {

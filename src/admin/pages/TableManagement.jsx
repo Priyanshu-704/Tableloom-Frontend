@@ -8,11 +8,12 @@ import Select from "../components/common/Select";
 import { AdminModal } from "../components/common/AdminModal";
 import AdminPagination from "../components/common/AdminPagination";
 import { AdminCardGridSkeleton } from "../components/common/AdminSkeleton";
+import { QrManagementOverlay } from "../components/tables/QrManagementOverlay";
 import { QRBatchOperations } from "./QRBatchOperations";
-import { QRManagement } from "./QRManagement";
 import { ToastContainer } from "../../user/components/common/Toast";
 import { useMonitoringMode } from "../hooks/useMonitoringMode";
 import { MonitoringBanner } from "../components/common/MonitoringBanner";
+import { withTenantQueryParams } from "../../common/utils/qrImage";
 const STATUS_CONFIG = {
   available: {
     label: "Available",
@@ -132,7 +133,7 @@ export function TableManagement() {
           location: formatLocationForDisplay(table.location),
           currentOrder: table.currentOrder,
           lastOccupied: table.lastOccupied,
-          qrCode: table.qrCode,
+          qrCode: withTenantQueryParams(table.qrCode),
           qrUrl: table.qrUrl,
           tokenExpiry: table.tokenExpiry,
           tokenDaysRemaining: table.tokenDaysRemaining,
@@ -478,8 +479,7 @@ export function TableManagement() {
       setShowTableForm(false);
       setEditingTable(null);
     }} showToast={showToast} />}{" "}
-      {!isMonitoringMode && showQRManagement && selectedTableForQR && <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-          <QRManagement table={selectedTableForQR} onClose={() => {
+      {!isMonitoringMode && showQRManagement && selectedTableForQR && <QrManagementOverlay table={selectedTableForQR} onClose={() => {
         setShowQRManagement(false);
         setSelectedTableForQR(null);
       }} onSuccess={message => {
@@ -487,7 +487,7 @@ export function TableManagement() {
         loadTableStats();
         showToast(message, "success");
       }} />
-        </div>}
+      }
       {!isMonitoringMode && <AdminModal isOpen={showQRBatchOps} title="Batch QR Operations" subtitle="Perform bulk download, regenerate, and print actions for table QR codes." onClose={() => setShowQRBatchOps(false)} maxWidth="max-w-2xl">
         <QRBatchOperations tables={tables} onClose={() => setShowQRBatchOps(false)} onSuccess={message => {
         loadTables();

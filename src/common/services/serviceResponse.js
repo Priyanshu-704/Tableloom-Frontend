@@ -1,3 +1,5 @@
+import { getApiMessage } from "../utils/handleApiError";
+
 export const toServiceResponse = (response, fallback = {}) => {
   const payload = response?.data ?? {};
   const status = Number(response?.status || 0);
@@ -6,7 +8,8 @@ export const toServiceResponse = (response, fallback = {}) => {
       typeof payload?.success === "boolean"
         ? payload.success
         : status >= 200 && status < 300,
-    message: payload?.message || fallback.message || "",
+    message: getApiMessage(payload, fallback.message || ""),
+    error: payload?.error || fallback.error || "",
     data:
       payload?.data !== undefined
         ? payload.data
