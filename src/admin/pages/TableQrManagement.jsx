@@ -9,6 +9,30 @@ import { AdminCardGridSkeleton } from "../components/common/AdminSkeleton";
 import { QrManagementOverlay } from "../components/tables/QrManagementOverlay";
 import { AdminModal } from "../components/common/AdminModal";
 import { withTenantQueryParams } from "../../common/utils/qrImage";
+
+const mapTableToQrRow = (table) => ({
+  id: table._id || table.id,
+  number: table.tableNumber || table.number,
+  tableName: table.tableName || "",
+  capacity: table.capacity,
+  location: table.location,
+  qrCode: withTenantQueryParams(table.qrCode),
+  qrUrl: table.qrUrl,
+  tokenExpiry: table.tokenExpiry,
+  tokenDaysRemaining: table.tokenDaysRemaining,
+  tokenExpired: table.tokenExpired,
+});
+
+const getTableRows = (response) => {
+  const source = Array.isArray(response?.data)
+    ? response.data
+    : Array.isArray(response?.data?.data)
+      ? response.data.data
+      : [];
+
+  return source.map(mapTableToQrRow);
+};
+
 export function TableQrManagement() {
   const { addNotification } = useAdmin();
   const [tables, setTables] = useState([]);
@@ -21,18 +45,7 @@ export function TableQrManagement() {
       try {
         setLoading(true);
         const response = await tableService.getTables();
-        const rows = (response?.data?.data || []).map((table) => ({
-          id: table._id,
-          number: table.tableNumber,
-          tableName: table.tableName,
-          capacity: table.capacity,
-          location: table.location,
-          qrCode: withTenantQueryParams(table.qrCode),
-          qrUrl: table.qrUrl,
-          tokenExpiry: table.tokenExpiry,
-          tokenDaysRemaining: table.tokenDaysRemaining,
-        }));
-        setTables(rows);
+        setTables(getTableRows(response));
       } catch {
         addNotification("Failed to load tables for QR management", "error");
       } finally {
@@ -154,18 +167,7 @@ export function TableQrManagement() {
             tableService
               .getTables()
               .then((response) => {
-                const rows = (response?.data?.data || []).map((table) => ({
-                  id: table._id,
-                  number: table.tableNumber,
-                  tableName: table.tableName,
-                  capacity: table.capacity,
-                  location: table.location,
-                  qrCode: withTenantQueryParams(table.qrCode),
-                  qrUrl: table.qrUrl,
-                  tokenExpiry: table.tokenExpiry,
-                  tokenDaysRemaining: table.tokenDaysRemaining,
-                }));
-                setTables(rows);
+                setTables(getTableRows(response));
               })
               .catch(() => {});
           }}
