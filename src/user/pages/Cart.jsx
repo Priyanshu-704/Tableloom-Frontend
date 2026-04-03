@@ -7,6 +7,7 @@ import { useNavigate } from "react-router-dom";
 import { useNotification } from "../../common/NotificationContext";
 import { useApp } from "../context/AppContext";
 import { buildCustomerPath } from "../../common/utils/routes";
+import { useSettings } from "../../common/context/SettingsContext";
 export function Cart() {
   const {
     notify
@@ -19,6 +20,9 @@ export function Cart() {
     dispatch,
     tableNumber
   } = useApp();
+  const {
+    settings
+  } = useSettings();
   const {
     cart,
     cartSummary,
@@ -37,10 +41,12 @@ export function Cart() {
   const [isApplyingDiscount, setIsApplyingDiscount] = useState(false);
   const formatPrice = value => new Intl.NumberFormat("en-IN", {
     style: "currency",
-    currency: "INR",
+    currency: settings?.taxSettings?.currency || cart?.summary?.currency || cartSummary?.currency || "INR",
     maximumFractionDigits: 2
   }).format(Number(value || 0));
   const currentTableNumber = cart?.table?.number || cart?.table?.tableNumber || tableNumber || "1";
+  const activeSummary = cart?.summary || cartSummary || null;
+  const isTaxInclusive = Boolean(activeSummary?.taxInclusive ?? settings?.taxSettings?.taxInclusive);
   useEffect(() => {
     let mounted = true;
     const loadCart = async () => {
@@ -322,7 +328,10 @@ export function Cart() {
               </div>
 
               {cart.summary.tax > 0 && <div className="flex justify-between">
-                  <span className="text-gray-600">Tax</span>
+                  <span className="text-gray-600">
+                    Tax {cart.summary.taxRate ? `(${cart.summary.taxRate}%)` : ""}
+                    {cart.summary.taxInclusive ? " included" : ""}
+                  </span>
                   <span>{formatPrice(cart.summary.tax || 0)}</span>
                   
                 </div>}
@@ -342,9 +351,11 @@ export function Cart() {
                   <span>-{formatPrice(cart.summary.discount || 0)}</span>
                 </div>}
 
-              {cart.summary.deliveryFee > 0 && <div className="flex justify-between">
-                  <span className="text-gray-600">Delivery Fee</span>
-                  <span>{formatPrice(cart.summary.deliveryFee || 0)}</span>
+              {cart.summary.serviceCharge > 0 && <div className="flex justify-between">
+                  <span className="text-gray-600">
+                    Service Charge {cart.summary.serviceChargeRate ? `(${cart.summary.serviceChargeRate}%)` : ""}
+                  </span>
+                  <span>{formatPrice(cart.summary.serviceCharge || 0)}</span>
                 </div>}
 
               <div className="flex justify-between text-lg font-bold border-t pt-3 mt-2">
@@ -360,7 +371,10 @@ export function Cart() {
               </div>
 
               {cartSummary.tax > 0 && <div className="flex justify-between">
-                  <span className="text-gray-600">Tax</span>
+                  <span className="text-gray-600">
+                    Tax {cartSummary.taxRate ? `(${cartSummary.taxRate}%)` : ""}
+                    {cartSummary.taxInclusive ? " included" : ""}
+                  </span>
                   <span>{formatPrice(cartSummary.tax)}</span>
                 </div>}
 
@@ -379,9 +393,11 @@ export function Cart() {
                   <span>-{formatPrice(cartSummary.discount)}</span>
                 </div>}
 
-              {cartSummary.deliveryFee > 0 && <div className="flex justify-between">
-                  <span className="text-gray-600">Delivery Fee</span>
-                  <span>{formatPrice(cartSummary.deliveryFee)}</span>
+              {cartSummary.serviceCharge > 0 && <div className="flex justify-between">
+                  <span className="text-gray-600">
+                    Service Charge {cartSummary.serviceChargeRate ? `(${cartSummary.serviceChargeRate}%)` : ""}
+                  </span>
+                  <span>{formatPrice(cartSummary.serviceCharge)}</span>
                 </div>}
 
               <div className="flex justify-between text-lg font-bold border-t pt-3 mt-2">
@@ -413,6 +429,9 @@ export function Cart() {
         <p className="text-xs text-gray-500 text-center mt-2">
           {cart?.table ? `Your order will be prepared and served at Table ${cart.table.number} (${cart.table.name})` : "Your order will be prepared and served"}
         </p>
+        {isTaxInclusive ? <p className="mt-1 text-center text-xs text-amber-600">
+            Tax is already included in listed item prices for this restaurant.
+          </p> : null}
       </div>
     </div>;
 }

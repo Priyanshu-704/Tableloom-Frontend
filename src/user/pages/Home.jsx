@@ -25,6 +25,7 @@ export function Home() {
   const {
     settings
   } = useSettings();
+  const currency = settings?.taxSettings?.currency || latestOrder?.currency || "INR";
   const [latestOrder, setLatestOrder] = useState(currentOrder || null);
   useEffect(() => {
     setLatestOrder(currentOrder || null);
@@ -127,7 +128,7 @@ export function Home() {
                   <p className="text-lg font-bold text-primary-600">
                     {new Intl.NumberFormat("en-IN", {
                   style: "currency",
-                  currency: "INR",
+                  currency,
                   maximumFractionDigits: 2
                 }).format(Number(latestOrder.totalAmount || latestOrder.total || 0))}
                   </p>

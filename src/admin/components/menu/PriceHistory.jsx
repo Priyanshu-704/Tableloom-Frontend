@@ -3,6 +3,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { ArrowDownRight, ArrowUpRight, CalendarRange, IndianRupee, RefreshCw, TrendingUp } from "lucide-react";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { menuService } from "../../../common/services";
+import { useSettings } from "../../../common/context/SettingsContext";
 const PERIOD_OPTIONS = [{
   value: "7d",
   label: "Last 7 days"
@@ -60,16 +61,24 @@ const formatDate = (value, options = {}) => new Date(value).toLocaleDateString("
   ...options
 });
 const formatPercent = (value = 0) => `${Number(value || 0).toFixed(1)}%`;
-const formatSignedCurrency = (value = 0) => {
+const formatSignedCurrency = (value = 0, currency = "INR") => {
   const amount = Number(value || 0);
   const sign = amount > 0 ? "+" : amount < 0 ? "-" : "";
-  return `${sign}${menuService.formatPrice(Math.abs(amount))}`;
+  return `${sign}${new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency,
+    maximumFractionDigits: 2
+  }).format(Math.abs(amount))}`;
 };
 export function PriceHistory() {
+  const {
+    settings
+  } = useSettings();
   const [priceChanges, setPriceChanges] = useState([]);
   const [period, setPeriod] = useState("30d");
   const [changeType, setChangeType] = useState("all");
   const [loading, setLoading] = useState(false);
+  const currency = settings?.taxSettings?.currency || "INR";
   const loadPriceChanges = useCallback(async () => {
     setLoading(true);
     try {
@@ -333,7 +342,11 @@ export function PriceHistory() {
                           Previous
                         </span>
                         <span className="mt-1 block font-semibold text-gray-900">
-                          {isInitial ? "-" : menuService.formatPrice(change.oldPrice)}
+                          {isInitial ? "-" : new Intl.NumberFormat("en-IN", {
+                        style: "currency",
+                        currency,
+                        maximumFractionDigits: 2
+                      }).format(Number(change.oldPrice || 0))}
                         </span>
                       </div>
                       <div className="rounded-xl bg-gray-50 px-3 py-3">
@@ -341,7 +354,11 @@ export function PriceHistory() {
                           New Price
                         </span>
                         <span className="mt-1 block font-semibold text-gray-900">
-                          {menuService.formatPrice(change.newPrice)}
+                          {new Intl.NumberFormat("en-IN", {
+                        style: "currency",
+                        currency,
+                        maximumFractionDigits: 2
+                      }).format(Number(change.newPrice || 0))}
                         </span>
                       </div>
                       <div className="rounded-xl bg-gray-50 px-3 py-3">
@@ -350,7 +367,11 @@ export function PriceHistory() {
                         </span>
                         <span className="mt-1 inline-flex items-center gap-1 font-semibold text-gray-900">
                           <IndianRupee className="h-4 w-4 text-primary-600" />
-                          {isInitial ? menuService.formatPrice(change.newPrice) : formatSignedCurrency(amountDelta)}
+                          {isInitial ? new Intl.NumberFormat("en-IN", {
+                        style: "currency",
+                        currency,
+                        maximumFractionDigits: 2
+                      }).format(Number(change.newPrice || 0)) : formatSignedCurrency(amountDelta, currency)}
                         </span>
                       </div>
                     </div>

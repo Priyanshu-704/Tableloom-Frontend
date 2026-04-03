@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import { Plus, Minus, ChevronDown, X } from "lucide-react";
 import { useCart } from "../../hooks/useCart";
 import { useTranslation } from "../../hooks/useTranslation";
+import { useSettings } from "../../../common/context/SettingsContext";
 export function MenuItem({
   item
 }) {
@@ -17,6 +18,9 @@ export function MenuItem({
   const {
     t
   } = useTranslation();
+  const {
+    settings
+  } = useSettings();
   const [selectedSize, setSelectedSize] = useState(item.sizes?.[0] || null);
   const [showSizeSelector, setShowSizeSelector] = useState(false);
   const [cartItemInfo, setCartItemInfo] = useState({
@@ -27,7 +31,7 @@ export function MenuItem({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const formatPrice = value => new Intl.NumberFormat("en-IN", {
     style: "currency",
-    currency: "INR",
+    currency: settings?.taxSettings?.currency || "INR",
     maximumFractionDigits: 2
   }).format(Number(value || 0));
   useEffect(() => {

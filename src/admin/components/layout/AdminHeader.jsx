@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { Bell, Menu, Shield, X } from "lucide-react";
+import { Bell, Menu, PanelLeftClose, PanelLeftOpen, Shield, X } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import { useAdmin } from "../../context/AdminContext";
 import { useAdminNotificationCenter } from "../../context/AdminNotificationCenterContext";
@@ -10,7 +10,9 @@ import { BrandBadge } from "../../../common/components/BrandBadge";
 import { isSuperAdminMonitoringPath } from "../../../common/utils/routes";
 export function AdminHeader({
   isMobileSidebarOpen = false,
-  onToggleMobileSidebar
+  onToggleMobileSidebar,
+  isDesktopSidebarCollapsed = false,
+  onToggleDesktopSidebar
 }) {
   const {
     notifications
@@ -35,12 +37,12 @@ export function AdminHeader({
   const isMonitoringMode = isSuperAdminMonitoringPath(location.pathname, user?.role);
   return <header className="fixed top-0 left-0 right-0 z-50 h-16 border-b border-slate-800/60 bg-[linear-gradient(90deg,rgba(2,6,23,0.97)_0%,rgba(15,23,42,0.95)_42%,rgba(10,37,64,0.94)_100%)] shadow-lg shadow-slate-950/20 backdrop-blur-sm">
       <div className="flex h-full">
-        <div className="hidden h-full w-72 shrink-0 items-center border-r border-slate-800/60 bg-[linear-gradient(180deg,rgba(15,23,42,0.92)_0%,rgba(17,24,39,0.88)_100%)] px-6 lg:flex">
-          <div className="flex min-w-0 items-center gap-4">
+        <div className={`hidden h-full shrink-0 items-center border-r border-slate-800/60 bg-[linear-gradient(180deg,rgba(15,23,42,0.92)_0%,rgba(17,24,39,0.88)_100%)] transition-[width,padding] duration-300 lg:flex ${isDesktopSidebarCollapsed ? "w-24 justify-center px-3" : "w-72 px-6"}`}>
+          <div className={`flex min-w-0 items-center ${isDesktopSidebarCollapsed ? "justify-center" : "gap-4"}`}>
             <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white/8 ring-1 ring-white/10 shadow-inner">
               <img src={settings?.restaurant?.logo || "/tableloom-mark.svg"} alt={settings?.restaurant?.name || "Tableloom"} className="h-8 w-8 object-contain" />
             </div>
-            <div className="min-w-0">
+            <div className={`min-w-0 ${isDesktopSidebarCollapsed ? "hidden" : ""}`}>
               <p className="truncate text-base font-bold text-white xl:text-lg">
                 {settings?.restaurant?.name || "Tableloom"}
               </p>
@@ -83,6 +85,9 @@ export function AdminHeader({
           </div>
 
           <div className="flex shrink-0 items-center gap-2 sm:gap-4">
+            <button type="button" onClick={onToggleDesktopSidebar} className="hidden rounded-2xl border border-white/10 bg-white/6 p-2.5 text-slate-200 transition hover:border-white/20 hover:bg-white/10 hover:text-white lg:inline-flex" aria-label={isDesktopSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"} title={isDesktopSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"} aria-pressed={isDesktopSidebarCollapsed}>
+              {isDesktopSidebarCollapsed ? <PanelLeftOpen className="h-5 w-5" /> : <PanelLeftClose className="h-5 w-5" />}
+            </button>
             {isMonitoringMode ? <div className="hidden items-center gap-2 rounded-full border border-amber-400/30 bg-amber-400/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-amber-200 xl:flex">
                 <Shield className="h-3.5 w-3.5" />
                 Monitoring Only

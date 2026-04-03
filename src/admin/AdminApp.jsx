@@ -1,4 +1,4 @@
-import React, { lazy, Suspense, useState } from "react";
+import React, { lazy, Suspense, useEffect, useState } from "react";
 import { Navigate, Outlet, Route, Routes } from "react-router-dom";
 import { useAuth } from "../common/context/AuthContext";
 import { buildAdminPath, resolveAdminHomePath } from "../common/utils/routes";
@@ -137,14 +137,30 @@ const LoadingScreen = () => <div className="min-h-screen bg-gray-50 p-6">
   </div>;
 function AdminLayout() {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [isDesktopSidebarCollapsed, setIsDesktopSidebarCollapsed] = useState(() => {
+    if (typeof window === "undefined") {
+      return false;
+    }
+    return window.localStorage.getItem("admin.sidebar.collapsed") === "true";
+  });
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+    window.localStorage.setItem(
+      "admin.sidebar.collapsed",
+      String(isDesktopSidebarCollapsed)
+    );
+  }, [isDesktopSidebarCollapsed]);
 
   return <AdminNotificationCenterProvider>
       <div className="min-h-screen bg-gray-50">
-        <AdminHeader isMobileSidebarOpen={isMobileSidebarOpen} onToggleMobileSidebar={() => setIsMobileSidebarOpen(current => !current)} />
+        <AdminHeader isMobileSidebarOpen={isMobileSidebarOpen} onToggleMobileSidebar={() => setIsMobileSidebarOpen(current => !current)} isDesktopSidebarCollapsed={isDesktopSidebarCollapsed} onToggleDesktopSidebar={() => setIsDesktopSidebarCollapsed(current => !current)} />
         <div className="flex">
-          <Sidebar isMobileSidebarOpen={isMobileSidebarOpen} onCloseMobileSidebar={() => setIsMobileSidebarOpen(false)} />
+          <Sidebar isMobileSidebarOpen={isMobileSidebarOpen} onCloseMobileSidebar={() => setIsMobileSidebarOpen(false)} isDesktopCollapsed={isDesktopSidebarCollapsed} />
           <AdminNotificationDrawer />
-          <main className="mt-16 min-w-0 flex-1 pb-6 lg:ml-72 lg:pb-8">
+          <main className={`mt-16 min-w-0 flex-1 pb-6 transition-[margin] duration-300 lg:pb-8 ${isDesktopSidebarCollapsed ? "lg:ml-24" : "lg:ml-72"}`}>
             <Outlet />
           </main>
         </div>

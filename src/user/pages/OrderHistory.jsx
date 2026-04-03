@@ -4,11 +4,7 @@ import { useNavigate } from "react-router-dom";
 import orderService from "../../common/services/orderService";
 import { useApp } from "../context/AppContext";
 import { buildCustomerPath } from "../../common/utils/routes";
-const formatPrice = value => new Intl.NumberFormat("en-IN", {
-  style: "currency",
-  currency: "INR",
-  maximumFractionDigits: 2
-}).format(Number(value || 0));
+import { useSettings } from "../../common/context/SettingsContext";
 export function OrderHistory() {
   const navigate = useNavigate();
   const {
@@ -16,9 +12,17 @@ export function OrderHistory() {
     currentOrder,
     dispatch
   } = useApp();
+  const {
+    settings
+  } = useSettings();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const formatPrice = value => new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: settings?.taxSettings?.currency || "INR",
+    maximumFractionDigits: 2
+  }).format(Number(value || 0));
   const loadOrders = async (isRefresh = false) => {
     if (!sessionId) {
       setOrders(currentOrder ? [currentOrder] : []);

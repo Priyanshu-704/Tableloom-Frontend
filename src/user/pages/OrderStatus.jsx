@@ -8,11 +8,7 @@ import { useNotification } from "../../common/NotificationContext";
 import { useNavigate, useParams } from "react-router-dom";
 import { WaiterModal } from "../components/waiter/WaiterModal";
 import { buildCustomerPath } from "../../common/utils/routes";
-const formatCurrency = value => new Intl.NumberFormat("en-IN", {
-  style: "currency",
-  currency: "INR",
-  maximumFractionDigits: 2
-}).format(Number(value || 0));
+import { useSettings } from "../../common/context/SettingsContext";
 const STATUS_STEPS = [{
   key: ORDER_STATUS.PENDING,
   label: "Order Placed",
@@ -54,6 +50,9 @@ export function OrderStatus({
     state
   } = useApp();
   const {
+    settings
+  } = useSettings();
+  const {
     notify
   } = useNotification();
   const {
@@ -66,6 +65,11 @@ export function OrderStatus({
     isOpen: false,
     reason: ""
   });
+  const formatCurrency = value => new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: settings?.taxSettings?.currency || order?.currency || "INR",
+    maximumFractionDigits: 2
+  }).format(Number(value || 0));
   const tableNumber = state.tableInfo?.tableNumber;
   useEffect(() => {
     const timer = setInterval(() => {

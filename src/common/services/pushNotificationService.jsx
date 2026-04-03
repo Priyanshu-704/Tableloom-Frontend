@@ -16,11 +16,12 @@ const buildMetadata = () => ({
   userAgent: typeof navigator !== "undefined" ? navigator.userAgent : "",
   language: typeof navigator !== "undefined" ? navigator.language : ""
 });
+const resolveTokenEndpoint = (audience = "") => String(audience || "").toLowerCase() === "staff" ? "/push-notifications/token/staff" : "/push-notifications/token/customer";
 export const pushNotificationService = {
   buildStorageKey,
   registerToken: async (payload = {}) => {
     try {
-      const response = await axiosInstance.post("/push-notifications/token", {
+      const response = await axiosInstance.post(resolveTokenEndpoint(payload?.audience), {
         ...payload,
         device: {
           ...buildMetadata(),
@@ -43,7 +44,7 @@ export const pushNotificationService = {
   },
   unregisterToken: async (payload = {}) => {
     try {
-      const response = await axiosInstance.delete("/push-notifications/token", {
+      const response = await axiosInstance.delete(resolveTokenEndpoint(payload?.audience), {
         data: payload
       });
       return response?.data ?? {

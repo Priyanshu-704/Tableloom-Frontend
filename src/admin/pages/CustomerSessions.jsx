@@ -5,6 +5,7 @@ import { customerAdminService } from "../../common/services";
 import { useAdmin } from "../context/AdminContext";
 import AdminPagination from "../components/common/AdminPagination";
 import { AdminListSkeleton } from "../components/common/AdminSkeleton";
+import { useSettings } from "../../common/context/SettingsContext";
 const MODE_OPTIONS = [{
   value: "active",
   label: "Active Sessions"
@@ -31,13 +32,17 @@ const STATUS_OPTIONS = [{
   value: "timeout",
   label: "Timeout"
 }];
-const formatCurrency = value => new Intl.NumberFormat("en-IN", {
+const formatCurrency = (value, currency = "INR") => new Intl.NumberFormat("en-IN", {
   style: "currency",
-  currency: "INR",
+  currency,
   maximumFractionDigits: 2
 }).format(Number(value || 0));
 export function CustomerSessions() {
   const PAGE_SIZE = 10;
+  const {
+    settings
+  } = useSettings();
+  const currency = settings?.taxSettings?.currency || "INR";
   const {
     addNotification
   } = useAdmin();
@@ -138,7 +143,7 @@ export function CustomerSessions() {
         <div className="rounded-lg border border-gray-200 bg-white p-5">
           <p className="text-sm text-gray-500">Revenue</p>
           <p className="mt-2 text-2xl font-semibold text-gray-900">
-            {formatCurrency(analytics?.revenue)}
+            {formatCurrency(analytics?.revenue, currency)}
           </p>
         </div>
       </div>
@@ -201,7 +206,7 @@ export function CustomerSessions() {
                     </span>
                     <span className="inline-flex items-center gap-2">
                       <Wallet className="h-4 w-4" />
-                      Spent {formatCurrency(session.totalSpent)}
+                      Spent {formatCurrency(session.totalSpent, currency)}
                     </span>
                   </div>
                 </div>

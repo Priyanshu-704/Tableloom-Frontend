@@ -7,6 +7,7 @@ import { useAdmin } from "../../context/AdminContext";
 import { ItemForm } from "./ItemForm";
 import { AdminPageSkeleton } from "../common/AdminSkeleton";
 import { buildAdminPath } from "../../../common/utils/routes";
+import { useSettings } from "../../../common/context/SettingsContext";
 const FILTER_OPTIONS = [{
   value: "all",
   label: "All Items"
@@ -28,8 +29,12 @@ const getPrimaryPrice = item => {
 export function SeasonalMenu() {
   const navigate = useNavigate();
   const {
+    settings
+  } = useSettings();
+  const {
     addNotification
   } = useAdmin();
+  const currency = settings?.taxSettings?.currency || "INR";
   const [items, setItems] = useState([]);
   const [categories, setCategories] = useState([]);
   const [sizes, setSizes] = useState([]);
@@ -254,7 +259,11 @@ export function SeasonalMenu() {
 
                   <div className="flex items-center gap-2 text-sm text-gray-600">
                     <Tag className="h-4 w-4" />
-                    <span>{menuService.formatPrice(getPrimaryPrice(item))}</span>
+                    <span>{new Intl.NumberFormat("en-IN", {
+                  style: "currency",
+                  currency,
+                  maximumFractionDigits: 2
+                }).format(Number(getPrimaryPrice(item) || 0))}</span>
                   </div>
 
                   <div className="space-y-2 rounded-lg bg-slate-50 p-3 text-sm text-slate-600">

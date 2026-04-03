@@ -7,6 +7,7 @@ import { KitchenDisplay } from "../components/orders/KitchenDisplay";
 import AdminPagination from "../components/common/AdminPagination";
 import { AdminListSkeleton } from "../components/common/AdminSkeleton";
 import { orderService } from "../../common/services";
+import { useSettings } from "../../common/context/SettingsContext";
 const ORDER_STATUS = [{
   value: "all",
   label: "All Orders"
@@ -45,9 +46,9 @@ const PAYMENT_STATUS = [{
   value: "failed",
   label: "Failed"
 }];
-const formatCurrency = value => new Intl.NumberFormat("en-IN", {
+const formatCurrency = (value, currency = "INR") => new Intl.NumberFormat("en-IN", {
   style: "currency",
-  currency: "INR",
+  currency,
   maximumFractionDigits: 2
 }).format(Number(value || 0));
 const EMPTY_STATUS_COUNTS = {
@@ -78,6 +79,10 @@ const normalizeOrder = order => ({
 });
 export function Orders() {
   const PAGE_SIZE = 10;
+  const {
+    settings
+  } = useSettings();
+  const currency = settings?.taxSettings?.currency || "INR";
   const {
     dispatch,
     kitchenView,
@@ -208,7 +213,7 @@ export function Orders() {
             <div>
               <p className="text-sm text-gray-500">Today Revenue</p>
               <p className="text-2xl font-semibold text-gray-900">
-                {formatCurrency(statistics?.todayRevenue)}
+                {formatCurrency(statistics?.todayRevenue, currency)}
               </p>
             </div>
             <IndianRupee className="h-6 w-6 text-emerald-600" />

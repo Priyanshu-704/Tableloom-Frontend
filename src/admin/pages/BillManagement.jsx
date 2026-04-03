@@ -8,6 +8,7 @@ import AdminPagination from "../components/common/AdminPagination";
 import { AdminModal } from "../components/common/AdminModal";
 import { AdminPageSkeleton } from "../components/common/AdminSkeleton";
 import { useMonitoringMode } from "../hooks/useMonitoringMode";
+import { useSettings } from "../../common/context/SettingsContext";
 const PAGE_SIZE = 12;
 const PAYMENT_STATUS_OPTIONS = [{
   value: "all",
@@ -79,9 +80,9 @@ const billBadgeClasses = {
   paid: "bg-emerald-100 text-emerald-700",
   finalized: "bg-violet-100 text-violet-700"
 };
-const formatCurrency = value => new Intl.NumberFormat("en-IN", {
+const formatCurrency = (value, currency = "INR") => new Intl.NumberFormat("en-IN", {
   style: "currency",
-  currency: "INR",
+  currency,
   maximumFractionDigits: 2
 }).format(Number(value || 0));
 const formatDateTime = value => value ? new Date(value).toLocaleString([], {
@@ -96,9 +97,13 @@ export function BillManagement() {
     addNotification
   } = useAdmin();
   const {
+    settings
+  } = useSettings();
+  const {
     hasAnyPermission,
     hasPermission
   } = useAuth();
+  const currency = settings?.taxSettings?.currency || "INR";
   const isMonitoringMode = useMonitoringMode();
   const canViewBillStats = hasPermission("view_statistics");
   const canSendBillEmail = hasPermission("session_view_all");
@@ -217,15 +222,15 @@ export function BillManagement() {
     tone: "bg-emerald-50 text-emerald-600"
   }, {
     label: "Today's Revenue",
-    value: formatCurrency(stats.todayRevenue),
+    value: formatCurrency(stats.todayRevenue, currency),
     icon: Receipt,
     tone: "bg-violet-50 text-violet-600"
   }, {
     label: "Monthly Revenue",
-    value: formatCurrency(stats.monthlyRevenue),
+    value: formatCurrency(stats.monthlyRevenue, currency),
     icon: CreditCard,
     tone: "bg-rose-50 text-rose-600"
-  }], [stats.monthlyRevenue, stats.paidBills, stats.pendingBills, stats.todayRevenue, stats.totalBills]);
+  }], [currency, stats.monthlyRevenue, stats.paidBills, stats.pendingBills, stats.todayRevenue, stats.totalBills]);
   const openPdf = (billId, type = "view") => {
     const url = type === "download" ? billService.getBillDownloadUrl(billId) : billService.getBillViewUrl(billId);
     window.open(url, "_blank", "noopener,noreferrer");
@@ -468,7 +473,7 @@ export function BillManagement() {
                   <div className="rounded-2xl bg-slate-50 p-4 text-left sm:min-w-[190px] sm:text-right">
                     <p className="text-sm text-gray-500">Total Amount</p>
                     <p className="text-2xl font-bold text-gray-900">
-                      {formatCurrency(bill.totalAmount)}
+                      {formatCurrency(bill.totalAmount, bill.currency || currency)}
                     </p>
                     <p className="text-xs text-gray-500">
                       Created {formatDateTime(bill.createdAt)}
@@ -591,7 +596,7 @@ export function BillManagement() {
                 UPI ID: <span className="break-all font-medium text-gray-900">{qrModal.upiId}</span>
               </p>
               <p className="mt-1 text-lg font-semibold text-gray-900">
-                {formatCurrency(qrModal.amount)}
+                {formatCurrency(qrModal.amount, currency)}
               </p>
             </>}
         </div>

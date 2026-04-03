@@ -303,6 +303,9 @@ export function BillRequest() {
       </div>;
   }
   const currency = settings?.taxSettings?.currency || "INR";
+  const isTaxInclusive = Boolean(billData?.bill?.taxInclusive ?? settings?.taxSettings?.taxInclusive);
+  const taxRate = Number(billData?.bill?.taxRate ?? settings?.taxSettings?.taxRate ?? 0);
+  const serviceChargeRate = Number(billData?.bill?.serviceChargeRate ?? settings?.taxSettings?.serviceCharge ?? 0);
   const totalAmount = Number(billData?.summary?.totalAmount || billData?.bill?.totalAmount || 0);
   const hasGeneratedBill = Boolean(billData?.bill?._id);
   const isPaid = (billData?.bill?.paymentStatus || billData?.session?.paymentStatus) === "paid";
@@ -484,13 +487,17 @@ export function BillRequest() {
               </span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-gray-600">Tax</span>
+              <span className="text-gray-600">
+                Tax {taxRate ? `(${taxRate}%)` : ""}{isTaxInclusive ? " included" : ""}
+              </span>
               <span className="text-gray-900">
                 {formatCurrency(billData?.summary?.taxAmount || 0, currency)}
               </span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-gray-600">Service Charge</span>
+              <span className="text-gray-600">
+                Service Charge {serviceChargeRate ? `(${serviceChargeRate}%)` : ""}
+              </span>
               <span className="text-gray-900">
                 {formatCurrency(billData?.summary?.serviceCharge || 0, currency)}
               </span>
@@ -498,7 +505,7 @@ export function BillRequest() {
             <div className="flex justify-between text-sm">
               <span className="text-gray-600">Discount</span>
               <span className="text-gray-900">
-                {formatCurrency(billData?.summary?.discountAmount || 0, currency)}
+                -{formatCurrency(billData?.summary?.discountAmount || 0, currency)}
               </span>
             </div>
             <div className="mt-2 flex justify-between border-t border-gray-200 pt-3 text-lg font-bold">
@@ -516,6 +523,9 @@ export function BillRequest() {
           <p className="mt-2 text-sm text-gray-600">
             Provide an email address if you want the generated bill sent there as well.
           </p>
+          {isTaxInclusive ? <p className="mt-2 text-xs text-amber-600">
+              Listed item prices already include tax for this restaurant.
+            </p> : null}
           <input type="email" value={email} onChange={event => setEmail(event.target.value)} placeholder="Enter your email address" className="mt-4 w-full rounded-xl border border-slate-300 px-4 py-3 text-sm focus:border-primary-500 focus:outline-none" />
         </div>
 

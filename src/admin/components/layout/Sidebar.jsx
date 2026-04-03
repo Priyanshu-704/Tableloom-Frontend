@@ -209,7 +209,8 @@ const navigationSections = [{
 }];
 export function Sidebar({
   isMobileSidebarOpen = false,
-  onCloseMobileSidebar
+  onCloseMobileSidebar,
+  isDesktopCollapsed = false
 }) {
   const {
     dispatch
@@ -264,13 +265,15 @@ export function Sidebar({
     onCloseMobileSidebar?.();
   }, [location.pathname]);
 
-  const renderNavigation = () => <div className="space-y-6 pb-10">
-      <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
-        <div className="flex items-center gap-3">
+  const renderNavigation = ({
+    compact = false
+  } = {}) => <div className={`pb-10 ${compact ? "space-y-4" : "space-y-6"}`}>
+      <div className={`rounded-3xl border border-slate-200 bg-white shadow-sm ${compact ? "p-3" : "p-4"}`}>
+        <div className={`flex items-center ${compact ? "justify-center" : "gap-3"}`}>
           <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-slate-100 ring-1 ring-slate-200">
             <img src={settings?.restaurant?.logo || "/tableloom-mark.svg"} alt={settings?.restaurant?.name || "Tableloom"} className="h-8 w-8 object-contain" />
           </div>
-          <div className="min-w-0">
+          <div className={`min-w-0 ${compact ? "hidden" : ""}`}>
             <p className="truncate text-sm font-bold text-slate-900">
               {settings?.restaurant?.name || "Tableloom"}
             </p>
@@ -281,22 +284,24 @@ export function Sidebar({
         </div>
       </div>
 
-      <nav className="space-y-6">
+      <nav className={compact ? "space-y-4" : "space-y-6"}>
         {visibleSections.map(section => <div key={section.id}>
-          <p className="mb-3 px-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">
-            {section.title}
-          </p>
+          {compact ? <div className="mb-3 px-2" title={section.title}>
+              <div className="h-px rounded-full bg-slate-200"></div>
+            </div> : <p className="mb-3 px-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">
+              {section.title}
+            </p>}
 
-          <div className="space-y-2 rounded-3xl border border-slate-200 bg-white p-2.5 shadow-sm">
+          <div className={`space-y-2 rounded-3xl border border-slate-200 bg-white shadow-sm ${compact ? "p-2" : "p-2.5"}`}>
             {section.items.map(item => {
           const Icon = item.icon;
           const active = isActive(item);
-          return <button key={item.id} type="button" onClick={() => handleNavigation(item)} className={`flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left transition-all ${active ? "bg-primary-600 text-white shadow-sm" : "text-slate-700 hover:bg-slate-50"}`}>
-                  <div className={`flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl ${active ? "bg-white/15 text-white" : "bg-slate-100 text-slate-600"}`}>
+          return <button key={item.id} type="button" onClick={() => handleNavigation(item)} className={`flex w-full rounded-2xl text-left transition-all ${compact ? "justify-center px-2 py-2.5" : "items-center gap-3 px-3 py-3"} ${active ? "bg-primary-600 text-white shadow-sm" : "text-slate-700 hover:bg-slate-50"}`} title={compact ? item.label : undefined} aria-label={item.label}>
+                  <div className={`flex flex-shrink-0 items-center justify-center rounded-2xl ${compact ? "h-12 w-12" : "h-11 w-11"} ${active ? "bg-white/15 text-white" : "bg-slate-100 text-slate-600"}`}>
                     <Icon className="h-5 w-5" />
                   </div>
 
-                  <div className="min-w-0">
+                  <div className={`min-w-0 ${compact ? "hidden" : ""}`}>
                     <p className="truncate text-sm font-semibold">
                       {item.label}
                     </p>
@@ -312,15 +317,15 @@ export function Sidebar({
     </div>;
 
   if (!visibleSections.length) {
-    return <aside className="fixed left-0 top-16 bottom-0 z-40 hidden w-72 border-r border-slate-200 bg-slate-50/95 lg:block">
+    return <aside className={`fixed left-0 top-16 bottom-0 z-40 hidden border-r border-slate-200 bg-slate-50/95 transition-[width] duration-300 lg:block ${isDesktopCollapsed ? "w-24" : "w-72"}`}>
         <div className="flex h-full flex-col">
-          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-6">
+          <div className={`min-h-0 flex-1 overflow-y-auto overscroll-contain transition-[padding] duration-300 ${isDesktopCollapsed ? "px-3 py-4" : "px-5 py-6"}`}>
             <div className="rounded-3xl border border-dashed border-slate-300 bg-white/70 px-5 py-8 text-center">
               <Settings className="mx-auto mb-3 h-8 w-8 text-slate-300" />
-              <p className="text-sm font-medium text-slate-500">
+              <p className={`font-medium text-slate-500 ${isDesktopCollapsed ? "text-xs" : "text-sm"}`}>
                 No navigation available
               </p>
-              <p className="mt-1 text-xs text-slate-400">
+              <p className={`mt-1 text-slate-400 ${isDesktopCollapsed ? "hidden" : "text-xs"}`}>
                 Contact the administrator for permissions.
               </p>
             </div>
@@ -334,15 +339,19 @@ export function Sidebar({
       <aside className={`fixed left-0 top-16 bottom-0 z-50 w-[min(90vw,21rem)] border-r border-slate-200 bg-slate-50/98 shadow-xl transition-transform lg:hidden ${isMobileSidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
         <div className="flex h-full flex-col">
           <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-4 sm:px-4 sm:py-5">
-            {renderNavigation()}
+            {renderNavigation({
+            compact: false
+          })}
           </div>
         </div>
       </aside>
 
-      <aside className="fixed left-0 top-16 bottom-0 z-40 hidden w-72 border-r border-slate-200 bg-slate-50/95 lg:block">
+      <aside className={`fixed left-0 top-16 bottom-0 z-40 hidden border-r border-slate-200 bg-slate-50/95 transition-[width] duration-300 lg:block ${isDesktopCollapsed ? "w-24" : "w-72"}`}>
         <div className="flex h-full flex-col">
-          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-6">
-            {renderNavigation()}
+          <div className={`min-h-0 flex-1 overflow-y-auto overscroll-contain transition-[padding] duration-300 ${isDesktopCollapsed ? "px-3 py-4" : "px-5 py-6"}`}>
+            {renderNavigation({
+            compact: isDesktopCollapsed
+          })}
           </div>
         </div>
       </aside>

@@ -95,9 +95,9 @@ const STATUS_CONFIG = {
     }
   }
 };
-const formatCurrency = value => new Intl.NumberFormat("en-IN", {
+const formatCurrency = (value, currency = "INR") => new Intl.NumberFormat("en-IN", {
   style: "currency",
-  currency: "INR",
+  currency,
   maximumFractionDigits: 2
 }).format(Number(value || 0));
 const formatRelativeTime = value => {
@@ -183,7 +183,7 @@ export function OrderCard({
                 {item.notes ? <p className="mt-1 text-xs text-gray-500">{item.notes}</p> : null}
               </div>
               <span className="shrink-0 font-medium text-gray-900">
-                {formatCurrency(item.totalPrice || item.price * item.quantity)}
+                {formatCurrency(item.totalPrice || item.price * item.quantity, order.currency || "INR")}
               </span>
             </div>)}
         </div>
@@ -202,7 +202,7 @@ export function OrderCard({
           <div className="flex justify-between font-semibold">
             <span className="text-gray-900">Total</span>
             <span className="text-primary-600">
-              {formatCurrency(order.total || order.totalAmount)}
+              {formatCurrency(order.total || order.totalAmount, order.currency || "INR")}
             </span>
           </div>
         </div>

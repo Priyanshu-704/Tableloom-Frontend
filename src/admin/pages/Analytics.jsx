@@ -4,6 +4,7 @@ import { customerAdminService, dashboardService, feedbackService, kitchenService
 import tableService from "../../common/services/TableService";
 import { useAdmin } from "../context/AdminContext";
 import { AdminPageSkeleton } from "../components/common/AdminSkeleton";
+import { useSettings } from "../../common/context/SettingsContext";
 const buildCsv = (rows = []) => {
   if (!rows.length) {
     return "";
@@ -30,9 +31,9 @@ const downloadCsv = (filename, rows) => {
   link.remove();
   window.URL.revokeObjectURL(url);
 };
-const formatCurrency = value => new Intl.NumberFormat("en-IN", {
+const formatCurrency = (value, currency = "INR") => new Intl.NumberFormat("en-IN", {
   style: "currency",
-  currency: "INR",
+  currency,
   maximumFractionDigits: 2
 }).format(Number(value) || 0);
 const formatMinutes = secondsOrMinutes => {
@@ -68,6 +69,10 @@ const normalizeWaiterDashboard = (payload = {}) => {
   };
 };
 export function Analytics() {
+  const {
+    settings
+  } = useSettings();
+  const currency = settings?.taxSettings?.currency || "INR";
   const {
     addNotification
   } = useAdmin();
@@ -114,7 +119,7 @@ export function Analytics() {
     const feedbackStats = analytics?.feedback?.statistics || {};
     return [{
       title: "Revenue",
-      value: formatCurrency(orderStats?.todayRevenue || dashboardStats?.todayRevenue || sessionStats?.revenue),
+      value: formatCurrency(orderStats?.todayRevenue || dashboardStats?.todayRevenue || sessionStats?.revenue, currency),
       subtitle: "Live paid revenue",
       icon: IndianRupee,
       color: "text-green-600 bg-green-50"
@@ -143,7 +148,7 @@ export function Analytics() {
     return popularItems.map(item => ({
       item: `${item?.name || "Menu item"}${item?.size ? ` (${item.size})` : ""}`,
       quantity: item?.totalQuantity || 0,
-      revenue: formatCurrency(item?.totalRevenue || 0)
+      revenue: formatCurrency(item?.totalRevenue || 0, currency)
     }));
   }, [analytics]);
   const operationsRows = useMemo(() => {
@@ -259,7 +264,7 @@ export function Analytics() {
             </div> : null}
 
           {activeTab === "sales" ? <div className="space-y-6">
-              <MetricCard title="Order Snapshot" icon={ShoppingCart} items={[["Total orders", analytics?.orders?.totalOrders || 0], ["Pending orders", analytics?.orders?.pendingOrders || 0], ["Preparing orders", analytics?.orders?.preparingOrders || 0], ["Today's revenue", formatCurrency(analytics?.orders?.todayRevenue || 0)]]} />
+              <MetricCard title="Order Snapshot" icon={ShoppingCart} items={[["Total orders", analytics?.orders?.totalOrders || 0], ["Pending orders", analytics?.orders?.pendingOrders || 0], ["Preparing orders", analytics?.orders?.preparingOrders || 0], ["Today's revenue", formatCurrency(analytics?.orders?.todayRevenue || 0, currency)]]} />
               <DataTable title="Popular Items" columns={["Item", "Quantity", "Revenue"]} rows={salesRows.map(row => [row.item, row.quantity, row.revenue])} />
             </div> : null}
 

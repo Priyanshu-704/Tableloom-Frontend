@@ -8,6 +8,7 @@ import { useAdminNotificationCenter } from "../context/AdminNotificationCenterCo
 import { StatsCard } from "../components/layout/StatsCard";
 import { AdminPageSkeleton } from "../components/common/AdminSkeleton";
 import { buildAdminPath } from "../../common/utils/routes";
+import { useSettings } from "../../common/context/SettingsContext";
 const defaultDashboard = {
   stats: {
     todayOrders: 0,
@@ -47,9 +48,9 @@ const DASHBOARD_BOOTSTRAP_TTL = 15000;
 let dashboardBootstrapCache = null;
 let dashboardBootstrapTimestamp = 0;
 let dashboardBootstrapPromise = null;
-const formatCurrency = value => new Intl.NumberFormat("en-IN", {
+const formatCurrency = (value, currency = "INR") => new Intl.NumberFormat("en-IN", {
   style: "currency",
-  currency: "INR",
+  currency,
   maximumFractionDigits: 2
 }).format(Number(value || 0));
 const formatRelativeTime = timestamp => {
@@ -141,6 +142,10 @@ const getDashboardBootstrapData = async () => {
   return dashboardBootstrapPromise;
 };
 export function Dashboard() {
+  const {
+    settings
+  } = useSettings();
+  const currency = settings?.taxSettings?.currency || "INR";
   const navigate = useNavigate();
   const {
     addNotification
@@ -303,7 +308,7 @@ export function Dashboard() {
     trendPositive: true
   }, {
     title: "Today Revenue",
-    value: formatCurrency(stats?.todayRevenue),
+    value: formatCurrency(stats?.todayRevenue, currency),
     icon: IndianRupee,
     trend: `${customerAnalytics?.completedSessions || 0} completed sessions`,
     trendPositive: true
