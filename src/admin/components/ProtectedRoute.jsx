@@ -1,7 +1,11 @@
 import React from "react";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../../common/context/AuthContext";
-import { buildAdminPath, stripAdminRoutePrefix } from "../../common/utils/routes";
+import {
+  buildAdminPath,
+  resolveAdminHomePath,
+  stripAdminRoutePrefix
+} from "../../common/utils/routes";
 import { SkeletonBlock } from "./common/AdminSkeleton";
 export default function ProtectedRoute({
   requiredPermission
@@ -59,7 +63,7 @@ export default function ProtectedRoute({
     return <Navigate to={buildAdminPath("/force-password-update")} replace />;
   }
   if (!requiresPasswordChange && strippedPath === "/force-password-update") {
-    return <Navigate to={buildAdminPath(user?.role === "super_admin" ? "/tenant-management" : "/dashboard")} replace />;
+    return <Navigate to={resolveAdminHomePath(user?.role)} replace />;
   }
   const hasRequiredPermission = Array.isArray(requiredPermission) ? hasAnyPermission(...requiredPermission) : requiredPermission ? hasPermission(requiredPermission) : true;
   if (!hasRequiredPermission) {

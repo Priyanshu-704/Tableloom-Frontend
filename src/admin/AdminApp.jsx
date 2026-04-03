@@ -1,7 +1,7 @@
 import React, { lazy, Suspense, useState } from "react";
 import { Navigate, Outlet, Route, Routes } from "react-router-dom";
 import { useAuth } from "../common/context/AuthContext";
-import { buildAdminPath } from "../common/utils/routes";
+import { buildAdminPath, resolveAdminHomePath } from "../common/utils/routes";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { AdminHeader } from "./components/layout/AdminHeader";
 import { Sidebar } from "./components/layout/Sidebar";
@@ -178,7 +178,7 @@ function AdminContent() {
     isAuthenticated,
     user
   } = useAuth();
-  const defaultAuthedPath = user?.role === "super_admin" ? buildAdminPath("/tenant-management") : buildAdminPath("/dashboard");
+  const defaultAuthedPath = resolveAdminHomePath(user?.role);
   return <div className="admin-scope">
       <Suspense fallback={<LoadingScreen />}>
         <Routes>
