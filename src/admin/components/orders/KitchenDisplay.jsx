@@ -39,6 +39,19 @@ const priorityBadge = {
   normal: "bg-blue-100 text-blue-700",
   low: "bg-slate-100 text-slate-700"
 };
+const hexToRgba = (hexColor, alpha = 1) => {
+  const normalizedHex = String(hexColor || "")
+    .replace("#", "")
+    .trim();
+  const fullHex = normalizedHex.length === 3 ? normalizedHex.split("").map(char => `${char}${char}`).join("") : normalizedHex;
+  if (fullHex.length !== 6) {
+    return `rgba(14, 116, 144, ${alpha})`;
+  }
+  const red = Number.parseInt(fullHex.slice(0, 2), 16);
+  const green = Number.parseInt(fullHex.slice(2, 4), 16);
+  const blue = Number.parseInt(fullHex.slice(4, 6), 16);
+  return `rgba(${red}, ${green}, ${blue}, ${alpha})`;
+};
 const calculateDelayMeta = item => {
   if (!item?.estimatedCompletion) {
     return {
@@ -166,6 +179,19 @@ export function KitchenDisplay({
     loadDelayMonitorStatus();
   }, [loadDelayMonitorStatus]);
   const activeStation = useMemo(() => stations.find(station => station._id === selectedStation), [selectedStation, stations]);
+  const stationTheme = useMemo(() => {
+    const baseColor = activeStation?.colorCode || "#f97316";
+    return {
+      baseColor,
+      panelBackground: `linear-gradient(135deg, ${hexToRgba(baseColor, 0.28)} 0%, rgba(15, 23, 42, 0.96) 38%, rgba(2, 6, 23, 0.98) 100%)`,
+      cardBackground: `linear-gradient(160deg, ${hexToRgba(baseColor, 0.16)} 0%, rgba(15, 23, 42, 0.94) 55%, rgba(2, 6, 23, 0.98) 100%)`,
+      softBackground: `linear-gradient(160deg, ${hexToRgba(baseColor, 0.12)} 0%, rgba(15, 23, 42, 0.88) 100%)`,
+      badgeBackground: hexToRgba(baseColor, 0.18),
+      badgeBorder: hexToRgba(baseColor, 0.42),
+      border: hexToRgba(baseColor, 0.34),
+      glow: hexToRgba(baseColor, 0.2)
+    };
+  }, [activeStation]);
   const prioritizedOrders = useMemo(() => {
     return [...orders].sort((firstOrder, secondOrder) => {
       const firstDelayMeta = getOrderDelayMeta(firstOrder);
@@ -184,17 +210,22 @@ export function KitchenDisplay({
   }, [orders]);
   const completeItemAction = async (kitchenOrderId, itemId, itemStatus) => {
     try {
+      let successMessage = "";
       if (itemStatus === "accepted") {
         await kitchenService.startPreparingItem(kitchenOrderId, itemId);
+        successMessage = "Kitchen item moved to preparing.";
       } else if (itemStatus === "preparing") {
         await kitchenService.markItemReady(kitchenOrderId, itemId);
+        successMessage = "Kitchen item marked ready.";
       } else if (itemStatus === "ready") {
         await kitchenService.markItemServed(kitchenOrderId, itemId);
+        successMessage = "Kitchen item marked served.";
       } else {
         return;
       }
       await loadKitchenData();
       await onRefreshOrders?.();
+      addNotificationRef.current(successMessage, "success");
     } catch (error) {
       logger.error("Failed to update kitchen item:", error);
       addNotificationRef.current(error.response?.data?.message || "Failed to update kitchen item", "error");
@@ -263,11 +294,21 @@ export function KitchenDisplay({
 
       <div className="mx-auto max-w-7xl space-y-6 px-6 py-6">
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
-          <div className="rounded-xl border border-slate-800 bg-slate-900 p-5">
+          <div className="rounded-xl border p-5 shadow-sm" style={{
+          borderColor: stationTheme.border,
+          background: stationTheme.panelBackground,
+          boxShadow: `0 18px 40px ${stationTheme.glow}`
+        }}>
             <p className="text-sm text-slate-400">Active Station</p>
             <p className="mt-2 text-xl font-semibold">{activeStation?.name || "None"}</p>
+            <p className="mt-2 text-sm text-slate-300 capitalize">
+              {activeStation?.stationType || "No station selected"}
+            </p>
           </div>
-          <div className="rounded-xl border border-slate-800 bg-slate-900 p-5">
+          <div className="rounded-xl border p-5" style={{
+          borderColor: stationTheme.border,
+          background: stationTheme.softBackground
+        }}>
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-slate-400">Queued Orders</p>
@@ -276,7 +317,10 @@ export function KitchenDisplay({
               <ChefHat className="h-6 w-6 text-orange-400" />
             </div>
           </div>
-          <div className="rounded-xl border border-slate-800 bg-slate-900 p-5">
+          <div className="rounded-xl border p-5" style={{
+          borderColor: stationTheme.border,
+          background: stationTheme.softBackground
+        }}>
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-slate-400">Avg Prep Time</p>
@@ -287,7 +331,10 @@ export function KitchenDisplay({
               <Clock3 className="h-6 w-6 text-blue-400" />
             </div>
           </div>
-          <div className="rounded-xl border border-slate-800 bg-slate-900 p-5">
+          <div className="rounded-xl border p-5" style={{
+          borderColor: stationTheme.border,
+          background: stationTheme.softBackground
+        }}>
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-slate-400">Delay Rate</p>
@@ -298,7 +345,10 @@ export function KitchenDisplay({
               <AlertTriangle className="h-6 w-6 text-red-400" />
             </div>
           </div>
-          <div className="rounded-xl border border-slate-800 bg-slate-900 p-5">
+          <div className="rounded-xl border p-5" style={{
+          borderColor: stationTheme.border,
+          background: stationTheme.softBackground
+        }}>
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-slate-400">Delay Monitor</p>
@@ -315,7 +365,10 @@ export function KitchenDisplay({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-4 rounded-xl border border-slate-800 bg-slate-900 p-4 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 rounded-xl border p-4 lg:grid-cols-4" style={{
+        borderColor: stationTheme.border,
+        background: stationTheme.cardBackground
+      }}>
           <select value={filters.status} onChange={event => setFilters(current => ({
           ...current,
           status: event.target.value
@@ -389,7 +442,18 @@ export function KitchenDisplay({
           </div> : <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
             {prioritizedOrders.map(order => {
           const orderDelayMeta = getOrderDelayMeta(order);
-          return <div key={order._id} className={`rounded-xl border p-5 shadow-sm ${orderDelayMeta.isCritical ? "border-red-500 bg-red-950/40 shadow-red-950/40" : orderDelayMeta.isDelayed ? "border-red-700 bg-slate-900 shadow-sm" : "border-slate-800 bg-slate-900"}`}>
+          return <div key={order._id} className="flex h-full flex-col rounded-xl border p-5 shadow-sm" style={orderDelayMeta.isCritical ? {
+            borderColor: "rgb(239 68 68)",
+            background: "linear-gradient(160deg, rgba(127, 29, 29, 0.55) 0%, rgba(15, 23, 42, 0.94) 56%, rgba(2, 6, 23, 0.98) 100%)",
+            boxShadow: "0 18px 40px rgba(127, 29, 29, 0.35)"
+          } : orderDelayMeta.isDelayed ? {
+            borderColor: "rgba(185, 28, 28, 0.7)",
+            background: "linear-gradient(160deg, rgba(69, 10, 10, 0.4) 0%, rgba(15, 23, 42, 0.94) 100%)"
+          } : {
+            borderColor: stationTheme.border,
+            background: stationTheme.cardBackground,
+            boxShadow: `0 18px 40px ${stationTheme.glow}`
+          }}>
                 <div className="mb-4 flex items-start justify-between gap-4">
                   <div>
                     <h3 className="text-lg font-semibold text-white">
@@ -407,7 +471,10 @@ export function KitchenDisplay({
                         </span>
                       </div> : null}
                   </div>
-                  <span className={`rounded-full px-2 py-1 text-xs font-medium capitalize ${orderDelayMeta.isDelayed ? "bg-red-100 text-red-700" : priorityBadge[order.priority] || priorityBadge.normal}`}>
+                  <span className={`rounded-full border px-2 py-1 text-xs font-medium capitalize ${orderDelayMeta.isDelayed ? "border-red-200 bg-red-100 text-red-700" : "text-white"}`} style={orderDelayMeta.isDelayed ? undefined : {
+                backgroundColor: stationTheme.badgeBackground,
+                borderColor: stationTheme.badgeBorder
+              }}>
                     {orderDelayMeta.isDelayed ? "high priority" : order.priority || "normal"}
                   </span>
                 </div>
@@ -415,9 +482,18 @@ export function KitchenDisplay({
                 <div className="space-y-3">
                   {(order.stationItems || []).map(item => {
                 const itemDelayMeta = calculateDelayMeta(item);
-                return <div key={item._id} className={`rounded-lg border p-4 ${itemDelayMeta.severity === "critical" ? "border-red-500 bg-red-950/40" : itemDelayMeta.isDelayed ? "border-red-800 bg-red-950/20" : "border-slate-800 bg-slate-950"}`}>
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
+                return <div key={item._id} className="rounded-lg border p-4" style={itemDelayMeta.severity === "critical" ? {
+                  borderColor: "rgba(239, 68, 68, 0.8)",
+                  background: "rgba(127, 29, 29, 0.35)"
+                } : itemDelayMeta.isDelayed ? {
+                  borderColor: "rgba(153, 27, 27, 0.75)",
+                  background: "rgba(69, 10, 10, 0.22)"
+                } : {
+                  borderColor: stationTheme.border,
+                  background: `linear-gradient(160deg, ${hexToRgba(stationTheme.baseColor, 0.08)} 0%, rgba(2, 6, 23, 0.9) 100%)`
+                }}>
+                      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                        <div className="min-w-0 flex-1">
                           <p className="font-medium text-white">
                             {item.quantity}x {item.menuItemName || item.menuItem?.name}
                           </p>
@@ -429,32 +505,44 @@ export function KitchenDisplay({
                             </p> : null}
                           {item.notes ? <p className="mt-2 text-xs text-sky-300">{item.notes}</p> : null}
                         </div>
-                        <button type="button" onClick={() => completeItemAction(order._id, item._id, item.status)} disabled={item.status === "pending"} className={`rounded-lg px-3 py-2 text-sm font-medium text-white transition-colors ${item.status === "pending" ? "cursor-not-allowed bg-slate-700 text-slate-300" : "bg-orange-600 hover:bg-orange-700"}`}>
+                        <button type="button" onClick={() => completeItemAction(order._id, item._id, item.status)} disabled={item.status === "pending"} className={`w-full rounded-lg px-3 py-2 text-sm font-medium text-white transition-colors lg:w-auto ${item.status === "pending" ? "cursor-not-allowed bg-slate-700 text-slate-300" : "bg-orange-600 hover:bg-orange-700"}`}>
                           {getItemActionLabel(item.status)}
                         </button>
                       </div>
 
-                      <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-slate-400 lg:grid-cols-4">
-                        <p>
+                      <div className="mt-3 grid grid-cols-2 gap-2 text-xs lg:grid-cols-4">
+                        <p className="rounded-md border px-2 py-2 text-slate-400" style={{
+                      borderColor: stationTheme.border,
+                      backgroundColor: hexToRgba(stationTheme.baseColor, 0.08)
+                    }}>
                           Prep:{" "}
                           <span className="text-slate-200">
                             {item.preparationTime || 0} min
                           </span>
                         </p>
-                        <p>
+                        <p className="rounded-md border px-2 py-2 text-slate-400" style={{
+                      borderColor: stationTheme.border,
+                      backgroundColor: hexToRgba(stationTheme.baseColor, 0.08)
+                    }}>
                           ETA:{" "}
                           <span className="text-slate-200">
                             {item.estimatedCompletion ? new Date(item.estimatedCompletion).toLocaleTimeString([], {
                           hour: "2-digit",
-                          minute: "2-digit"
+                            minute: "2-digit"
                         }) : "N/A"}
                           </span>
                         </p>
-                        <p>
+                        <p className="rounded-md border px-2 py-2 text-slate-400" style={{
+                      borderColor: stationTheme.border,
+                      backgroundColor: hexToRgba(stationTheme.baseColor, 0.08)
+                    }}>
                           Qty:{" "}
                           <span className="text-slate-200">{item.quantity || 0}</span>
                         </p>
-                        <p>
+                        <p className="rounded-md border px-2 py-2 text-slate-400" style={{
+                      borderColor: stationTheme.border,
+                      backgroundColor: hexToRgba(stationTheme.baseColor, 0.08)
+                    }}>
                           Delay:{" "}
                           <span className={itemDelayMeta.isDelayed ? "font-semibold text-red-300" : "text-slate-200"}>
                             {itemDelayMeta.delayMinutes || 0} min

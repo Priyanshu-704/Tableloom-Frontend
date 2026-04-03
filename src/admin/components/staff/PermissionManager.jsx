@@ -14,6 +14,7 @@ export function PermissionManager({
   onClose
 }) {
   const {
+    addNotification,
     confirmAction
   } = useAdmin();
   const [allPermissions, setAllPermissions] = useState([]);
@@ -44,10 +45,11 @@ export function PermissionManager({
       }
     } catch {
       setError("Failed to load permissions.");
+      addNotification("Failed to load permissions.", "error");
     } finally {
       setIsLoading(false);
     }
-  }, [currentPermissions, userRole]);
+  }, [addNotification, currentPermissions, userRole]);
   useEffect(() => {
     loadPermissions();
   }, [loadPermissions]);
@@ -85,10 +87,12 @@ export function PermissionManager({
       const defaultPermissions = rolePermissions[userRole] || [];
       setSelectedPermissions(defaultPermissions);
       setSuccess("Reset to role default permissions");
+      addNotification("Loaded role default permissions.", "success");
       setTimeout(() => setSuccess(""), 3000);
     } catch (error) {
       logger.error("Error resetting permissions:", error);
       setError("Failed to reset permissions");
+      addNotification("Failed to reset permissions.", "error");
     } finally {
       setIsLoading(false);
     }
@@ -103,15 +107,18 @@ export function PermissionManager({
         if (onPermissionsUpdate) {
           onPermissionsUpdate(userId, selectedPermissions);
         }
+        addNotification(result?.message || "Permissions updated successfully.", "success");
         if (onClose) {
           onClose();
         }
       } else {
         setError(result?.message || "Failed to update permissions");
+        addNotification(result?.message || "Failed to update permissions.", "error");
       }
     } catch (error) {
       logger.error("Error saving permissions:", error);
       setError(error.message || "Failed to save permissions. Please try again.");
+      addNotification(error.message || "Failed to save permissions. Please try again.", "error");
     } finally {
       setIsSaving(false);
     }
@@ -138,13 +145,16 @@ export function PermissionManager({
           onPermissionsUpdate(userId, updatedPermissions);
         }
         setSuccess("Permissions reset to role defaults!");
+        addNotification(result?.message || "Permissions reset to role defaults.", "success");
         setTimeout(() => setSuccess(""), 3000);
       } else {
         setError(result?.message || "Failed to reset permissions");
+        addNotification(result?.message || "Failed to reset permissions.", "error");
       }
     } catch (error) {
       logger.error("Error resetting permissions:", error);
       setError(error.message || "Failed to reset permissions");
+      addNotification(error.message || "Failed to reset permissions", "error");
     } finally {
       setIsLoading(false);
     }

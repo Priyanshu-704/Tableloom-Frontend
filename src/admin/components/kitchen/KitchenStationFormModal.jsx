@@ -50,13 +50,13 @@ export function KitchenStationFormModal({
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Capacity</label>
-            <input type="number" min="1" value={formData.capacity} onChange={event => onFieldChange("capacity", event.target.value)} className={`w-full border rounded-lg px-3 py-2 ${formErrors.capacity ? "border-red-300" : "border-gray-300"}`} />
+            <input type="number" min="1" value={formData.capacity} onChange={event => onFieldChange("capacity", event.target.value)} className={`w-full border rounded-lg px-3 py-2 ${formErrors.capacity ? "border-red-300" : "border-gray-300"}`} placeholder="Enter capacity" />
             {formErrors.capacity && <p className="mt-1 text-sm text-red-600">{formErrors.capacity}</p>}
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Display Order</label>
-            <input type="number" min="0" value={formData.displayOrder} onChange={event => onFieldChange("displayOrder", event.target.value)} className={`w-full border rounded-lg px-3 py-2 ${formErrors.displayOrder ? "border-red-300" : "border-gray-300"}`} />
+            <input type="number" min="0" value={formData.displayOrder} onChange={event => onFieldChange("displayOrder", event.target.value)} className={`w-full border rounded-lg px-3 py-2 ${formErrors.displayOrder ? "border-red-300" : "border-gray-300"}`} placeholder="Enter display order" />
             {formErrors.displayOrder && <p className="mt-1 text-sm text-red-600">{formErrors.displayOrder}</p>}
           </div>
 
@@ -67,7 +67,7 @@ export function KitchenStationFormModal({
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Prep Time Min</label>
-            <input type="number" min="1" value={formData.preparationTimes.min} onChange={event => onPreparationTimeChange("min", event.target.value)} className={`w-full border rounded-lg px-3 py-2 ${formErrors["preparationTimes.min"] ? "border-red-300" : "border-gray-300"}`} />
+            <input type="number" min="1" value={formData.preparationTimes.min} onChange={event => onPreparationTimeChange("min", event.target.value)} className={`w-full border rounded-lg px-3 py-2 ${formErrors["preparationTimes.min"] ? "border-red-300" : "border-gray-300"}`} placeholder="Min minutes" />
             {formErrors["preparationTimes.min"] && <p className="mt-1 text-sm text-red-600">
                 {formErrors["preparationTimes.min"]}
               </p>}
@@ -75,7 +75,7 @@ export function KitchenStationFormModal({
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Prep Time Max</label>
-            <input type="number" min="1" value={formData.preparationTimes.max} onChange={event => onPreparationTimeChange("max", event.target.value)} className={`w-full border rounded-lg px-3 py-2 ${formErrors["preparationTimes.max"] ? "border-red-300" : "border-gray-300"}`} />
+            <input type="number" min="1" value={formData.preparationTimes.max} onChange={event => onPreparationTimeChange("max", event.target.value)} className={`w-full border rounded-lg px-3 py-2 ${formErrors["preparationTimes.max"] ? "border-red-300" : "border-gray-300"}`} placeholder="Max minutes" />
             {formErrors["preparationTimes.max"] && <p className="mt-1 text-sm text-red-600">
                 {formErrors["preparationTimes.max"]}
               </p>}
@@ -83,7 +83,7 @@ export function KitchenStationFormModal({
 
           <div className="md:col-span-2">
             <label className="block text-sm font-medium text-gray-700 mb-1">Prep Time Average</label>
-            <input type="number" min="1" value={formData.preparationTimes.average} onChange={event => onPreparationTimeChange("average", event.target.value)} className={`w-full border rounded-lg px-3 py-2 ${formErrors["preparationTimes.average"] ? "border-red-300" : "border-gray-300"}`} />
+            <input type="number" min="1" value={formData.preparationTimes.average} onChange={event => onPreparationTimeChange("average", event.target.value)} className={`w-full border rounded-lg px-3 py-2 ${formErrors["preparationTimes.average"] ? "border-red-300" : "border-gray-300"}`} placeholder="Average minutes" />
             {formErrors["preparationTimes.average"] && <p className="mt-1 text-sm text-red-600">
                 {formErrors["preparationTimes.average"]}
               </p>}

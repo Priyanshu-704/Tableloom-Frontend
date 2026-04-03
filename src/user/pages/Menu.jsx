@@ -86,7 +86,7 @@ export function Menu() {
       try {
         setLoadingFilters(true);
         setError(null);
-        const [categoriesResponse, filterResponse] = await Promise.all([menuService.getCategories(true, false, {
+        const [categoriesResponse, filterResponse] = await Promise.all([menuService.getCategories(true, true, {
           view: "customer"
         }), menuService.getMenuFilterOptions()]);
         const categoryArray = Array.isArray(categoriesResponse?.data) ? categoriesResponse.data : categoriesResponse?.data?.data || [];
@@ -183,13 +183,34 @@ export function Menu() {
     });
     return grouped;
   }, [menuItems]);
+  const visibleCategories = useMemo(() => {
+    if (categories.length > 0) {
+      return categories;
+    }
+    const derivedCategories = new Map();
+    menuItems.forEach(item => {
+      if (!item.category || item.category === "Uncategorized") {
+        return;
+      }
+      const derivedKey = item.categoryId || item.category;
+      if (!derivedCategories.has(derivedKey)) {
+        derivedCategories.set(derivedKey, {
+          _id: item.categoryId || item.category,
+          name: item.category,
+          displayOrder: Number.MAX_SAFE_INTEGER,
+          isActive: true
+        });
+      }
+    });
+    return Array.from(derivedCategories.values()).sort((a, b) => a.name.localeCompare(b.name));
+  }, [categories, menuItems]);
   const categoryMeta = useMemo(() => {
     const map = new Map();
-    categories.forEach(category => {
+    visibleCategories.forEach(category => {
       map.set(category.name, category);
     });
     return map;
-  }, [categories]);
+  }, [visibleCategories]);
   const sortedCategoryKeys = useMemo(() => {
     return Object.keys(itemsByCategory).sort((a, b) => {
       const categoryA = categoryMeta.get(a);
@@ -220,7 +241,7 @@ export function Menu() {
         return;
       }
       const categoryName = visibleEntries[0].target.getAttribute("data-category");
-      const matchedCategory = categories.find(category => category.name === categoryName);
+      const matchedCategory = visibleCategories.find(category => category.name === categoryName);
       if (filters.category === "all") {
         setActiveCategoryKey(matchedCategory?._id || "all");
       }
@@ -230,7 +251,7 @@ export function Menu() {
     });
     sections.forEach(section => observer.observe(section));
     return () => observer.disconnect();
-  }, [categories, filters.category, sortedCategoryKeys]);
+  }, [visibleCategories, filters.category, sortedCategoryKeys]);
   const isLoading = loadingFilters || loadingMenuItems;
   const activeFilterCount = filters.sizeIds.length + filters.tags.length + filters.dietary.length + filters.spiceLevels.length + (filters.category !== "all" ? 1 : 0) + (filters.minPrice ? 1 : 0) + (filters.maxPrice ? 1 : 0) + (filters.sortBy ? 1 : 0);
   const updateFilters = partial => setFilters(current => ({
@@ -256,7 +277,7 @@ export function Menu() {
       });
       return;
     }
-    const targetCategory = categoryId === "all" ? sortedCategoryKeys[0] : categories.find(category => category._id === categoryId)?.name;
+    const targetCategory = categoryId === "all" ? sortedCategoryKeys[0] : visibleCategories.find(category => category._id === categoryId)?.name;
     if (targetCategory && categoryRefs.current[targetCategory]) {
       categoryRefs.current[targetCategory].scrollIntoView({
         behavior: "smooth",
@@ -290,7 +311,7 @@ export function Menu() {
                   All
                 </button>
 
-                {categories.map(category => <button key={category._id} type="button" onClick={() => filters.category === "all" ? handleCategoryClick(category._id) : updateFilters({
+                {visibleCategories.map(category => <button key={category._id} type="button" onClick={() => filters.category === "all" ? handleCategoryClick(category._id) : updateFilters({
                 category: category._id
               })} className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${filters.category === "all" && activeCategoryKey === category._id || filters.category === category._id ? "bg-primary-600 text-white" : "bg-white text-slate-700 ring-1 ring-slate-200 hover:bg-slate-50"}`}>
                     {category.name}

@@ -251,7 +251,7 @@ function AdminContent() {
               <Route path="tables/list" element={<ProtectedRouteWithPermission requiredPermission="table_view_all">
                     <TableManagement />
                   </ProtectedRouteWithPermission>} />
-              <Route path="tables/qr" element={<ProtectedRouteWithPermission requiredPermission="table_view_all">
+              <Route path="tables/qr" element={<ProtectedRouteWithPermission requiredPermission="table_edit">
                     <TableQrManagement />
                   </ProtectedRouteWithPermission>} />
               <Route path="waiter-calls" element={<ProtectedRouteWithPermission requiredPermission="waiter_call_view_all">

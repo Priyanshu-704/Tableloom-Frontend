@@ -1,6 +1,9 @@
+import { logger } from "../../common/utils/logger.js";
 import React, { useEffect, useState } from "react";
 import { Percent, Plus, RefreshCw } from "lucide-react";
 import { menuService } from "../../common/services";
+import { useAdmin } from "../context/AdminContext";
+import { AdminModal } from "../components/common/AdminModal";
 const initialForm = {
   code: "",
   description: "",
@@ -13,15 +16,22 @@ const initialForm = {
   isActive: true
 };
 export function DiscountManagement() {
+  const {
+    addNotification
+  } = useAdmin();
   const [coupons, setCoupons] = useState([]);
   const [form, setForm] = useState(initialForm);
   const [editingId, setEditingId] = useState("");
+  const [showCouponModal, setShowCouponModal] = useState(false);
   const [loading, setLoading] = useState(false);
   const loadCoupons = async () => {
     setLoading(true);
     try {
       const response = await menuService.getCoupons("all");
       setCoupons(response?.data || []);
+    } catch (error) {
+      logger.error("Failed to load coupons:", error);
+      addNotification(error.response?.data?.message || "Failed to load coupons.", "error");
     } finally {
       setLoading(false);
     }
@@ -32,6 +42,12 @@ export function DiscountManagement() {
   const resetForm = () => {
     setEditingId("");
     setForm(initialForm);
+    setShowCouponModal(false);
+  };
+  const openCreateModal = () => {
+    setEditingId("");
+    setForm(initialForm);
+    setShowCouponModal(true);
   };
   const handleSubmit = async event => {
     event.preventDefault();
@@ -42,13 +58,29 @@ export function DiscountManagement() {
       minOrderAmount: Number(form.minOrderAmount || 0),
       maxDiscountAmount: form.maxDiscountAmount === "" ? null : Number(form.maxDiscountAmount)
     };
-    if (editingId) {
-      await menuService.updateCoupon(editingId, payload);
-    } else {
-      await menuService.createCoupon(payload);
+    try {
+      if (editingId) {
+        await menuService.updateCoupon(editingId, payload);
+      } else {
+        await menuService.createCoupon(payload);
+      }
+      addNotification(editingId ? "Coupon updated successfully." : "Coupon created successfully.", "success");
+      resetForm();
+      await loadCoupons();
+    } catch (error) {
+      logger.error("Failed to save coupon:", error);
+      addNotification(error.response?.data?.message || "Failed to save coupon.", "error");
     }
-    resetForm();
-    await loadCoupons();
+  };
+  const handleToggleCouponStatus = async coupon => {
+    try {
+      await menuService.toggleCouponStatus(coupon._id);
+      await loadCoupons();
+      addNotification(coupon.isActive ? "Coupon deactivated successfully." : "Coupon activated successfully.", "success");
+    } catch (error) {
+      logger.error("Failed to update coupon status:", error);
+      addNotification(error.response?.data?.message || "Failed to update coupon status.", "error");
+    }
   };
   const startEdit = coupon => {
     setEditingId(coupon._id);
@@ -63,7 +95,17 @@ export function DiscountManagement() {
       endDate: coupon.endDate ? new Date(coupon.endDate).toISOString().slice(0, 10) : "",
       isActive: coupon.isActive ?? true
     });
+    setShowCouponModal(true);
   };
+  const couponModalFooter = <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-end">
+      <button type="button" onClick={resetForm} className="rounded-lg border border-gray-300 px-4 py-2 text-gray-700 hover:bg-gray-50">
+        Cancel
+      </button>
+      <button type="submit" form="coupon-form" className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary-600 px-4 py-2 font-semibold text-white hover:bg-primary-700">
+        <Plus className="h-4 w-4" />
+        {editingId ? "Update Coupon" : "Create Coupon"}
+      </button>
+    </div>;
   return <div className="space-y-6 p-4 sm:p-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
@@ -72,24 +114,66 @@ export function DiscountManagement() {
             Manage coupon codes and item-level discount campaigns together.
           </p>
         </div>
-        <button type="button" onClick={loadCoupons} className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2">
-          <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-          Refresh
-        </button>
+        <div className="flex flex-wrap gap-3">
+          <button type="button" onClick={loadCoupons} className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2">
+            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+            Refresh
+          </button>
+          <button type="button" onClick={openCreateModal} className="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 font-semibold text-white hover:bg-primary-700">
+            <Plus className="h-4 w-4" />
+            Create Coupon
+          </button>
+        </div>
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[0.95fr,1.05fr]">
-        <form onSubmit={handleSubmit} className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-gray-900">
-              {editingId ? "Edit Coupon" : "Create Coupon"}
-            </h2>
-            {editingId ? <button type="button" onClick={resetForm} className="text-sm text-gray-600">
-                Cancel
-              </button> : null}
+      <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="rounded-xl bg-primary-50 p-3">
+              <Percent className="h-5 w-5 text-primary-600" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900">Coupons</h2>
+              <p className="text-sm text-gray-500">Customer app will validate these codes at checkout.</p>
+            </div>
           </div>
 
-          <div className="mt-5 grid gap-4 md:grid-cols-2">
+          <div className="mt-5 space-y-4">
+            {coupons.map(coupon => <div key={coupon._id} className="rounded-2xl border border-gray-200 p-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="text-lg font-semibold text-gray-900">{coupon.code}</h3>
+                      <span className={`rounded-full px-2 py-1 text-xs font-medium ${coupon.isActive ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-600"}`}>
+                        {coupon.isActive ? "Active" : "Inactive"}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-sm text-gray-600">{coupon.description || "No description"}</p>
+                    <p className="mt-2 text-sm text-gray-500">
+                      {coupon.type === "percentage" ? `${coupon.value}% off` : `₹${coupon.value} off`}
+                      {" • "}
+                      Min order ₹{coupon.minOrderAmount || 0}
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button type="button" onClick={() => startEdit(coupon)} className="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700">
+                      Edit
+                    </button>
+                    <button type="button" onClick={() => handleToggleCouponStatus(coupon)} className="rounded-lg border border-primary-200 px-3 py-2 text-sm text-primary-700">
+                      {coupon.isActive ? "Deactivate" : "Activate"}
+                    </button>
+                  </div>
+                </div>
+              </div>)}
+
+            {coupons.length === 0 ? <div className="rounded-2xl border border-dashed border-gray-300 p-8 text-center text-sm text-gray-500">
+                No coupons created yet.
+              </div> : null}
+          </div>
+      </div>
+
+      <AdminModal isOpen={showCouponModal} title={editingId ? "Edit Coupon" : "Create Coupon"} subtitle="Set coupon code rules, discount type, active period, and checkout limits." onClose={resetForm} maxWidth="max-w-3xl" footer={couponModalFooter}>
+        <form id="coupon-form" onSubmit={handleSubmit} className="space-y-4 p-4 sm:p-5">
+          <div className="grid gap-4 md:grid-cols-2">
             <input value={form.code} onChange={event => setForm(current => ({
             ...current,
             code: event.target.value.toUpperCase()
@@ -133,58 +217,8 @@ export function DiscountManagement() {
           <textarea rows={4} value={form.description} onChange={event => setForm(current => ({
           ...current,
           description: event.target.value
-        }))} placeholder="Coupon description" className="mt-4 w-full rounded-lg border border-gray-300 px-3 py-2" />
-
-          <button type="submit" className="mt-4 inline-flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 font-semibold text-white">
-            <Plus className="h-4 w-4" />
-            {editingId ? "Update Coupon" : "Create Coupon"}
-          </button>
+        }))} placeholder="Coupon description" className="w-full rounded-lg border border-gray-300 px-3 py-2" />
         </form>
-
-        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="rounded-xl bg-primary-50 p-3">
-              <Percent className="h-5 w-5 text-primary-600" />
-            </div>
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900">Coupons</h2>
-              <p className="text-sm text-gray-500">Customer app will validate these codes at checkout.</p>
-            </div>
-          </div>
-
-          <div className="mt-5 space-y-4">
-            {coupons.map(coupon => <div key={coupon._id} className="rounded-2xl border border-gray-200 p-4">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                  <div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="text-lg font-semibold text-gray-900">{coupon.code}</h3>
-                      <span className={`rounded-full px-2 py-1 text-xs font-medium ${coupon.isActive ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-600"}`}>
-                        {coupon.isActive ? "Active" : "Inactive"}
-                      </span>
-                    </div>
-                    <p className="mt-1 text-sm text-gray-600">{coupon.description || "No description"}</p>
-                    <p className="mt-2 text-sm text-gray-500">
-                      {coupon.type === "percentage" ? `${coupon.value}% off` : `₹${coupon.value} off`}
-                      {" • "}
-                      Min order ₹{coupon.minOrderAmount || 0}
-                    </p>
-                  </div>
-                  <div className="flex gap-2">
-                    <button type="button" onClick={() => startEdit(coupon)} className="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700">
-                      Edit
-                    </button>
-                    <button type="button" onClick={() => menuService.toggleCouponStatus(coupon._id).then(loadCoupons)} className="rounded-lg border border-primary-200 px-3 py-2 text-sm text-primary-700">
-                      {coupon.isActive ? "Deactivate" : "Activate"}
-                    </button>
-                  </div>
-                </div>
-              </div>)}
-
-            {coupons.length === 0 ? <div className="rounded-2xl border border-dashed border-gray-300 p-8 text-center text-sm text-gray-500">
-                No coupons created yet.
-              </div> : null}
-          </div>
-        </div>
-      </div>
+      </AdminModal>
     </div>;
 }

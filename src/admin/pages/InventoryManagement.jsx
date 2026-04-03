@@ -99,9 +99,9 @@ export function InventoryManagement() {
       ingredientName: item.ingredientName || "",
       sku: item.sku || "",
       unit: item.unit || "pcs",
-      currentStock: item.currentStock ?? 0,
-      minimumStock: item.minimumStock ?? 5,
-      reorderQuantity: item.reorderQuantity ?? 10,
+      currentStock: item.currentStock ?? "",
+      minimumStock: item.minimumStock ?? "",
+      reorderQuantity: item.reorderQuantity ?? "",
       notes: item.notes || "",
       isActive: item.isActive ?? true,
       relatedMenuItems: normalizeInventoryRelations(item.relatedMenuItems)
@@ -116,10 +116,20 @@ export function InventoryManagement() {
   const handleSave = async () => {
     try {
       setSaving(true);
+      const payload = {
+        ...formState,
+        currentStock: Number(formState.currentStock || 0),
+        minimumStock: Number(formState.minimumStock || 0),
+        reorderQuantity: Number(formState.reorderQuantity || 0),
+        relatedMenuItems: (formState.relatedMenuItems || []).map(relation => ({
+          ...relation,
+          quantityRequired: Number(relation.quantityRequired || 0)
+        }))
+      };
       if (editingItem) {
-        await inventoryService.updateInventoryItem(editingItem._id, formState);
+        await inventoryService.updateInventoryItem(editingItem._id, payload);
       } else {
-        await inventoryService.createInventoryItem(formState);
+        await inventoryService.createInventoryItem(payload);
       }
       setIsFormOpen(false);
       setEditingItem(null);
@@ -138,7 +148,10 @@ export function InventoryManagement() {
     }
     try {
       setSaving(true);
-      await inventoryService.adjustInventoryStock(activeItem._id, adjustmentState);
+      await inventoryService.adjustInventoryStock(activeItem._id, {
+        ...adjustmentState,
+        quantity: Number(adjustmentState.quantity || 0)
+      });
       setIsAdjustOpen(false);
       setActiveItem(null);
       await loadInventory();
@@ -196,7 +209,7 @@ export function InventoryManagement() {
         ...current,
         relatedMenuItems: [...currentRelations, {
           menuItem: menuItemId,
-          quantityRequired: 1
+          quantityRequired: ""
         }]
       };
     });
@@ -458,21 +471,21 @@ export function InventoryManagement() {
             <span className="text-sm font-medium text-gray-700">Current Stock</span>
             <input type="number" min="0" value={formState.currentStock} onChange={event => setFormState(current => ({
             ...current,
-            currentStock: Number(event.target.value)
+            currentStock: event.target.value
           }))} className="w-full rounded-lg border border-gray-300 px-3 py-2" />
           </label>
           <label className="space-y-2">
             <span className="text-sm font-medium text-gray-700">Minimum Stock</span>
             <input type="number" min="0" value={formState.minimumStock} onChange={event => setFormState(current => ({
             ...current,
-            minimumStock: Number(event.target.value)
+            minimumStock: event.target.value
           }))} className="w-full rounded-lg border border-gray-300 px-3 py-2" />
           </label>
           <label className="space-y-2">
             <span className="text-sm font-medium text-gray-700">Reorder Quantity</span>
             <input type="number" min="0" value={formState.reorderQuantity} onChange={event => setFormState(current => ({
             ...current,
-            reorderQuantity: Number(event.target.value)
+            reorderQuantity: event.target.value
           }))} className="w-full rounded-lg border border-gray-300 px-3 py-2" />
           </label>
           <label className="space-y-2 md:col-span-2">
@@ -506,7 +519,7 @@ export function InventoryManagement() {
                           <span className="text-xs font-medium uppercase tracking-wide text-gray-500">
                             Required Qty
                           </span>
-                          <input type="number" min="0" step="0.01" value={relation?.quantityRequired ?? 1} onChange={event => updateRelationQuantity(menuItem._id, event.target.value)} className="w-28 rounded-lg border border-gray-300 px-3 py-2" />
+                          <input type="number" min="0" step="0.01" value={relation?.quantityRequired ?? ""} onChange={event => updateRelationQuantity(menuItem._id, event.target.value)} className="w-28 rounded-lg border border-gray-300 px-3 py-2" />
                         </label> : null}
                     </div>
                   </div>;
@@ -552,7 +565,7 @@ export function InventoryManagement() {
             <span className="text-sm font-medium text-gray-700">Quantity</span>
             <input type="number" min="1" value={adjustmentState.quantity} onChange={event => setAdjustmentState(current => ({
             ...current,
-            quantity: Number(event.target.value)
+            quantity: event.target.value
           }))} className="w-full rounded-lg border border-gray-300 px-3 py-2" />
           </label>
           <label className="space-y-2 md:col-span-2">

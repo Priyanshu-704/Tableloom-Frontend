@@ -3,6 +3,7 @@ import { ArrowLeft, CheckCircle2, Loader2 } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { tenantService } from "../../common/services";
 import { buildPlatformAdminPath } from "../../common/utils/routes";
+import { useAdmin } from "../context/AdminContext";
 
 const renderRows = (items = [], columns = []) => {
   if (!items.length) {
@@ -47,6 +48,7 @@ const renderRows = (items = [], columns = []) => {
 export function TenantOverview() {
   const navigate = useNavigate();
   const { tenantId } = useParams();
+  const { addNotification } = useAdmin();
   const [overview, setOverview] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -58,7 +60,9 @@ export function TenantOverview() {
       const response = await tenantService.getTenantOverview(tenantId);
       setOverview(response?.data || null);
     } catch (loadError) {
-      setError(loadError?.message || "Failed to load tenant overview");
+      const message = loadError?.message || "Failed to load tenant overview";
+      setError(message);
+      addNotification(message, "error");
     } finally {
       setLoading(false);
     }
@@ -74,8 +78,11 @@ export function TenantOverview() {
     try {
       await tenantService.verifyTenant(tenantId);
       await loadOverview();
+      addNotification("Tenant verified successfully", "success");
     } catch (verifyError) {
-      setError(verifyError?.message || "Failed to verify tenant");
+      const message = verifyError?.message || "Failed to verify tenant";
+      setError(message);
+      addNotification(message, "error");
     } finally {
       setVerifying(false);
     }

@@ -121,6 +121,7 @@ export function MenuManagement() {
     try {
       await menuService.deleteMenuItem(itemId);
       await loadMenuData();
+      addNotification("Menu item deleted successfully.", "success");
     } catch (error) {
       logger.error("Failed to delete menu item:", error);
       addNotification(error.response?.data?.message || "Failed to delete menu item.", "error");
@@ -143,6 +144,7 @@ export function MenuManagement() {
     try {
       await menuService.toggleMenuItemAvailability(itemId);
       await loadMenuData();
+      addNotification(item?.isAvailable ? "Menu item deactivated successfully." : "Menu item activated successfully.", "success");
     } catch (error) {
       logger.error("Failed to update availability:", error);
       addNotification(error.response?.data?.message || "Failed to update availability.", "error");
@@ -173,6 +175,7 @@ export function MenuManagement() {
         category: selectedCategory !== "all" ? selectedCategory : undefined,
         availableOnly: availabilityFilter === "available"
       });
+      addNotification("Menu exported successfully.", "success");
     } catch (error) {
       logger.error("Export failed:", error);
       addNotification(error.response?.data?.message || "Failed to export menu.", "error");

@@ -34,7 +34,7 @@ export function ItemForm({
     description: item?.description || "",
     category: item?.category?._id || item?.category || categories[0]?._id || "",
     image: item?.image || "",
-    preparationTime: item?.preparationTime || 15,
+    preparationTime: item?.preparationTime ?? "",
     ingredients: item?.ingredients?.join(", ") || "",
     spiceLevel: item?.spiceLevel || 0,
     isVegetarian: item?.isVegetarian || false,

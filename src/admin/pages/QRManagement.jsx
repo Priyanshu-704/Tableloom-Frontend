@@ -166,6 +166,7 @@ export function QRManagement({ table, onClose, onSuccess }) {
   const handleDownloadQR = async () => {
     try {
       await tableService.downloadQRCode(table.id);
+      addNotification("QR code downloaded successfully.", "success");
     } catch (error) {
       logger.error("Failed to download QR:", error);
       addNotification(
@@ -275,9 +276,11 @@ export function QRManagement({ table, onClose, onSuccess }) {
 
     Promise.all(imageLoadPromises)
       .then(() => {
+        addNotification("Print window opened successfully.", "success");
         window.setTimeout(triggerPrint, 150);
       })
       .catch(() => {
+        addNotification("Print window opened successfully.", "success");
         window.setTimeout(triggerPrint, 150);
       });
   };
@@ -299,6 +302,7 @@ export function QRManagement({ table, onClose, onSuccess }) {
     const subject = `QR Code for Table ${table.number}`;
     const body = `Here is the QR code URL for Table ${table.number}:\n\n${tableState.qrUrl || ""}`;
     window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    addNotification("Email draft opened successfully.", "success");
   };
 
   const handleRefreshToken = async () => {

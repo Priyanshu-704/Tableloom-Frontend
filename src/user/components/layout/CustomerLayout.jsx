@@ -40,7 +40,7 @@ function CustomerLayout() {
     }
     notify(response?.message || "Failed to call waiter. Please try again.", "error");
   };
-  return <div className="min-h-screen bg-[linear-gradient(180deg,#ecfeff_0%,#f8fafc_22%,#ffffff_100%)]">
+  return <div className="customer-scope min-h-screen bg-[linear-gradient(180deg,#ecfeff_0%,#f8fafc_22%,#ffffff_100%)]">
       {}
       <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
 

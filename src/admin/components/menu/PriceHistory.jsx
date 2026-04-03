@@ -28,8 +28,11 @@ const CHANGE_TYPE_OPTIONS = [{
 }, {
   value: "decrease",
   label: "Price decreases"
+}, {
+  value: "initial",
+  label: "New size prices"
 }];
-const CHANGE_COLORS = ["#2563eb", "#16a34a", "#dc2626"];
+const CHANGE_COLORS = ["#16a34a", "#dc2626", "#2563eb"];
 const buildDateRange = period => {
   if (period === "all") {
     return {};
@@ -91,6 +94,7 @@ export function PriceHistory() {
     const totalChanges = priceChanges.length;
     const increases = priceChanges.filter(item => item.changeType === "increase");
     const decreases = priceChanges.filter(item => item.changeType === "decrease");
+    const initials = priceChanges.filter(item => item.changeType === "initial");
     const uniqueItems = new Set(priceChanges.map(item => item.menuItem?.id).filter(Boolean)).size;
     const averageChange = totalChanges === 0 ? 0 : priceChanges.reduce((sum, item) => sum + Math.abs(Number(item.changePercentage || 0)), 0) / totalChanges;
     const largestChange = priceChanges.reduce((largest, item) => Math.abs(Number(item.changePercentage || 0)) > Math.abs(Number(largest.changePercentage || 0)) ? item : largest, priceChanges[0] || null);
@@ -98,6 +102,7 @@ export function PriceHistory() {
       totalChanges,
       increaseCount: increases.length,
       decreaseCount: decreases.length,
+      initialCount: initials.length,
       uniqueItems,
       averageChange,
       largestChange
@@ -129,7 +134,10 @@ export function PriceHistory() {
   }, {
     name: "Decreases",
     value: stats.decreaseCount
-  }].filter(item => item.value > 0), [stats.decreaseCount, stats.increaseCount]);
+  }, {
+    name: "New Prices",
+    value: stats.initialCount
+  }].filter(item => item.value > 0), [stats.decreaseCount, stats.increaseCount, stats.initialCount]);
   const topItems = useMemo(() => {
     const grouped = priceChanges.reduce((accumulator, item) => {
       const key = item.menuItem?.name || "Unknown item";
@@ -242,7 +250,7 @@ export function PriceHistory() {
             <div>
               <h2 className="text-lg font-semibold text-gray-900">Change Mix</h2>
               <p className="text-sm text-gray-500">
-                Increases versus decreases in the selected period.
+                Increases, decreases, and newly added size prices in the selected period.
               </p>
             </div>
           </div>
@@ -290,7 +298,7 @@ export function PriceHistory() {
         <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
           <h2 className="text-lg font-semibold text-gray-900">Recent Changes</h2>
           <p className="mt-1 text-sm text-gray-500">
-            Latest adjustments with size, reason, and percentage movement.
+            Latest adjustments with size, reason, and price movement details.
           </p>
 
           <div className="mt-5 space-y-3">
@@ -300,6 +308,7 @@ export function PriceHistory() {
                 No price changes available for the selected filters.
               </div> : priceChanges.slice(0, 8).map(change => {
             const isIncrease = change.changeType === "increase";
+            const isInitial = change.changeType === "initial";
             const amountDelta = Number(change.newPrice || 0) - Number(change.oldPrice || 0);
             return <div key={change.id} className="rounded-2xl border border-gray-200 px-4 py-4">
                     <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
@@ -312,9 +321,9 @@ export function PriceHistory() {
                         </p>
                       </div>
 
-                      <div className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-sm font-medium ${isIncrease ? "bg-red-50 text-red-700" : "bg-emerald-50 text-emerald-700"}`}>
-                        {isIncrease ? <ArrowUpRight className="h-4 w-4" /> : <ArrowDownRight className="h-4 w-4" />}
-                        {formatPercent(change.changePercentage)}
+                      <div className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-sm font-medium ${isInitial ? "bg-blue-50 text-blue-700" : isIncrease ? "bg-red-50 text-red-700" : "bg-emerald-50 text-emerald-700"}`}>
+                        {isInitial ? <TrendingUp className="h-4 w-4" /> : isIncrease ? <ArrowUpRight className="h-4 w-4" /> : <ArrowDownRight className="h-4 w-4" />}
+                        {isInitial ? "New price" : formatPercent(change.changePercentage)}
                       </div>
                     </div>
 
@@ -324,7 +333,7 @@ export function PriceHistory() {
                           Previous
                         </span>
                         <span className="mt-1 block font-semibold text-gray-900">
-                          {menuService.formatPrice(change.oldPrice)}
+                          {isInitial ? "-" : menuService.formatPrice(change.oldPrice)}
                         </span>
                       </div>
                       <div className="rounded-xl bg-gray-50 px-3 py-3">
@@ -341,7 +350,7 @@ export function PriceHistory() {
                         </span>
                         <span className="mt-1 inline-flex items-center gap-1 font-semibold text-gray-900">
                           <IndianRupee className="h-4 w-4 text-primary-600" />
-                          {formatSignedCurrency(amountDelta)}
+                          {isInitial ? menuService.formatPrice(change.newPrice) : formatSignedCurrency(amountDelta)}
                         </span>
                       </div>
                     </div>

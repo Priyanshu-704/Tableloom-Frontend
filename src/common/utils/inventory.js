@@ -3,16 +3,16 @@ export const INVENTORY_FORM_DEFAULTS = {
   ingredientName: "",
   sku: "",
   unit: "pcs",
-  currentStock: 0,
-  minimumStock: 5,
-  reorderQuantity: 10,
+  currentStock: "",
+  minimumStock: "",
+  reorderQuantity: "",
   notes: "",
   isActive: true,
   relatedMenuItems: []
 };
 export const INVENTORY_ADJUSTMENT_DEFAULTS = {
   adjustmentType: "add",
-  quantity: 1,
+  quantity: "",
   notes: ""
 };
 export const INVENTORY_STATUS_OPTIONS = [{

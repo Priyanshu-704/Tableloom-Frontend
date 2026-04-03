@@ -13,7 +13,7 @@ export function TableForm({
   const [formData, setFormData] = useState({
     tableNumber: table?.tableNumber || table?.number || "",
     tableName: table?.tableName || "",
-    capacity: table?.capacity || 4,
+    capacity: table?.capacity ?? "",
     location: table?.location || LOCATIONS[0],
     notes: table?.notes || ""
   });

@@ -37,6 +37,9 @@ export function Feedback() {
     try {
       const response = await feedbackService.getSessionFeedback(sessionId);
       setFeedbackList(response?.data || []);
+    } catch (error) {
+      notify(error?.message || "Failed to load feedback", "error");
+      setFeedbackList([]);
     } finally {
       setLoading(false);
     }
@@ -102,6 +105,8 @@ export function Feedback() {
       notify(isEditing ? "Feedback updated successfully" : "Thank you for your feedback", "success");
       resetForm();
       await loadFeedback();
+    } catch (error) {
+      notify(error?.message || "Failed to save feedback", "error");
     } finally {
       setSaving(false);
     }
@@ -122,6 +127,8 @@ export function Feedback() {
         resetForm();
       }
       await loadFeedback();
+    } catch (error) {
+      notify(error?.message || "Failed to delete feedback", "error");
     } finally {
       setSaving(false);
     }

@@ -14,6 +14,7 @@ import { ToastContainer } from "../../user/components/common/Toast";
 import { useMonitoringMode } from "../hooks/useMonitoringMode";
 import { MonitoringBanner } from "../components/common/MonitoringBanner";
 import { withTenantQueryParams } from "../../common/utils/qrImage";
+import { useAuth } from "../../common/context/AuthContext";
 const STATUS_CONFIG = {
   available: {
     label: "Available",
@@ -62,7 +63,16 @@ export function TableManagement() {
     user,
     confirmAction
   } = useAdmin();
+  const {
+    hasPermission
+  } = useAuth();
   const isMonitoringMode = useMonitoringMode();
+  const canCreateTable = !isMonitoringMode && hasPermission("table_create");
+  const canEditTable = !isMonitoringMode && hasPermission("table_edit");
+  const canDeleteTable = !isMonitoringMode && hasPermission("table_delete");
+  const canUpdateTableStatus = !isMonitoringMode && hasPermission("table_update_status");
+  const canManageQr = !isMonitoringMode && hasPermission("table_edit");
+  const canUseBatchQr = canManageQr;
   const [toasts, setToasts] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -221,21 +231,21 @@ export function TableManagement() {
     };
   }, [tables, stats]);
   const handleAddTable = () => {
-    if (isMonitoringMode) {
+    if (!canCreateTable) {
       return;
     }
     setEditingTable(null);
     setShowTableForm(true);
   };
   const handleEditTable = table => {
-    if (isMonitoringMode) {
+    if (!canEditTable) {
       return;
     }
     setEditingTable(table);
     setShowTableForm(true);
   };
   const handleDeleteTable = async tableId => {
-    if (isMonitoringMode) {
+    if (!canDeleteTable) {
       return;
     }
     const confirmed = await confirmAction({
@@ -263,7 +273,7 @@ export function TableManagement() {
     }
   };
   const handleStatusChange = async (tableId, newStatus) => {
-    if (isMonitoringMode) {
+    if (!canUpdateTableStatus) {
       return;
     }
     try {
@@ -290,6 +300,7 @@ export function TableManagement() {
         payload: updatedTables
       });
       loadTableStats();
+      showToast(`Table status updated to ${newStatus}.`, "success");
     } catch (error) {
       logger.error("Failed to update table status:", error);
       let errorMessage = "Failed to update table status.";
@@ -300,7 +311,7 @@ export function TableManagement() {
     }
   };
   const handleClearTable = async tableId => {
-    if (isMonitoringMode) {
+    if (!canUpdateTableStatus) {
       return;
     }
     const confirmed = await confirmAction({
@@ -325,6 +336,7 @@ export function TableManagement() {
         payload: updatedTables
       });
       loadTableStats();
+      showToast("Table cleared successfully.", "success");
     } catch (error) {
       logger.error("Failed to clear table:", error);
       let errorMessage = "Failed to clear table.";
@@ -337,6 +349,7 @@ export function TableManagement() {
   const handleDownloadQR = async (tableId, tableNumber) => {
     try {
       await tableService.downloadQRCode(tableId);
+      showToast(`QR code downloaded for table ${tableNumber}.`, "success");
     } catch (error) {
       logger.error("Failed to download QR code:", error);
       showToast(error.response?.data?.message || "Failed to download QR code. Please try again.", "error");
@@ -374,7 +387,7 @@ export function TableManagement() {
           </p>
         </div>
         <div className="flex w-full flex-wrap items-center gap-3 sm:w-auto sm:justify-end">
-          {!isMonitoringMode && <button onClick={() => setShowQRBatchOps(true)} className="flex items-center space-x-2 px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors" title="Batch QR Operations">
+          {canUseBatchQr && <button onClick={() => setShowQRBatchOps(true)} className="flex items-center space-x-2 px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors" title="Batch QR Operations">
               <Layers className="h-4 w-4" />
               <span>Batch QR</span>
             </button>}
@@ -393,13 +406,13 @@ export function TableManagement() {
             </button>
           </div>
 
-          {!isMonitoringMode && <button onClick={handleAddTable} className="flex items-center space-x-2 bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg transition-colors">
+          {canCreateTable && <button onClick={handleAddTable} className="flex items-center space-x-2 bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg transition-colors">
               <Plus className="h-4 w-4" />
               <span>Add Table</span>
             </button>}
         </div>
       </div>
-      {isMonitoringMode && <MonitoringBanner message="Table layouts, occupancy, and QR status are visible in monitoring mode, but table edits, status updates, QR management, and destructive actions are disabled." />}
+      {(isMonitoringMode || !canCreateTable || !canEditTable || !canDeleteTable || !canManageQr) && <MonitoringBanner message={isMonitoringMode ? "Table layouts, occupancy, and QR status are visible in monitoring mode, but table edits, status updates, QR management, and destructive actions are disabled." : canUpdateTableStatus ? "You can monitor tables and update table status here. Table creation, editing, delete actions, and QR management are not available for your role." : "You can monitor table status here, but table editing and QR management are not available for your role."} />}
       {}
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4 lg:grid-cols-6">
         {Object.entries(STATUS_CONFIG).map(([status, config]) => {
@@ -463,8 +476,8 @@ export function TableManagement() {
       </div>
       {}
       {loading ? <AdminCardGridSkeleton count={6} cardHeight="h-56" columns="md:grid-cols-2 lg:grid-cols-3" /> : view === "grid" ? <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {tables.map(table => <TableCard key={table.id} table={table} onEdit={handleEditTable} onDelete={handleDeleteTable} onStatusChange={handleStatusChange} onClearTable={handleClearTable} onDownloadQR={handleDownloadQR} onManageQR={handleManageQR} getOccupancyTime={getOccupancyTime} isReadOnly={isMonitoringMode} />)}
-        </div> : <FloorPlanView tables={tables} onTableClick={handleEditTable} onStatusChange={handleStatusChange} isReadOnly={isMonitoringMode} />}
+          {tables.map(table => <TableCard key={table.id} table={table} onEdit={handleEditTable} onDelete={handleDeleteTable} onStatusChange={handleStatusChange} onClearTable={handleClearTable} onDownloadQR={handleDownloadQR} onManageQR={handleManageQR} getOccupancyTime={getOccupancyTime} isReadOnly={isMonitoringMode} canEdit={canEditTable} canDelete={canDeleteTable} canManageQr={canManageQr} canUpdateStatus={canUpdateTableStatus} />)}
+        </div> : <FloorPlanView tables={tables} onTableClick={handleEditTable} onStatusChange={handleStatusChange} isReadOnly={isMonitoringMode} canEdit={canEditTable} canUpdateStatus={canUpdateTableStatus} />}
       <AdminPagination page={pagination.page} totalPages={pagination.pages} totalItems={pagination.total} pageSize={PAGE_SIZE} itemLabel="tables" onPageChange={setCurrentPage} />
       {!loading && tables.length === 0 && <div className="text-center py-12">
           <Utensils className="h-12 w-12 text-gray-300 mx-auto mb-4" />
@@ -475,11 +488,11 @@ export function TableManagement() {
             Try adjusting your search or filter criteria
           </p>
         </div>}
-      {!isMonitoringMode && showTableForm && <TableForm table={editingTable} onSave={handleTableSave} onCancel={() => {
+      {(canCreateTable || canEditTable) && showTableForm && <TableForm table={editingTable} onSave={handleTableSave} onCancel={() => {
       setShowTableForm(false);
       setEditingTable(null);
     }} showToast={showToast} />}{" "}
-      {!isMonitoringMode && showQRManagement && selectedTableForQR && <QrManagementOverlay table={selectedTableForQR} onClose={() => {
+      {canManageQr && showQRManagement && selectedTableForQR && <QrManagementOverlay table={selectedTableForQR} onClose={() => {
         setShowQRManagement(false);
         setSelectedTableForQR(null);
       }} onSuccess={message => {
@@ -488,7 +501,7 @@ export function TableManagement() {
         showToast(message, "success");
       }} />
       }
-      {!isMonitoringMode && <AdminModal isOpen={showQRBatchOps} title="Batch QR Operations" subtitle="Perform bulk download, regenerate, and print actions for table QR codes." onClose={() => setShowQRBatchOps(false)} maxWidth="max-w-2xl">
+      {canUseBatchQr && <AdminModal isOpen={showQRBatchOps} title="Batch QR Operations" subtitle="Perform bulk download, regenerate, and print actions for table QR codes." onClose={() => setShowQRBatchOps(false)} maxWidth="max-w-2xl">
         <QRBatchOperations tables={tables} onClose={() => setShowQRBatchOps(false)} onSuccess={message => {
         loadTables();
         loadTableStats();
@@ -506,7 +519,11 @@ function TableCard({
   onClearTable,
   onManageQR,
   getOccupancyTime,
-  isReadOnly = false
+  isReadOnly = false,
+  canEdit = false,
+  canDelete = false,
+  canManageQr = false,
+  canUpdateStatus = false
 }) {
   const statusConfig = STATUS_CONFIG[table.status] || STATUS_CONFIG.available;
   const StatusIcon = statusConfig.icon;
@@ -576,7 +593,7 @@ function TableCard({
     return styles[table.status] || styles.available;
   };
   const statusStyles = getStatusStyles();
-  return <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-all duration-200 flex flex-col h-full">
+  return <div className="relative z-0 flex h-full flex-col overflow-visible rounded-xl border border-gray-200 bg-white shadow-sm transition-all duration-200 hover:z-10 hover:shadow-md">
       {}
       <div className={`${statusStyles.bg} ${statusStyles.border} border-b px-4 py-3`}>
         <div className="flex items-start justify-between">
@@ -641,7 +658,7 @@ function TableCard({
                     </span>
                   </div>}
               </div>
-              {!isReadOnly && <button onClick={() => onClearTable(table.id)} className="w-full bg-orange-600 hover:bg-orange-700 text-white py-1.5 px-3 rounded-lg text-sm font-medium transition-colors focus:ring-2 focus:ring-orange-500 focus:ring-offset-2">
+              {!isReadOnly && canUpdateStatus && <button onClick={() => onClearTable(table.id)} className="w-full bg-orange-600 hover:bg-orange-700 text-white py-1.5 px-3 rounded-lg text-sm font-medium transition-colors focus:ring-2 focus:ring-orange-500 focus:ring-offset-2">
                   Clear Table
                 </button>}
             </div>
@@ -712,7 +729,7 @@ function TableCard({
               <Select value={table.status} onChange={newStatus => onStatusChange(table.id, newStatus)} options={Object.entries(STATUS_CONFIG).map(([value, config]) => ({
               value,
               label: config.label
-            }))} size="sm" variant="filled" className="flex-1" disabled={isReadOnly} />
+            }))} size="sm" variant="filled" className="flex-1" disabled={isReadOnly || !canUpdateStatus} />
 
               <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
                 <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
@@ -722,23 +739,23 @@ function TableCard({
             </div>
 
             {}
-            {table.qrCode && !isReadOnly && <button onClick={() => onManageQR(table)} className="flex items-center justify-center space-x-1 text-purple-600 hover:text-purple-800 text-sm font-medium transition-colors px-3 py-2 rounded-lg border border-purple-200 hover:bg-purple-50 whitespace-nowrap" title="Manage QR code">
+            {table.qrCode && !isReadOnly && canManageQr && <button onClick={() => onManageQR(table)} className="flex items-center justify-center space-x-1 text-purple-600 hover:text-purple-800 text-sm font-medium transition-colors px-3 py-2 rounded-lg border border-purple-200 hover:bg-purple-50 whitespace-nowrap" title="Manage QR code">
                 <QrCode className="h-4 w-4" />
                 <span>Manage QR</span>
               </button>}
           </div>
 
           {}
-          {!isReadOnly && <div className="flex items-center justify-end space-x-3">
-              <button onClick={() => onEdit(table)} className="flex items-center space-x-1 text-blue-600 hover:text-blue-800 text-sm font-medium transition-colors px-3 py-2 rounded-lg border border-blue-200 hover:bg-blue-50">
+          {!isReadOnly && (canEdit || canDelete) && <div className="flex items-center justify-end space-x-3">
+              {canEdit && <button onClick={() => onEdit(table)} className="flex items-center space-x-1 text-blue-600 hover:text-blue-800 text-sm font-medium transition-colors px-3 py-2 rounded-lg border border-blue-200 hover:bg-blue-50">
                 <Edit className="h-4 w-4" />
                 <span>Edit</span>
-              </button>
+              </button>}
 
-              <button onClick={() => onDelete(table.id)} className="flex items-center space-x-1 text-red-600 hover:text-red-800 text-sm font-medium transition-colors px-3 py-2 rounded-lg border border-red-200 hover:bg-red-50">
+              {canDelete && <button onClick={() => onDelete(table.id)} className="flex items-center space-x-1 text-red-600 hover:text-red-800 text-sm font-medium transition-colors px-3 py-2 rounded-lg border border-red-200 hover:bg-red-50">
                 <Trash2 className="h-4 w-4" />
                 <span>Delete</span>
-              </button>
+              </button>}
             </div>}
         </div>
       </div>
@@ -748,7 +765,9 @@ function FloorPlanView({
   tables,
   onTableClick,
   onStatusChange,
-  isReadOnly = false
+  isReadOnly = false,
+  canEdit = false,
+  canUpdateStatus = false
 }) {
   const locations = [...new Set(tables.map(t => t.location))];
   const handleQuickStatusChange = (tableId, newStatus, e) => {
@@ -774,7 +793,7 @@ function FloorPlanView({
         return <div key={location} className="bg-gray-50 rounded-lg p-6 border border-gray-200">
               <h4 className="font-semibold text-gray-900 mb-4">{location}</h4>
               <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                {locationTables.map(table => <FloorPlanTable key={table.id} table={table} onClick={onTableClick} onStatusChange={handleQuickStatusChange} isReadOnly={isReadOnly} />)}
+                {locationTables.map(table => <FloorPlanTable key={table.id} table={table} onClick={onTableClick} onStatusChange={handleQuickStatusChange} isReadOnly={isReadOnly} canEdit={canEdit} canUpdateStatus={canUpdateStatus} />)}
               </div>
             </div>;
       })}
@@ -785,7 +804,9 @@ function FloorPlanTable({
   table,
   onClick,
   onStatusChange,
-  isReadOnly = false
+  isReadOnly = false,
+  canEdit = false,
+  canUpdateStatus = false
 }) {
   const statusConfig = STATUS_CONFIG[table.status] || STATUS_CONFIG.available;
   const getStatusColor = () => {
@@ -802,7 +823,7 @@ function FloorPlanTable({
   const color = getStatusColor();
   return <div className="relative group">
       <button onClick={() => {
-      if (!isReadOnly) {
+      if (!isReadOnly && canEdit) {
         onClick(table);
       }
     }} className={`w-full p-3 rounded-lg border-2 text-center transition-all hover:scale-105 bg-${color}-50 border-${color}-300`}>
@@ -820,7 +841,7 @@ function FloorPlanTable({
       </button>
 
       {}
-      {!isReadOnly && <div className="absolute top-full left-0 right-0 mt-1 hidden group-hover:block z-10">
+      {!isReadOnly && canUpdateStatus && <div className="absolute top-full left-0 right-0 mt-1 hidden group-hover:block z-10">
           <Select value={table.status} onChange={newStatus => onStatusChange(table.id, newStatus)} options={Object.entries(STATUS_CONFIG).map(([value, config]) => ({
         value,
         label: config.label

@@ -5,6 +5,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { buildAdminPath, stripAdminRoutePrefix } from "../../common/utils/routes";
 import { getApiMessage } from "../../common/utils/handleApiError";
 import { ConfirmationDialog } from "../components/common/ConfirmationDialog";
+import { ToastContainer } from "../../user/components/common/Toast";
 const AdminContext = createContext();
 const initialState = {
   isAuthenticated: false,
@@ -189,9 +190,10 @@ export function AdminProvider({
       fallbackMessage || (type === "success" ? "Action completed successfully" : "Something went wrong"),
     );
     const notification = {
-      id: Date.now(),
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       message: resolvedMessage,
       type,
+      duration: 5000,
       timestamp: new Date().toISOString()
     };
     dispatch({
@@ -262,6 +264,7 @@ export function AdminProvider({
   };
   return <AdminContext.Provider value={value}>
       {children}
+      <ToastContainer toasts={state.notifications} onRemoveToast={removeNotification} />
       <ConfirmationDialog isOpen={confirmationState.isOpen} title={confirmationState.title} message={confirmationState.message} confirmLabel={confirmationState.confirmLabel} cancelLabel={confirmationState.cancelLabel} tone={confirmationState.tone} onCancel={() => closeConfirmation(false)} onConfirm={() => closeConfirmation(true)} />
     </AdminContext.Provider>;
 }

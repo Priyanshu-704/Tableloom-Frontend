@@ -13,7 +13,7 @@ import { MonitoringBanner } from "../common/MonitoringBanner";
 const initialFormData = {
   name: "",
   description: "",
-  displayOrder: 0,
+  displayOrder: "",
   isActive: true,
   kitchenStation: ""
 };
@@ -59,8 +59,7 @@ export function CategoryManager({
     setShowForm(false);
     setEditingCategory(null);
     setFormData({
-      ...initialFormData,
-      displayOrder: categories.length
+      ...initialFormData
     });
     setImageFile(null);
     setImagePreview("");
@@ -99,7 +98,6 @@ export function CategoryManager({
     setEditingCategory(null);
     setFormData({
       ...initialFormData,
-      displayOrder: categories.length
     });
     setImageFile(null);
     setImagePreview("");
@@ -114,7 +112,7 @@ export function CategoryManager({
     setFormData({
       name: category.name,
       description: category.description || "",
-      displayOrder: category.displayOrder || 0,
+      displayOrder: category.displayOrder ?? "",
       isActive: category.isActive,
       kitchenStation: category.kitchenStation?._id || category.kitchenStation || ""
     });

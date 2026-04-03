@@ -52,6 +52,17 @@ select {
   font: inherit;
 }
 
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
 .no-scrollbar {
   overflow: scroll;
   -ms-overflow-style: none;
@@ -107,8 +118,32 @@ select {
   cursor: pointer;
 }
 
+.customer-scope button:not(:disabled),
+.customer-scope [role="button"]:not([aria-disabled="true"]),
+.customer-scope a[href],
+.customer-scope summary:not([aria-disabled="true"]),
+.customer-scope label,
+.customer-scope input[type="checkbox"]:not(:disabled),
+.customer-scope input[type="radio"]:not(:disabled),
+.customer-scope input[type="range"]:not(:disabled),
+.customer-scope select:not(:disabled) {
+  cursor: pointer;
+}
+
+.customer-scope button:not(:disabled) *,
+.customer-scope [role="button"]:not([aria-disabled="true"]) *,
+.customer-scope a[href] *,
+.customer-scope summary:not([aria-disabled="true"]) * {
+  cursor: inherit;
+}
+
 .admin-scope button:disabled,
 .admin-scope [aria-disabled="true"] {
+  cursor: not-allowed;
+}
+
+.customer-scope button:disabled,
+.customer-scope [aria-disabled="true"] {
   cursor: not-allowed;
 }
 

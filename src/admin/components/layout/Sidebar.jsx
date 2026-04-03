@@ -147,7 +147,7 @@ const navigationSections = [{
     description: "Table QR management",
     icon: QrCode,
     path: buildAdminPath("/tables/qr"),
-    requiredPermission: "table_view_all"
+    requiredPermission: "table_edit"
   }]
 }, {
   id: "customer",

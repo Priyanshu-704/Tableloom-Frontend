@@ -12,14 +12,14 @@ const STATION_STATUS = ["active", "maintenance", "closed"];
 const initialFormData = {
   name: "",
   stationType: "grill",
-  capacity: 1,
+  capacity: "",
   colorCode: "#4CAF50",
-  displayOrder: 0,
+  displayOrder: "",
   status: "active",
   preparationTimes: {
-    min: 5,
-    max: 30,
-    average: 15
+    min: "",
+    max: "",
+    average: ""
   }
 };
 export function KitchenStationManagement() {
@@ -66,8 +66,7 @@ export function KitchenStationManagement() {
     }
     setEditingStation(null);
     setFormData({
-      ...initialFormData,
-      displayOrder: stations.length
+      ...initialFormData
     });
     setFormErrors({});
     setShowForm(true);
@@ -80,14 +79,14 @@ export function KitchenStationManagement() {
     setFormData({
       name: station.name,
       stationType: station.stationType,
-      capacity: station.capacity || 1,
+      capacity: station.capacity ?? "",
       colorCode: station.colorCode || "#4CAF50",
-      displayOrder: station.displayOrder || 0,
+      displayOrder: station.displayOrder ?? "",
       status: station.status || "active",
       preparationTimes: {
-        min: station.preparationTimes?.min || 5,
-        max: station.preparationTimes?.max || 30,
-        average: station.preparationTimes?.average || 15
+        min: station.preparationTimes?.min ?? "",
+        max: station.preparationTimes?.max ?? "",
+        average: station.preparationTimes?.average ?? ""
       }
     });
     setFormErrors({});
@@ -139,22 +138,22 @@ export function KitchenStationManagement() {
     if (!formData.stationType) {
       nextErrors.stationType = "Station type is required.";
     }
-    if (Number.isNaN(capacity) || capacity < 1 || capacity > 50) {
+    if (String(formData.capacity).trim() === "" || Number.isNaN(capacity) || capacity < 1 || capacity > 50) {
       nextErrors.capacity = "Capacity must be between 1 and 50.";
     }
-    if (Number.isNaN(displayOrder) || displayOrder < 0) {
+    if (String(formData.displayOrder).trim() === "" || Number.isNaN(displayOrder) || displayOrder < 0) {
       nextErrors.displayOrder = "Display order must be 0 or greater.";
     }
-    if (Number.isNaN(min) || min < 1) {
+    if (String(formData.preparationTimes.min).trim() === "" || Number.isNaN(min) || min < 1) {
       nextErrors["preparationTimes.min"] = "Min prep time must be at least 1.";
     }
-    if (Number.isNaN(max) || max < 1) {
+    if (String(formData.preparationTimes.max).trim() === "" || Number.isNaN(max) || max < 1) {
       nextErrors["preparationTimes.max"] = "Max prep time must be at least 1.";
     }
     if (!nextErrors["preparationTimes.min"] && !nextErrors["preparationTimes.max"] && min > max) {
       nextErrors["preparationTimes.max"] = "Max prep time must be greater than or equal to min prep time.";
     }
-    if (Number.isNaN(average) || average < min || average > max) {
+    if (String(formData.preparationTimes.average).trim() === "" || Number.isNaN(average) || average < min || average > max) {
       nextErrors["preparationTimes.average"] = "Average prep time must be between min and max.";
     }
     setFormErrors(nextErrors);
@@ -270,7 +269,7 @@ export function KitchenStationManagement() {
         </div>}
 
       {loading ? <AdminCardGridSkeleton count={4} cardHeight="h-56" columns="lg:grid-cols-2" /> : <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          {stations.map(station => <div key={station._id} className="bg-white rounded-lg border border-gray-200 shadow-sm p-5">
+          {stations.map(station => <div key={station._id} className="flex h-full min-h-[28rem] flex-col rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
               <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div className="flex items-start gap-3">
                   <div className="h-10 w-10 rounded-lg flex items-center justify-center" style={{
@@ -314,20 +313,22 @@ export function KitchenStationManagement() {
                 </div>
               </div>
 
-              <div className="space-y-2 mb-4">
+              <div className="mb-4 flex-1 space-y-2">
                 <p className="text-sm font-medium text-gray-700">Assigned Categories</p>
-                {station.assignedCategories?.length ? <div className="space-y-2">
-                    {station.assignedCategories.map(category => <div key={category._id} className="flex justify-between items-center bg-gray-50 border border-gray-200 rounded px-3 py-2">
+                {station.assignedCategories?.length ? <div className="max-h-48 space-y-2 overflow-y-auto pr-1">
+                    {station.assignedCategories.map(category => <div key={category._id} className="flex items-center justify-between rounded border border-gray-200 bg-gray-50 px-3 py-2">
                         <span className="text-sm text-gray-700">{category.name}</span>
                         {!isMonitoringMode && <button onClick={() => handleRemoveCategory(station._id, category._id)} className="inline-flex items-center gap-1 text-xs text-red-600 hover:text-red-700">
                             <Unlink className="h-3 w-3" />
                             Remove
                           </button>}
                       </div>)}
-                  </div> : <p className="text-sm text-gray-500">No categories assigned</p>}
+                  </div> : <div className="flex h-48 items-center justify-center rounded-lg border border-dashed border-gray-200 bg-gray-50/70 px-4 text-center text-sm text-gray-500">
+                    No categories assigned
+                  </div>}
               </div>
 
-              {!isMonitoringMode && <div>
+              {!isMonitoringMode && <div className="mt-auto border-t border-gray-100 pt-4">
                 <p className="text-sm font-medium text-gray-700 mb-2">Assign Category</p>
                 <div className="flex flex-col gap-2 sm:flex-row">
                   <select className="w-full flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm" defaultValue="" onChange={e => {

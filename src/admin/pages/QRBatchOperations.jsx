@@ -228,9 +228,11 @@ export function QRBatchOperations({
 
     Promise.all(imageLoadPromises)
       .then(() => {
+        onSuccess?.(`Print window opened for ${selectedTableData.length} QR codes`);
         window.setTimeout(triggerPrint, 150);
       })
       .catch(() => {
+        onSuccess?.(`Print window opened for ${selectedTableData.length} QR codes`);
         window.setTimeout(triggerPrint, 150);
       });
   };

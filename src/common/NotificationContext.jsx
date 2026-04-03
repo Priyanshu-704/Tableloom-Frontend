@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useReducer } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useReducer } from 'react';
 import customerNotificationService from "./services/customerNotificationService";
 const NotificationContext = createContext();
 const initialState = {
@@ -79,39 +79,7 @@ export function NotificationProvider({
   children
 }) {
   const [state, dispatch] = useReducer(notificationReducer, initialState);
-  useEffect(() => {
-    let active = true;
-    const loadNotifications = async () => {
-      const sessionId = typeof window !== "undefined" ? window.sessionStorage.getItem("sessionId") || window.localStorage.getItem("sessionId") || "" : "";
-      if (!sessionId) {
-        dispatch({
-          type: "SET_NOTIFICATIONS",
-          payload: {
-            notifications: [],
-            unreadCount: 0
-          }
-        });
-        return;
-      }
-      const response = await customerNotificationService.getNotifications({
-        limit: 50
-      });
-      if (active) {
-        dispatch({
-          type: "SET_NOTIFICATIONS",
-          payload: {
-            notifications: response?.data || [],
-            unreadCount: response?.unreadCount || 0
-          }
-        });
-      }
-    };
-    loadNotifications();
-    return () => {
-      active = false;
-    };
-  }, []);
-  const addToast = toast => {
+  const addToast = useCallback(toast => {
     const id = Date.now().toString();
     dispatch({
       type: 'ADD_TOAST',
@@ -120,26 +88,41 @@ export function NotificationProvider({
         id
       }
     });
-  };
-  const removeToast = id => {
+  }, []);
+  const removeToast = useCallback(id => {
     dispatch({
       type: 'REMOVE_TOAST',
       payload: id
     });
-  };
-  const clearToasts = () => {
+  }, []);
+  const clearToasts = useCallback(() => {
     dispatch({
       type: 'CLEAR_TOASTS'
     });
-  };
-  const notify = (message, type = 'info', duration = 5000) => {
+  }, []);
+  const notify = useCallback((message, type = 'info', duration = 5000) => {
     addToast({
       message,
       type,
       duration
     });
-  };
-  const refreshNotifications = async () => {
+  }, [addToast]);
+  const refreshNotifications = useCallback(async () => {
+    const sessionId = typeof window !== "undefined" ? window.sessionStorage.getItem("sessionId") || window.localStorage.getItem("sessionId") || "" : "";
+    if (!sessionId) {
+      dispatch({
+        type: "SET_NOTIFICATIONS",
+        payload: {
+          notifications: [],
+          unreadCount: 0
+        }
+      });
+      return {
+        success: true,
+        data: [],
+        unreadCount: 0
+      };
+    }
     const response = await customerNotificationService.getNotifications({
       limit: 50
     });
@@ -151,8 +134,8 @@ export function NotificationProvider({
       }
     });
     return response;
-  };
-  const addPersistentNotification = notification => {
+  }, []);
+  const addPersistentNotification = useCallback(notification => {
     if (!notification?._id) {
       return;
     }
@@ -163,27 +146,50 @@ export function NotificationProvider({
         isRead: Boolean(notification.isRead)
       }
     });
-  };
-  const markNotificationRead = async notificationId => {
+  }, []);
+  const markNotificationRead = useCallback(async notificationId => {
     await customerNotificationService.markAsRead(notificationId);
     dispatch({
       type: "MARK_NOTIFICATION_READ",
       payload: notificationId
     });
-  };
-  const markAllNotificationsRead = async () => {
+  }, []);
+  const markAllNotificationsRead = useCallback(async () => {
     await customerNotificationService.markAllAsRead();
     dispatch({
       type: "MARK_ALL_NOTIFICATIONS_READ"
     });
-  };
-  const clearNotifications = async () => {
+  }, []);
+  const clearNotifications = useCallback(async () => {
     await customerNotificationService.clearAll();
     dispatch({
       type: "CLEAR_NOTIFICATIONS"
     });
-  };
-  return <NotificationContext.Provider value={{
+  }, []);
+  useEffect(() => {
+    let active = true;
+    const loadNotifications = async () => {
+      try {
+        await refreshNotifications();
+      } catch {
+        if (!active) {
+          return;
+        }
+        dispatch({
+          type: "SET_NOTIFICATIONS",
+          payload: {
+            notifications: [],
+            unreadCount: 0
+          }
+        });
+      }
+    };
+    loadNotifications();
+    return () => {
+      active = false;
+    };
+  }, [refreshNotifications]);
+  const contextValue = useMemo(() => ({
     toasts: state.toasts,
     notifications: state.notifications,
     unreadCount: state.unreadCount,
@@ -196,7 +202,8 @@ export function NotificationProvider({
     markNotificationRead,
     markAllNotificationsRead,
     clearNotifications
-  }}>
+  }), [state.toasts, state.notifications, state.unreadCount, addToast, removeToast, clearToasts, notify, refreshNotifications, addPersistentNotification, markNotificationRead, markAllNotificationsRead, clearNotifications]);
+  return <NotificationContext.Provider value={contextValue}>
       {children}
     </NotificationContext.Provider>;
 }

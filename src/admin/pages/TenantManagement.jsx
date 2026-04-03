@@ -3,6 +3,7 @@ import { Building2, CheckCircle2, ExternalLink, Loader2, PlusCircle } from "luci
 import { useNavigate } from "react-router-dom";
 import { tenantService } from "../../common/services";
 import { buildTenantPath } from "../../common/utils/routes";
+import { useAdmin } from "../context/AdminContext";
 
 const initialForm = {
   restaurantName: "",
@@ -15,6 +16,7 @@ const initialForm = {
 
 export function TenantManagement() {
   const navigate = useNavigate();
+  const { addNotification } = useAdmin();
   const [tenants, setTenants] = useState([]);
   const [form, setForm] = useState(initialForm);
   const [error, setError] = useState("");
@@ -30,7 +32,9 @@ export function TenantManagement() {
       const response = await tenantService.getTenants();
       setTenants(Array.isArray(response?.data) ? response.data : []);
     } catch (loadError) {
-      setError(loadError?.message || "Failed to load tenants");
+      const message = loadError?.message || "Failed to load tenants";
+      setError(message);
+      addNotification(message, "error");
     } finally {
       setLoading(false);
     }
@@ -61,11 +65,15 @@ export function TenantManagement() {
     try {
       const response = await tenantService.createTenant(form);
       setCredentials(response?.data?.credentials || null);
-      setSuccess(response?.message || "Tenant created successfully");
+      const message = response?.message || "Tenant created successfully";
+      setSuccess(message);
+      addNotification(message, "success");
       setForm(initialForm);
       await loadTenants();
     } catch (createError) {
-      setError(createError?.message || "Failed to create tenant");
+      const message = createError?.message || "Failed to create tenant";
+      setError(message);
+      addNotification(message, "error");
     } finally {
       setSubmitting(false);
     }
@@ -79,10 +87,14 @@ export function TenantManagement() {
     try {
       const response = await tenantService.verifyTenant(tenantId);
       setCredentials(response?.data?.credentials || null);
-      setSuccess(response?.message || "Tenant verified successfully");
+      const message = response?.message || "Tenant verified successfully";
+      setSuccess(message);
+      addNotification(message, "success");
       await loadTenants();
     } catch (verifyError) {
-      setError(verifyError?.message || "Failed to verify tenant");
+      const message = verifyError?.message || "Failed to verify tenant";
+      setError(message);
+      addNotification(message, "error");
     } finally {
       setVerifyingTenantId("");
     }

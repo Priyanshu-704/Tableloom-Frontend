@@ -1,4 +1,4 @@
-import React, { lazy, Suspense } from "react";
+import React, { lazy, Suspense, useEffect } from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AppProvider } from "../src/user/context/AppContext";
 import { NotificationProvider } from "../src/common/NotificationContext";
@@ -21,6 +21,28 @@ const CustomerApp = lazy(() => import("./user/CustomerApp"));
 const MainLoader = () => <div className="min-h-screen flex items-center justify-center bg-slate-950">
     <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-primary-500"></div>
   </div>;
+function NumberInputGuard() {
+  useEffect(() => {
+    const handleWheel = event => {
+      const target = event.target;
+      if (!(target instanceof HTMLInputElement) || target.type !== "number") {
+        return;
+      }
+      if (document.activeElement !== target) {
+        return;
+      }
+      event.preventDefault();
+    };
+    document.addEventListener("wheel", handleWheel, {
+      capture: true,
+      passive: false
+    });
+    return () => {
+      document.removeEventListener("wheel", handleWheel, true);
+    };
+  }, []);
+  return null;
+}
 function AppContent() {
   return <Suspense fallback={<MainLoader />}>
       <Routes>
@@ -46,6 +68,7 @@ function AppProviders() {
   const isAdminRoute = isTenantAdminPath(location.pathname);
   const isSuperAdminRoute = isSuperAdminPath(location.pathname);
   return <NetworkProvider>
+      <NumberInputGuard />
       <NetworkStatusBanner />
       {isAdminRoute || isSuperAdminRoute ? <SettingsProvider>
           <AppContent />

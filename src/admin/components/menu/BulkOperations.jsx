@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { CheckCircle, Download, IndianRupee, Eye, Loader2, Package2, RefreshCw, Tag, Upload } from "lucide-react";
+import { CheckCircle, Download, IndianRupee, Eye, Loader2, Package2, RefreshCw, Tag, Upload, XCircle } from "lucide-react";
 import { menuService } from "../../../common/services";
 import { useAdmin } from "../../context/AdminContext";
 import { AdminPageSkeleton } from "../common/AdminSkeleton";
@@ -53,6 +53,17 @@ export function BulkOperations() {
   const [itemPage, setItemPage] = useState(1);
   const [hasMoreItems, setHasMoreItems] = useState(true);
   const [lastResult, setLastResult] = useState(null);
+  const resultRows = lastResult?.rows || [];
+  const getStatusClasses = status => status === "success" ? "bg-green-100 text-green-700 border border-green-200" : "bg-red-100 text-red-700 border border-red-200";
+  const getActionClasses = action => {
+    if (action === "created") {
+      return "bg-emerald-100 text-emerald-700 border border-emerald-200";
+    }
+    if (action === "updated") {
+      return "bg-blue-100 text-blue-700 border border-blue-200";
+    }
+    return "bg-red-100 text-red-700 border border-red-200";
+  };
   const loadBulkData = useCallback(async () => {
     try {
       setLoadingData(true);
@@ -148,32 +159,64 @@ export function BulkOperations() {
           setLoading(false);
           return;
         }
-        await menuService.bulkUpdatePrices(itemIds.map(menuItemId => ({
+        const response = await menuService.bulkUpdatePrices(itemIds.map(menuItemId => ({
           menuItemId,
           sizeId: bulkData.sizeId,
           newPrice: parseFloat(bulkData.price),
           reason: bulkData.reason || "Bulk price update"
         })));
+        const stats = response?.data || {};
+        setLastResult({
+          message: response?.message || `Bulk price update completed. ${stats.successful || 0} succeeded, ${stats.failed || 0} failed.`,
+          rows: stats.rows || [],
+          details: stats.errors || [],
+          successful: stats.successful || 0,
+          failed: stats.failed || 0
+        });
       } else if (selectedAction === "updateAvailability") {
-        await menuService.bulkUpdateAvailability(itemIds.map(menuItemId => ({
+        const response = await menuService.bulkUpdateAvailability(itemIds.map(menuItemId => ({
           menuItemId,
           isAvailable: Boolean(bulkData.isAvailable)
         })));
+        const stats = response?.data || {};
+        setLastResult({
+          message: response?.message || `Bulk availability update completed. ${stats.successful || 0} succeeded, ${stats.failed || 0} failed.`,
+          rows: stats.rows || [],
+          details: stats.errors || [],
+          successful: stats.successful || 0,
+          failed: stats.failed || 0
+        });
       } else if (selectedAction === "updateStatus") {
-        await menuService.bulkUpdateStatus(itemIds.map(menuItemId => ({
+        const response = await menuService.bulkUpdateStatus(itemIds.map(menuItemId => ({
           menuItemId,
           isActive: Boolean(bulkData.isActive)
         })));
+        const stats = response?.data || {};
+        setLastResult({
+          message: response?.message || `Bulk status update completed. ${stats.successful || 0} succeeded, ${stats.failed || 0} failed.`,
+          rows: stats.rows || [],
+          details: stats.errors || [],
+          successful: stats.successful || 0,
+          failed: stats.failed || 0
+        });
       } else if (selectedAction === "updateCategories") {
         if (!bulkData?.categoryId) {
           addNotification("Please select a target category", "error");
           setLoading(false);
           return;
         }
-        await menuService.bulkUpdateCategories(itemIds.map(menuItemId => ({
+        const response = await menuService.bulkUpdateCategories(itemIds.map(menuItemId => ({
           menuItemId,
           categoryId: bulkData.categoryId
         })));
+        const stats = response?.data || {};
+        setLastResult({
+          message: response?.message || `Bulk category update completed. ${stats.successful || 0} succeeded, ${stats.failed || 0} failed.`,
+          rows: stats.rows || [],
+          details: stats.errors || [],
+          successful: stats.successful || 0,
+          failed: stats.failed || 0
+        });
       } else if (selectedAction === "export") {
         const response = await menuService.exportMenuItems({
           itemIds: itemIds.join(","),
@@ -186,9 +229,6 @@ export function BulkOperations() {
         });
       }
       addNotification("Bulk operation completed successfully", "success");
-      if (selectedAction !== "export") {
-        setLastResult(null);
-      }
       resetState();
       await loadBulkData();
     } catch {
@@ -207,7 +247,11 @@ export function BulkOperations() {
       const importStats = response?.data || {};
       setLastResult({
         message: response?.message || `Imported ${importStats.created || 0} items with ${importStats.failed || 0} failures.`,
-        details: importStats.errors || []
+        rows: importStats.rows || [],
+        details: importStats.errors || [],
+        created: importStats.created || 0,
+        updated: importStats.updated || 0,
+        failed: importStats.failed || 0
       });
       addNotification(response?.message || "Import completed successfully", "success");
       await loadBulkData();
@@ -459,11 +503,64 @@ export function BulkOperations() {
                 <p className="text-sm font-medium text-slate-800">
                   {lastResult.message}
                 </p>
-                {lastResult.details?.length ? <div className="mt-3 max-h-40 space-y-1 overflow-y-auto rounded-xl border border-slate-200 bg-white p-3">
-                    {lastResult.details.map((detail, index) => <p key={`${detail}-${index}`} className="text-xs text-slate-600">
-                        {detail}
-                      </p>)}
+                {(lastResult.successful !== undefined || lastResult.created !== undefined) ? <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                    {lastResult.created !== undefined ? <div className="flex items-center gap-2 text-emerald-600">
+                        <CheckCircle className="h-4 w-4" />
+                        <span className="text-sm">Created: {lastResult.created || 0}</span>
+                      </div> : null}
+                    {lastResult.updated !== undefined ? <div className="flex items-center gap-2 text-blue-600">
+                        <CheckCircle className="h-4 w-4" />
+                        <span className="text-sm">Updated: {lastResult.updated || 0}</span>
+                      </div> : null}
+                    {lastResult.successful !== undefined ? <div className="flex items-center gap-2 text-green-600">
+                        <CheckCircle className="h-4 w-4" />
+                        <span className="text-sm">Successful: {lastResult.successful || 0}</span>
+                      </div> : null}
+                    <div className="flex items-center gap-2 text-red-600">
+                      <XCircle className="h-4 w-4" />
+                      <span className="text-sm">Failed: {lastResult.failed || 0}</span>
+                    </div>
                   </div> : null}
+                {resultRows.length ? <div className="mt-4 overflow-x-auto rounded-xl border border-slate-200 bg-white">
+                    <table className="min-w-full divide-y divide-slate-200">
+                      <thead className="bg-slate-50">
+                        <tr>
+                          <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Item</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Size</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Status</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Action</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Reason</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 bg-white">
+                        {resultRows.map((row, index) => <tr key={`${row.menuItemId || row.rowNumber || "row"}-${index}`} className="align-top">
+                            <td className="px-4 py-3 text-sm font-medium text-slate-900">{row.itemName || "-"}</td>
+                            <td className="px-4 py-3 text-sm text-slate-700">{row.size || "-"}</td>
+                            <td className="px-4 py-3 text-sm">
+                              <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold capitalize ${getStatusClasses(row.status)}`}>
+                                {row.status || "failed"}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-sm">
+                              <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold capitalize ${getActionClasses(row.action)}`}>
+                                {row.action || "failed"}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-sm text-slate-700">{row.reason || "-"}</td>
+                          </tr>)}
+                      </tbody>
+                    </table>
+                  </div> : null}
+                {lastResult.details?.length ? <details className="mt-4 rounded-xl border border-slate-200 bg-white p-3">
+                    <summary className="cursor-pointer text-sm font-medium text-slate-700">
+                      Raw Details ({lastResult.details.length})
+                    </summary>
+                    <div className="mt-3 max-h-40 space-y-1 overflow-y-auto">
+                      {lastResult.details.map((detail, index) => <p key={`${detail}-${index}`} className="text-xs text-slate-600">
+                          {detail}
+                        </p>)}
+                    </div>
+                  </details> : null}
               </div> : null}
 
             {selectedAction && selectedAction !== "import" ? <button type="button" onClick={executeBulkAction} disabled={loading || !selectedItemList.length} className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-primary-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-60">

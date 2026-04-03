@@ -19,7 +19,8 @@ export function AccountPopover({
   const popoverRef = useRef(null);
   const navigate = useNavigate();
   const {
-    logout
+    logout,
+    hasPermission
   } = useAuth();
   useEffect(() => {
     const handleClickOutside = event => {
@@ -60,6 +61,7 @@ export function AccountPopover({
     return roleNames[role] || role;
   };
   const roleLabel = getRoleDisplayName(user?.role);
+  const canManageSettings = hasPermission("system_settings");
   return <div className="relative" ref={popoverRef}>
       <button onClick={() => setIsOpen(!isOpen)} className={`group flex items-center gap-3 rounded-2xl border px-2.5 py-2 text-left transition-all ${isOpen ? "border-sky-300/60 bg-white/95 shadow-lg shadow-slate-900/10" : "border-transparent bg-white/8 hover:border-white/12 hover:bg-white/12"}`} aria-label="Account menu" aria-expanded={isOpen}>
         <div className="flex items-center gap-2">
@@ -116,7 +118,7 @@ export function AccountPopover({
                 <p className="truncate text-xs text-slate-500">Manage your account details and password</p>
               </div>
             </button>
-            {user?.role !== "super_admin" ? <button onClick={() => handleNavigate(buildAdminPath("/settings/restaurant"))} className="flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left text-sm text-slate-700 transition hover:bg-slate-50">
+            {canManageSettings ? <button onClick={() => handleNavigate(buildAdminPath("/settings/restaurant"))} className="flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left text-sm text-slate-700 transition hover:bg-slate-50">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
                   <SettingsIcon className="h-4 w-4" />
                 </div>

@@ -177,21 +177,10 @@ export function WaiterCalls() {
     loadDashboard();
   }, [loadDashboard]);
   useEffect(() => {
-    const intervalId = window.setInterval(() => {
-      if (document.visibilityState === "visible") {
-        loadCalls();
-        loadDashboard();
-      }
-    }, 10000);
-    return () => {
-      window.clearInterval(intervalId);
-    };
-  }, [loadCalls, loadDashboard]);
-  useEffect(() => {
     setCurrentPage(1);
   }, [filters.callType, filters.priority, filters.search, filters.status]);
   useEffect(() => {
-    if (!assignModal.isOpen || availableStaff.length > 0) {
+    if (!assignModal.isOpen) {
       return;
     }
     const loadAvailableStaff = async () => {
@@ -204,7 +193,7 @@ export function WaiterCalls() {
       }
     };
     loadAvailableStaff();
-  }, [addNotification, assignModal.isOpen, availableStaff.length]);
+  }, [addNotification, assignModal.isOpen]);
   const runCallAction = async (callId, task, successMessage) => {
     try {
       setActiveId(callId);
