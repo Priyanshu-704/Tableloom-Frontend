@@ -18,13 +18,15 @@ const normalizeOrder = (payload = {}) => ({
   id: payload?._id || payload?.id || payload?.orderId || "",
   total: payload?.total ?? payload?.totalAmount ?? payload?.summary?.total ?? 0,
   createdAt: payload?.createdAt || payload?.orderPlacedAt || payload?.updatedAt || new Date().toISOString(),
-  items: Array.isArray(payload?.items) ? payload.items.map(item => ({
-    ...item,
-    id: item?._id || item?.id,
-    name: item?.name || item?.menuItem?.name || "Menu item",
-    price: item?.price ?? item?.unitPrice ?? item?.totalPrice ?? 0,
-    quantity: item?.quantity || 0
-  })) : []
+  ...(Array.isArray(payload?.items) ? {
+    items: payload.items.map(item => ({
+      ...item,
+      id: item?._id || item?.id,
+      name: item?.name || item?.menuItem?.name || "Menu item",
+      price: item?.price ?? item?.unitPrice ?? item?.totalPrice ?? 0,
+      quantity: item?.quantity || 0
+    }))
+  } : {})
 });
 const getWaiterMessage = (payload = {}) => payload?.message || payload?.statusMessage || "Your request has been updated.";
 const getStoredSessionId = () => {
@@ -100,6 +102,9 @@ export function UserLiveUpdatesProvider({
     };
     const handleOrderUpdate = (payload = {}) => {
       const normalizedOrder = normalizeOrder(payload);
+      if (!(normalizedOrder?._id || normalizedOrder?.id)) {
+        return;
+      }
       dispatch({
         type: "SET_CURRENT_ORDER",
         payload: normalizedOrder

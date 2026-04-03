@@ -42,7 +42,7 @@ export function useOrderStatus(orderId) {
   const normalizedFetchedOrder = normalizeOrder(fetchedOrder);
   const currentOrderId = normalizedCurrentOrder?._id || normalizedCurrentOrder?.id || "";
   const shouldUseCurrentOrder = !orderId || currentOrderId && String(currentOrderId) === String(orderId);
-  const order = shouldUseCurrentOrder ? normalizedFetchedOrder || normalizedCurrentOrder || null : normalizedFetchedOrder || null;
+  const order = shouldUseCurrentOrder ? normalizedCurrentOrder || normalizedFetchedOrder || null : normalizedFetchedOrder || null;
   const refreshOrder = useCallback(async () => {
     if (!orderId && !sessionId) {
       setFetchedOrder(null);

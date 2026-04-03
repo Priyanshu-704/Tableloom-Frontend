@@ -58,6 +58,27 @@ const upsertWaiterCall = (calls = [], payload = {}) => {
   };
   return nextCalls;
 };
+const mergeCurrentOrder = (currentOrder, nextOrder) => {
+  if (!nextOrder) {
+    return null;
+  }
+  if (!currentOrder) {
+    return nextOrder;
+  }
+  const currentOrderId = currentOrder?._id || currentOrder?.id || currentOrder?.orderNumber || "";
+  const nextOrderId = nextOrder?._id || nextOrder?.id || nextOrder?.orderNumber || "";
+  if (!currentOrderId || !nextOrderId || String(currentOrderId) !== String(nextOrderId)) {
+    return nextOrder;
+  }
+  return {
+    ...currentOrder,
+    ...nextOrder,
+    items: Array.isArray(nextOrder?.items) ? nextOrder.items : currentOrder?.items || [],
+    customer: nextOrder?.customer || currentOrder?.customer || null,
+    table: nextOrder?.table || currentOrder?.table || null,
+    summary: nextOrder?.summary || currentOrder?.summary || null
+  };
+};
 function appReducer(state, action) {
   switch (action.type) {
     case "SET_TABLE_INFO":
@@ -73,7 +94,7 @@ function appReducer(state, action) {
     case "SET_CURRENT_ORDER":
       return {
         ...state,
-        currentOrder: action.payload || null
+        currentOrder: mergeCurrentOrder(state.currentOrder, action.payload)
       };
     case "SET_LOADING":
       return {
