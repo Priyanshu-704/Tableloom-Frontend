@@ -57,9 +57,11 @@ export const orderService = {
       handleApiError(error, "Failed to fetch orders");
     }
   },
-  getOrderStatistics: async () => {
+  getOrderStatistics: async (filters = {}) => {
     try {
-      const response = await axiosInstance.get("/orders/dashboard/stats");
+      const response = await axiosInstance.get("/orders/dashboard/stats", {
+        params: filters
+      });
       return response?.data ?? {
         success: true,
         data: {}

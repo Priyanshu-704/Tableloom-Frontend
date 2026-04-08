@@ -66,12 +66,15 @@ export const feedbackService = {
       handleApiError(error, "Failed to fetch feedback dashboard");
     }
   },
-  getStatistics: async (period = "30days") => {
+  getStatistics: async (options = "30days") => {
     try {
+      const params = typeof options === "string" ? {
+        period: options
+      } : {
+        ...(options || {})
+      };
       const response = await axiosInstance.get("/feedback/statistics", {
-        params: {
-          period
-        }
+        params
       });
       return response?.data ?? {
         success: true,
@@ -81,12 +84,15 @@ export const feedbackService = {
       handleApiError(error, "Failed to fetch feedback statistics");
     }
   },
-  getNps: async (period = "30days") => {
+  getNps: async (options = "30days") => {
     try {
+      const params = typeof options === "string" ? {
+        period: options
+      } : {
+        ...(options || {})
+      };
       const response = await axiosInstance.get("/feedback/nps", {
-        params: {
-          period
-        }
+        params
       });
       return response?.data ?? {
         success: true,

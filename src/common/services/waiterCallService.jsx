@@ -100,12 +100,15 @@ export const waiterCallService = {
       handleApiError(error, "Failed to fetch waiter call dashboard");
     }
   },
-  getStatistics: async (period = "today") => {
+  getStatistics: async (options = "today") => {
     try {
+      const params = typeof options === "string" ? {
+        period: options
+      } : {
+        ...(options || {})
+      };
       const response = await axiosInstance.get("/waiter-calls/statistics", {
-        params: {
-          period
-        }
+        params
       });
       return response?.data ?? {
         success: true,

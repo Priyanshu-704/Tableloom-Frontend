@@ -14,12 +14,15 @@ export const customerAdminService = {
       handleApiError(error, "Failed to fetch customer sessions");
     }
   },
-  getAnalytics: async (period = "today") => {
+  getAnalytics: async (options = "today") => {
     try {
+      const params = typeof options === "string" ? {
+        period: options
+      } : {
+        ...(options || {})
+      };
       const response = await axiosInstance.get("/customers/analytics", {
-        params: {
-          period
-        }
+        params
       });
       return response?.data ?? {
         success: true,
