@@ -13,6 +13,7 @@ const STATUS_TONE = {
 };
 
 const CATEGORY_LABEL = {
+  access: "Access",
   tenant: "Tenant",
   billing: "Billing",
   technical: "Technical",
@@ -21,7 +22,7 @@ const CATEGORY_LABEL = {
 };
 
 const initialForm = {
-  category: "tenant",
+  category: "access",
   subject: "",
   message: "",
 };
@@ -89,7 +90,7 @@ export function ContactSuperAdmin() {
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-sky-600">Admin Support</p>
             <h1 className="mt-2 text-2xl font-semibold text-slate-900 sm:text-3xl">Contact Super Admin</h1>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-              Send tenant, billing, technical, or account issues directly to the platform team. Only tenant admins can use this page.
+              Send tenant, access, billing, technical, or account issues directly to the platform team. Only tenant admins can use this page.
             </p>
           </div>
         </div>
@@ -158,9 +159,18 @@ export function ContactSuperAdmin() {
                     <span className="rounded-full bg-slate-100 px-2.5 py-1 font-medium text-slate-700">
                       {CATEGORY_LABEL[request.category] || "Other"}
                     </span>
+                    {request.responseMessage ? <span>Response received</span> : null}
                     {request.updatedBy?.name ? <span>Last updated by {request.updatedBy.name}</span> : null}
                     {request.resolvedAt ? <span>Resolved {new Date(request.resolvedAt).toLocaleString()}</span> : null}
                   </div>
+                  {request.responseMessage ? <div className="mt-3 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-slate-700">
+                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-sky-700">Super Admin Response</p>
+                      <p className="mt-2 whitespace-pre-wrap leading-6">{request.responseMessage}</p>
+                      <p className="mt-2 text-xs text-slate-500">
+                        {request.respondedBy?.name ? `By ${request.respondedBy.name}` : "By super admin"}
+                        {request.respondedAt ? ` on ${new Date(request.respondedAt).toLocaleString()}` : ""}
+                      </p>
+                    </div> : null}
                 </article>) : null}
           </div>
 

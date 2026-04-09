@@ -1,9 +1,25 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Building2, CheckCircle2, ExternalLink, Loader2, PlusCircle, Power, ShieldAlert } from "lucide-react";
+import {
+  Building2,
+  CheckCircle2,
+  ExternalLink,
+  Loader2,
+  MessageSquareText,
+  PlusCircle,
+  Power,
+  Send,
+  ShieldAlert,
+} from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supportService, tenantService } from "../../common/services";
 import { buildTenantPath } from "../../common/utils/routes";
+import {
+  buildTenantWorkspacePath,
+  normalizeTenantKeyInput,
+  normalizeTenantSlugInput,
+} from "../../common/utils/tenantWorkspace";
 import { useAdmin } from "../context/AdminContext";
+import { AdminModal } from "../components/common/AdminModal";
 
 const initialForm = {
   restaurantName: "",
@@ -11,16 +27,40 @@ const initialForm = {
   key: "",
   adminName: "",
   adminEmail: "",
-  subscriptionPlan: "starter"
+  phone: "",
+  subscriptionPlan: "starter",
 };
 
-const superAdminTabs = [{
-  id: "tenants",
-  label: "Tenant Workspace"
-}, {
-  id: "requests",
-  label: "Admin Requests"
-}];
+const superAdminTabs = [
+  {
+    id: "tenants",
+    label: "Tenant Workspaces",
+    description: "Create and verify restaurant tenants",
+  },
+  {
+    id: "requests",
+    label: "Access Requests",
+    description: "Review and respond to tenant admin requests",
+  },
+];
+
+const requestStatusTone = {
+  open: "bg-amber-100 text-amber-700",
+  in_progress: "bg-sky-100 text-sky-700",
+  resolved: "bg-emerald-100 text-emerald-700",
+};
+
+const requestCategoryLabel = {
+  access: "Access",
+  tenant: "Tenant",
+  billing: "Billing",
+  technical: "Technical",
+  account: "Account",
+  other: "Other",
+};
+
+const formatRequestStatus = (status = "open") =>
+  String(status || "open").replace(/_/g, " ");
 
 export function TenantManagement() {
   const navigate = useNavigate();
@@ -28,12 +68,14 @@ export function TenantManagement() {
   const { addNotification, confirmAction } = useAdmin();
   const [tenants, setTenants] = useState([]);
   const [supportRequests, setSupportRequests] = useState([]);
+  const [responseDrafts, setResponseDrafts] = useState({});
   const [form, setForm] = useState(initialForm);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [credentials, setCredentials] = useState(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [isCreateTenantModalOpen, setIsCreateTenantModalOpen] = useState(false);
   const [verifyingTenantId, setVerifyingTenantId] = useState("");
   const [updatingTenantId, setUpdatingTenantId] = useState("");
   const [updatingSupportId, setUpdatingSupportId] = useState("");
@@ -68,23 +110,52 @@ export function TenantManagement() {
     Promise.all([loadTenants(), loadSupportRequests()]);
   }, []);
 
+  useEffect(() => {
+    setResponseDrafts((current) =>
+      supportRequests.reduce((next, request) => {
+        next[request._id] =
+          current[request._id] ?? request.responseMessage ?? "";
+        return next;
+      }, {})
+    );
+  }, [supportRequests]);
+
   const pendingTenants = useMemo(
-    () => tenants.filter(tenant => tenant?.onboarding?.verificationStatus === "pending" || tenant?.status === "pending"),
+    () =>
+      tenants.filter(
+        (tenant) =>
+          tenant?.onboarding?.verificationStatus === "pending" ||
+          tenant?.status === "pending"
+      ),
     [tenants]
   );
 
+  const openSupportRequests = useMemo(
+    () => supportRequests.filter((request) => request.status !== "resolved").length,
+    [supportRequests]
+  );
+
   const handleChange = (field, value) => {
-    setForm(current => ({
+    setForm((current) => ({
       ...current,
-      [field]: value
+      [field]:
+        field === "slug"
+          ? normalizeTenantSlugInput(value)
+          : field === "key"
+            ? normalizeTenantKeyInput(value)
+            : value,
     }));
   };
 
-  const handleCreateTenant = async event => {
-    event.preventDefault();
-    setSubmitting(true);
+  const resetFeedback = () => {
     setError("");
     setSuccess("");
+  };
+
+  const handleCreateTenant = async (event) => {
+    event.preventDefault();
+    setSubmitting(true);
+    resetFeedback();
 
     try {
       const response = await tenantService.createTenant(form);
@@ -93,6 +164,7 @@ export function TenantManagement() {
       setSuccess(message);
       addNotification(message, "success");
       setForm(initialForm);
+      setIsCreateTenantModalOpen(false);
       await loadTenants();
     } catch (createError) {
       const message = createError?.message || "Failed to create tenant";
@@ -103,10 +175,9 @@ export function TenantManagement() {
     }
   };
 
-  const handleVerifyTenant = async tenantId => {
+  const handleVerifyTenant = async (tenantId) => {
     setVerifyingTenantId(tenantId);
-    setError("");
-    setSuccess("");
+    resetFeedback();
 
     try {
       const response = await tenantService.verifyTenant(tenantId);
@@ -124,31 +195,45 @@ export function TenantManagement() {
     }
   };
 
-  const getTenantAdminPath = tenant => buildTenantPath("/admin/dashboard", {
-    tenantSlug: tenant?.slug,
-    tenantKey: tenant?.key
-  });
-  const getTenantWorkspacePath = tenant => `/${tenant?.slug || "tenant"}/${tenant?.key || "workspace"}`;
-  const isTenantVerified = tenant => tenant?.onboarding?.verificationStatus === "verified" || Boolean(tenant?.adminUser);
+  const getTenantAdminPath = (tenant) =>
+    buildTenantPath("/admin/dashboard", {
+      tenantSlug: tenant?.slug,
+      tenantKey: tenant?.key,
+    });
 
-  const handleTenantStatusChange = async tenant => {
+  const getTenantWorkspacePath = (tenant) => buildTenantWorkspacePath(tenant);
+
+  const isTenantVerified = (tenant) =>
+    tenant?.onboarding?.verificationStatus === "verified" ||
+    Boolean(tenant?.adminUser);
+
+  const handleTenantStatusChange = async (tenant) => {
     const nextStatus = tenant?.status === "active" ? "suspended" : "active";
     const actionLabel = nextStatus === "active" ? "Activate" : "Deactivate";
     const confirmed = await confirmAction({
       title: `${actionLabel} Tenant`,
       message: `Are you sure you want to ${actionLabel.toLowerCase()} ${tenant?.name}?`,
       confirmLabel: actionLabel,
-      tone: nextStatus === "active" ? "warning" : "danger"
+      tone: nextStatus === "active" ? "warning" : "danger",
     });
+
     if (!confirmed) {
       return;
     }
+
     setUpdatingTenantId(tenant._id);
-    setError("");
-    setSuccess("");
+    resetFeedback();
+
     try {
-      const response = await tenantService.updateTenantStatus(tenant._id, nextStatus);
-      const message = response?.message || `Tenant ${nextStatus === "active" ? "activated" : "deactivated"} successfully`;
+      const response = await tenantService.updateTenantStatus(
+        tenant._id,
+        nextStatus
+      );
+      const message =
+        response?.message ||
+        `Tenant ${
+          nextStatus === "active" ? "activated" : "deactivated"
+        } successfully`;
       setSuccess(message);
       addNotification(message, "success");
       await loadTenants();
@@ -161,20 +246,73 @@ export function TenantManagement() {
     }
   };
 
-  const handleSupportStatusChange = async (requestId, status) => {
-    setUpdatingSupportId(requestId);
+  const handleSupportDraftChange = (requestId, value) => {
+    setResponseDrafts((current) => ({
+      ...current,
+      [requestId]: value,
+    }));
+  };
+
+  const handleSupportStatusChange = async (request, nextStatus) => {
+    setUpdatingSupportId(request._id);
+
     try {
-      const response = await supportService.updateSupportRequestStatus(requestId, status);
-      addNotification(response?.message || "Support request updated", "success");
+      const response = await supportService.updateSupportRequestStatus(
+        request._id,
+        {
+          status: nextStatus,
+          responseMessage: String(
+            responseDrafts[request._id] ?? request.responseMessage ?? ""
+          ).trim(),
+        }
+      );
+
+      addNotification(
+        response?.message ||
+          `Support request marked as ${formatRequestStatus(nextStatus)}`,
+        "success"
+      );
       await loadSupportRequests();
     } catch (requestError) {
-      addNotification(requestError?.message || "Failed to update support request", "error");
+      addNotification(
+        requestError?.message || "Failed to update support request",
+        "error"
+      );
     } finally {
       setUpdatingSupportId("");
     }
   };
 
-  const openTenantAdmin = tenant => {
+  const handleSupportResponseSave = async (request) => {
+    setUpdatingSupportId(request._id);
+
+    try {
+      const response = await supportService.updateSupportRequestStatus(
+        request._id,
+        {
+          status: request.status,
+          responseMessage: String(
+            responseDrafts[request._id] ?? request.responseMessage ?? ""
+          ).trim(),
+        }
+      );
+
+      addNotification(
+        response?.message || "Super admin response saved successfully",
+        "success"
+      );
+      await loadSupportRequests();
+    } catch (requestError) {
+      addNotification(
+        requestError?.message || "Failed to save support response",
+        "error"
+      );
+    } finally {
+      setUpdatingSupportId("");
+    }
+  };
+
+  const openTenantAdmin = (tenant) => {
     const tenantAdminPath = getTenantAdminPath(tenant);
     const openedWindow = window.open(tenantAdminPath, "_blank");
 
@@ -183,118 +321,199 @@ export function TenantManagement() {
     }
   };
 
-  const switchTab = tabId => {
+  const switchTab = (tabId) => {
     const nextParams = new URLSearchParams(searchParams);
     if (tabId === "requests") {
       nextParams.set("tab", "requests");
     } else {
       nextParams.delete("tab");
     }
-    setSearchParams(nextParams, {
-      replace: true
-    });
+    setSearchParams(nextParams, { replace: true });
   };
 
-  return <div className="space-y-5 p-4 sm:p-6">
+  const createRoutePreview =
+    form.slug && form.key
+      ? getTenantWorkspacePath(form)
+      : "/your-slug/yourkey";
+
+  return (
+    <div className="space-y-5 p-4 sm:p-6">
       <div className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-sky-600">Platform</p>
-        <h1 className="mt-2 text-2xl font-semibold text-slate-900 sm:text-3xl">Tenant Management</h1>
-        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-          Create restaurant workspaces, review self-registration requests, verify pending tenants, and open any tenant in read-only mode.
-        </p>
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-sky-600">
+              Platform
+            </p>
+            <h1 className="mt-2 text-2xl font-semibold text-slate-900 sm:text-3xl">
+              Super Admin Panel
+            </h1>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
+              Register new restaurant workspaces, review pending verification,
+              and respond to tenant admin access requests from one place.
+            </p>
+          </div>
+
+          {activeTab === "tenants" ? (
+            <button
+              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
+              onClick={() => {
+                resetFeedback();
+                setIsCreateTenantModalOpen(true);
+              }}
+              type="button"
+            >
+              <PlusCircle className="h-4 w-4" />
+              Register Tenant
+            </button>
+          ) : null}
+        </div>
+
         <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
-          {superAdminTabs.map(tab => <button key={tab.id} type="button" onClick={() => switchTab(tab.id)} className={`rounded-2xl border px-4 py-3 text-left text-sm font-medium transition-colors ${activeTab === tab.id ? "border-sky-500 bg-sky-50 text-sky-700" : "border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100"}`}>
-              {tab.label}
-            </button>)}
+          {superAdminTabs.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => switchTab(tab.id)}
+              className={`rounded-2xl border px-4 py-4 text-left transition-colors ${
+                activeTab === tab.id
+                  ? "border-sky-500 bg-sky-50 text-sky-700"
+                  : "border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100"
+              }`}
+            >
+              <div className="text-sm font-semibold">{tab.label}</div>
+              <div className="mt-1 text-xs leading-5 opacity-80">
+                {tab.description}
+              </div>
+            </button>
+          ))}
         </div>
       </div>
 
-      {error ? <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div> : null}
-      {success ? <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{success}</div> : null}
-      {credentials ? <div className="rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-800">
-          Admin email: <strong>{credentials.email}</strong><br />
+      {error ? (
+        <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+          {error}
+        </div>
+      ) : null}
+      {success ? (
+        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+          {success}
+        </div>
+      ) : null}
+      {credentials ? (
+        <div className="rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-800">
+          Admin email: <strong>{credentials.email}</strong>
+          <br />
           Temporary password: <strong>{credentials.temporaryPassword}</strong>
-        </div> : null}
+        </div>
+      ) : null}
 
-      {activeTab === "tenants" ? <div className="grid gap-6 xl:grid-cols-[minmax(0,380px)_minmax(0,1fr)]">
-          <form className="space-y-4 rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-6" onSubmit={handleCreateTenant}>
-            <div className="flex items-center gap-3">
-              <PlusCircle className="h-5 w-5 text-sky-600" />
-              <h2 className="text-xl font-semibold text-slate-900">Register Tenant</h2>
+      {activeTab === "tenants" ? (
+        <div className="space-y-6">
+          <section className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h2 className="text-xl font-semibold text-slate-900">
+                  Pending Verification
+                </h2>
+                <p className="mt-1 text-sm text-slate-500">
+                  Self-registered workspaces waiting for platform approval.
+                </p>
+              </div>
+              <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-amber-700">
+                {pendingTenants.length} Pending
+              </span>
             </div>
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
-              <p className="font-semibold text-slate-900">Workspace route preview</p>
-              <p className="mt-2 break-all font-mono text-[13px] text-slate-800">
-                {getTenantWorkspacePath(form)}
-              </p>
-            </div>
-            <input className="w-full rounded-2xl border border-slate-200 px-4 py-3" placeholder="Restaurant name" value={form.restaurantName} onChange={event => handleChange("restaurantName", event.target.value)} />
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-1">
-              <input className="w-full rounded-2xl border border-slate-200 px-4 py-3" placeholder="Slug" value={form.slug} onChange={event => handleChange("slug", event.target.value)} />
-              <input className="w-full rounded-2xl border border-slate-200 px-4 py-3" placeholder="Key" value={form.key} onChange={event => handleChange("key", event.target.value)} />
-            </div>
-            <input className="w-full rounded-2xl border border-slate-200 px-4 py-3" placeholder="Admin name" value={form.adminName} onChange={event => handleChange("adminName", event.target.value)} />
-            <input className="w-full rounded-2xl border border-slate-200 px-4 py-3" placeholder="Admin email" type="email" value={form.adminEmail} onChange={event => handleChange("adminEmail", event.target.value)} />
-            <select className="w-full rounded-2xl border border-slate-200 px-4 py-3" value={form.subscriptionPlan} onChange={event => handleChange("subscriptionPlan", event.target.value)}>
-              <option value="starter">Starter</option>
-              <option value="growth">Growth</option>
-              <option value="enterprise">Enterprise</option>
-            </select>
-            <button className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-900 px-4 py-3 font-semibold text-white transition hover:bg-slate-800 disabled:opacity-60" disabled={submitting} type="submit">
-              {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <PlusCircle className="h-4 w-4" />}
-              {submitting ? "Creating..." : "Create Tenant"}
-            </button>
-          </form>
 
-          <div className="space-y-6">
-            <section className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <h2 className="text-xl font-semibold text-slate-900">Pending Verification</h2>
-                  <p className="mt-1 text-sm text-slate-500">Self-registered workspaces waiting for platform approval.</p>
+            <div className="mt-4 max-h-[24rem] space-y-3 overflow-y-auto overscroll-contain pr-1">
+              {pendingTenants.length === 0 ? (
+                <div className="rounded-2xl border border-dashed border-slate-200 px-4 py-6 text-sm text-slate-500">
+                  No pending tenant registrations.
                 </div>
-                <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-amber-700">
-                  {pendingTenants.length} Pending
-                </span>
-              </div>
-
-              <div className="mt-4 max-h-[24rem] space-y-3 overflow-y-auto overscroll-contain pr-1">
-                {pendingTenants.length === 0 ? <div className="rounded-2xl border border-dashed border-slate-200 px-4 py-6 text-sm text-slate-500">
-                    No pending tenant registrations.
-                  </div> : pendingTenants.map(tenant => <div key={tenant._id} className="flex flex-col gap-4 rounded-2xl border border-slate-200 px-4 py-4">
-                      <div>
-                        <div className="font-semibold text-slate-900">{tenant.name}</div>
-                        <div className="text-sm text-slate-500">{tenant.requestedAdmin?.name || tenant.adminUser?.name || "Pending admin"}</div>
-                        <div className="text-sm text-slate-500">{tenant.requestedAdmin?.email || tenant.contact?.email}</div>
-                        <div className="mt-2 inline-flex rounded-xl bg-slate-100 px-3 py-1.5 font-mono text-xs text-slate-700">
-                          {getTenantWorkspacePath(tenant)}
+              ) : (
+                pendingTenants.map((tenant) => (
+                  <div
+                    key={tenant._id}
+                    className="flex flex-col gap-4 rounded-2xl border border-slate-200 px-4 py-4"
+                  >
+                    <div>
+                      <div className="font-semibold text-slate-900">
+                        {tenant.name}
+                      </div>
+                      <div className="text-sm text-slate-500">
+                        {tenant.requestedAdmin?.name ||
+                          tenant.adminUser?.name ||
+                          "Pending admin"}
+                      </div>
+                      <div className="text-sm text-slate-500">
+                        {tenant.requestedAdmin?.email || tenant.contact?.email}
+                      </div>
+                      {tenant.requestedAdmin?.phone || tenant.contact?.phone ? (
+                        <div className="text-sm text-slate-500">
+                          {tenant.requestedAdmin?.phone || tenant.contact?.phone}
                         </div>
+                      ) : null}
+                      <div className="mt-2 inline-flex rounded-xl bg-slate-100 px-3 py-1.5 font-mono text-xs text-slate-700">
+                        {getTenantWorkspacePath(tenant)}
                       </div>
-                      <div className="grid gap-2 sm:grid-cols-2">
-                        <button className="rounded-2xl border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50" onClick={() => openTenantAdmin(tenant)} type="button">
-                          Open Admin Panel
-                        </button>
-                        <button className="inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-60" disabled={verifyingTenantId === tenant._id} onClick={() => handleVerifyTenant(tenant._id)} type="button">
-                          {verifyingTenantId === tenant._id ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-                          Verify
-                        </button>
-                      </div>
-                    </div>)}
-              </div>
-            </section>
+                    </div>
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      <button
+                        className="rounded-2xl border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                        onClick={() => openTenantAdmin(tenant)}
+                        type="button"
+                      >
+                        Open Admin Panel
+                      </button>
+                      <button
+                        className="inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-60"
+                        disabled={verifyingTenantId === tenant._id}
+                        onClick={() => handleVerifyTenant(tenant._id)}
+                        type="button"
+                      >
+                        {verifyingTenantId === tenant._id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <CheckCircle2 className="h-4 w-4" />
+                        )}
+                        Verify
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </section>
 
-            <section className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-              <div className="flex items-center gap-3">
-                <Building2 className="h-5 w-5 text-sky-600" />
-                <h2 className="text-xl font-semibold text-slate-900">All Tenants</h2>
-              </div>
+          <section className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+            <div className="flex items-center gap-3">
+              <Building2 className="h-5 w-5 text-sky-600" />
+              <h2 className="text-xl font-semibold text-slate-900">
+                All Tenants
+              </h2>
+            </div>
 
-              <div className="mt-4 max-h-[32rem] space-y-3 overflow-y-auto overscroll-contain pr-1 lg:hidden">
-                {loading ? <div className="rounded-2xl border border-slate-200 px-4 py-6 text-sm text-slate-500">Loading tenants...</div> : tenants.map(tenant => <div key={tenant._id} className="rounded-2xl border border-slate-200 px-4 py-4 text-left transition hover:border-slate-300 hover:bg-slate-50">
+            <div className="mt-4 max-h-[32rem] space-y-3 overflow-y-auto overscroll-contain pr-1 lg:hidden">
+              {loading ? (
+                <div className="rounded-2xl border border-slate-200 px-4 py-6 text-sm text-slate-500">
+                  Loading tenants...
+                </div>
+              ) : null}
+              {!loading
+                ? tenants.map((tenant) => (
+                    <div
+                      key={tenant._id}
+                      className="rounded-2xl border border-slate-200 px-4 py-4 text-left transition hover:border-slate-300 hover:bg-slate-50"
+                    >
                       <div className="flex items-start justify-between gap-3">
                         <div>
-                          <div className="font-semibold text-slate-900">{tenant.name}</div>
-                          <div className="mt-1 text-sm text-slate-500">{tenant.contact?.email || tenant.requestedAdmin?.email || "No email"}</div>
+                          <div className="font-semibold text-slate-900">
+                            {tenant.name}
+                          </div>
+                          <div className="mt-1 text-sm text-slate-500">
+                            {tenant.contact?.email ||
+                              tenant.requestedAdmin?.email ||
+                              "No email"}
+                          </div>
                         </div>
                         <ExternalLink className="mt-1 h-4 w-4 text-slate-400" />
                       </div>
@@ -303,117 +522,464 @@ export function TenantManagement() {
                       </div>
                       <div className="mt-3 grid grid-cols-2 gap-2 text-sm text-slate-600">
                         <div className="rounded-xl bg-slate-50 px-3 py-2">
-                          Plan: <span className="font-medium capitalize text-slate-900">{tenant.subscription?.plan || "starter"}</span>
+                          Plan:{" "}
+                          <span className="font-medium capitalize text-slate-900">
+                            {tenant.subscription?.plan || "starter"}
+                          </span>
                         </div>
                         <div className="rounded-xl bg-slate-50 px-3 py-2">
-                          Status: <span className="font-medium capitalize text-slate-900">{tenant.onboarding?.verificationStatus || tenant.status}</span>
+                          Status:{" "}
+                          <span className="font-medium capitalize text-slate-900">
+                            {tenant.onboarding?.verificationStatus ||
+                              tenant.status}
+                          </span>
                         </div>
                       </div>
                       <div className="mt-3 flex flex-wrap gap-2">
-                        <button type="button" onClick={() => openTenantAdmin(tenant)} className="inline-flex items-center gap-2 rounded-2xl border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
+                        <button
+                          type="button"
+                          onClick={() => openTenantAdmin(tenant)}
+                          className="inline-flex items-center gap-2 rounded-2xl border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                        >
                           <ExternalLink className="h-4 w-4" />
                           Monitor
                         </button>
-                        {isTenantVerified(tenant) ? <button type="button" onClick={() => handleTenantStatusChange(tenant)} disabled={updatingTenantId === tenant._id} className={`inline-flex items-center gap-2 rounded-2xl px-3 py-2 text-sm font-medium ${tenant.status === "active" ? "border border-rose-200 text-rose-700 hover:bg-rose-50" : "border border-emerald-200 text-emerald-700 hover:bg-emerald-50"}`}>
-                          {updatingTenantId === tenant._id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Power className="h-4 w-4" />}
-                          {tenant.status === "active" ? "Deactivate Tenant" : "Activate Tenant"}
-                        </button> : null}
+                        {isTenantVerified(tenant) ? (
+                          <button
+                            type="button"
+                            onClick={() => handleTenantStatusChange(tenant)}
+                            disabled={updatingTenantId === tenant._id}
+                            className={`inline-flex items-center gap-2 rounded-2xl px-3 py-2 text-sm font-medium ${
+                              tenant.status === "active"
+                                ? "border border-rose-200 text-rose-700 hover:bg-rose-50"
+                                : "border border-emerald-200 text-emerald-700 hover:bg-emerald-50"
+                            }`}
+                          >
+                            {updatingTenantId === tenant._id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Power className="h-4 w-4" />
+                            )}
+                            {tenant.status === "active"
+                              ? "Deactivate Tenant"
+                              : "Activate Tenant"}
+                          </button>
+                        ) : null}
                       </div>
-                    </div>)}
-                {!loading && tenants.length === 0 ? <div className="rounded-2xl border border-dashed border-slate-200 px-4 py-6 text-sm text-slate-500">No tenants found.</div> : null}
-              </div>
+                    </div>
+                  ))
+                : null}
+              {!loading && tenants.length === 0 ? (
+                <div className="rounded-2xl border border-dashed border-slate-200 px-4 py-6 text-sm text-slate-500">
+                  No tenants found.
+                </div>
+              ) : null}
+            </div>
 
-              <div className="mt-4 hidden max-h-[32rem] overflow-auto lg:block">
-                <table className="min-w-full divide-y divide-slate-200 text-sm">
-                  <thead className="sticky top-0 bg-white">
-                    <tr className="text-left text-slate-500">
-                      <th className="pb-3 pr-4">Restaurant</th>
-                      <th className="pb-3 pr-4">Route</th>
-                      <th className="pb-3 pr-4">Plan</th>
-                      <th className="pb-3 pr-4">Status</th>
-                      <th className="pb-3 pr-4">Action</th>
+            <div className="mt-4 hidden max-h-[32rem] overflow-auto lg:block">
+              <table className="min-w-full divide-y divide-slate-200 text-sm">
+                <thead className="sticky top-0 bg-white">
+                  <tr className="text-left text-slate-500">
+                    <th className="pb-3 pr-4">Restaurant</th>
+                    <th className="pb-3 pr-4">Route</th>
+                    <th className="pb-3 pr-4">Plan</th>
+                    <th className="pb-3 pr-4">Status</th>
+                    <th className="pb-3 pr-4">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {loading ? (
+                    <tr>
+                      <td className="py-6 text-slate-500" colSpan="5">
+                        Loading tenants...
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {loading ? <tr><td className="py-6 text-slate-500" colSpan="5">Loading tenants...</td></tr> : tenants.map(tenant => <tr key={tenant._id} className="cursor-pointer hover:bg-slate-50" onClick={() => openTenantAdmin(tenant)}>
-                        <td className="py-4 pr-4">
-                          <div className="font-medium text-slate-900">{tenant.name}</div>
-                          <div className="text-slate-500">{tenant.contact?.email || tenant.requestedAdmin?.email || "No email"}</div>
-                        </td>
-                        <td className="py-4 pr-4">{getTenantWorkspacePath(tenant)}</td>
-                        <td className="py-4 pr-4 capitalize">{tenant.subscription?.plan || "starter"}</td>
-                        <td className="py-4 pr-4 capitalize">{tenant.onboarding?.verificationStatus || tenant.status}</td>
-                        <td className="py-4 pr-4">
-                          <div className="flex flex-wrap gap-2">
-                            <button className="inline-flex items-center gap-2 rounded-2xl border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50" onClick={event => {
-                          event.stopPropagation();
-                          openTenantAdmin(tenant);
-                        }} type="button">
-                              <ExternalLink className="h-4 w-4" />
-                              Monitor
-                            </button>
-                            {isTenantVerified(tenant) ? <button className={`inline-flex items-center gap-2 rounded-2xl px-3 py-2 text-sm font-medium ${tenant.status === "active" ? "border border-rose-200 text-rose-700 hover:bg-rose-50" : "border border-emerald-200 text-emerald-700 hover:bg-emerald-50"}`} onClick={event => {
-                          event.stopPropagation();
-                          handleTenantStatusChange(tenant);
-                        }} disabled={updatingTenantId === tenant._id} type="button">
-                                {updatingTenantId === tenant._id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Power className="h-4 w-4" />}
-                                {tenant.status === "active" ? "Deactivate" : "Activate"}
-                              </button> : null}
-                          </div>
-                        </td>
-                      </tr>)}
-                    {!loading && tenants.length === 0 ? <tr><td className="py-6 text-slate-500" colSpan="5">No tenants found.</td></tr> : null}
-                  </tbody>
-                </table>
-              </div>
-            </section>
-          </div>
-        </div> : <section className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+                  ) : null}
+                  {!loading
+                    ? tenants.map((tenant) => (
+                        <tr
+                          key={tenant._id}
+                          className="cursor-pointer hover:bg-slate-50"
+                          onClick={() => openTenantAdmin(tenant)}
+                        >
+                          <td className="py-4 pr-4">
+                            <div className="font-medium text-slate-900">
+                              {tenant.name}
+                            </div>
+                            <div className="text-slate-500">
+                              {tenant.contact?.email ||
+                                tenant.requestedAdmin?.email ||
+                                "No email"}
+                            </div>
+                          </td>
+                          <td className="py-4 pr-4">
+                            {getTenantWorkspacePath(tenant)}
+                          </td>
+                          <td className="py-4 pr-4 capitalize">
+                            {tenant.subscription?.plan || "starter"}
+                          </td>
+                          <td className="py-4 pr-4 capitalize">
+                            {tenant.onboarding?.verificationStatus ||
+                              tenant.status}
+                          </td>
+                          <td className="py-4 pr-4">
+                            <div className="flex flex-wrap gap-2">
+                              <button
+                                className="inline-flex items-center gap-2 rounded-2xl border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  openTenantAdmin(tenant);
+                                }}
+                                type="button"
+                              >
+                                <ExternalLink className="h-4 w-4" />
+                                Monitor
+                              </button>
+                              {isTenantVerified(tenant) ? (
+                                <button
+                                  className={`inline-flex items-center gap-2 rounded-2xl px-3 py-2 text-sm font-medium ${
+                                    tenant.status === "active"
+                                      ? "border border-rose-200 text-rose-700 hover:bg-rose-50"
+                                      : "border border-emerald-200 text-emerald-700 hover:bg-emerald-50"
+                                  }`}
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    handleTenantStatusChange(tenant);
+                                  }}
+                                  disabled={updatingTenantId === tenant._id}
+                                  type="button"
+                                >
+                                  {updatingTenantId === tenant._id ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    <Power className="h-4 w-4" />
+                                  )}
+                                  {tenant.status === "active"
+                                    ? "Deactivate"
+                                    : "Activate"}
+                                </button>
+                              ) : null}
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    : null}
+                  {!loading && tenants.length === 0 ? (
+                    <tr>
+                      <td className="py-6 text-slate-500" colSpan="5">
+                        No tenants found.
+                      </td>
+                    </tr>
+                  ) : null}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+      ) : (
+        <section className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h2 className="text-xl font-semibold text-slate-900">Admin Support Requests</h2>
-              <p className="mt-1 text-sm text-slate-500">Messages sent by tenant admins to the platform team.</p>
+              <h2 className="text-xl font-semibold text-slate-900">
+                Super Admin Access Requests
+              </h2>
+              <p className="mt-1 text-sm text-slate-500">
+                Tenant admin messages, status tracking, and platform responses.
+              </p>
             </div>
             <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-700">
-              {supportRequests.filter(request => request.status !== "resolved").length} Open
+              {openSupportRequests} Open
             </span>
           </div>
 
-          <div className="mt-4 max-h-[40rem] space-y-3 overflow-y-auto overscroll-contain pr-1">
-            {supportRequests.length === 0 ? <div className="rounded-2xl border border-dashed border-slate-200 px-4 py-6 text-sm text-slate-500">
+          <div className="mt-4 max-h-[44rem] space-y-4 overflow-y-auto overscroll-contain pr-1">
+            {supportRequests.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-slate-200 px-4 py-6 text-sm text-slate-500">
                 No support requests yet.
-              </div> : supportRequests.map(request => <article key={request._id} className="rounded-2xl border border-slate-200 p-4">
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                    <div>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="text-base font-semibold text-slate-900">{request.subject}</h3>
-                        <span className={`rounded-full px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.14em] ${request.status === "resolved" ? "bg-emerald-100 text-emerald-700" : request.status === "in_progress" ? "bg-sky-100 text-sky-700" : "bg-amber-100 text-amber-700"}`}>
-                          {String(request.status || "open").replace(/_/g, " ")}
-                        </span>
+              </div>
+            ) : (
+              supportRequests.map((request) => {
+                const responseDraft =
+                  responseDrafts[request._id] ?? request.responseMessage ?? "";
+                const responseChanged =
+                  String(responseDraft).trim() !==
+                  String(request.responseMessage || "").trim();
+
+                return (
+                  <article
+                    key={request._id}
+                    className="rounded-2xl border border-slate-200 p-4"
+                  >
+                    <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h3 className="text-base font-semibold text-slate-900">
+                            {request.subject}
+                          </h3>
+                          <span
+                            className={`rounded-full px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.14em] ${
+                              requestStatusTone[request.status] ||
+                              requestStatusTone.open
+                            }`}
+                          >
+                            {formatRequestStatus(request.status)}
+                          </span>
+                          <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">
+                            {requestCategoryLabel[request.category] || "Other"}
+                          </span>
+                        </div>
+                        <p className="mt-2 text-sm text-slate-500">
+                          {request.tenant?.name || "Unknown tenant"} •{" "}
+                          {request.createdBy?.name || "Admin"} •{" "}
+                          {new Date(request.createdAt).toLocaleString()}
+                        </p>
+                        <p className="mt-3 text-sm leading-6 text-slate-600">
+                          {request.message}
+                        </p>
+
+                        <div className="mt-3 flex items-start gap-2 rounded-2xl bg-slate-50 px-3 py-2 text-xs text-slate-500">
+                          <ShieldAlert className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" />
+                          <span>
+                            Workspace route:{" "}
+                            {request.tenant?.slug
+                              ? `/${request.tenant.slug}/${request.tenant.key}`
+                              : "Unavailable"}
+                            .
+                          </span>
+                        </div>
+
+                        {request.responseMessage ? (
+                          <div className="mt-4 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3">
+                            <div className="text-xs font-semibold uppercase tracking-[0.18em] text-sky-700">
+                              Latest Response
+                            </div>
+                            <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-700">
+                              {request.responseMessage}
+                            </p>
+                            <p className="mt-2 text-xs text-slate-500">
+                              {request.respondedBy?.name
+                                ? `By ${request.respondedBy.name}`
+                                : "By super admin"}
+                              {request.respondedAt
+                                ? ` on ${new Date(
+                                    request.respondedAt
+                                  ).toLocaleString()}`
+                                : ""}
+                            </p>
+                          </div>
+                        ) : null}
                       </div>
-                      <p className="mt-2 text-sm text-slate-500">
-                        {request.tenant?.name || "Unknown tenant"} • {request.createdBy?.name || "Admin"} • {new Date(request.createdAt).toLocaleString()}
-                      </p>
-                      <p className="mt-3 text-sm leading-6 text-slate-600">{request.message}</p>
+
+                      <div className="w-full xl:w-[22rem]">
+                        <label className="block text-sm font-semibold text-slate-800">
+                          Super Admin Response
+                          <textarea
+                            className="mt-2 min-h-[148px] w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+                            maxLength={2500}
+                            placeholder="Write a response back to the tenant admin."
+                            value={responseDraft}
+                            onChange={(event) =>
+                              handleSupportDraftChange(
+                                request._id,
+                                event.target.value
+                              )
+                            }
+                          />
+                        </label>
+
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {["open", "in_progress", "resolved"].map((status) => (
+                            <button
+                              key={status}
+                              type="button"
+                              disabled={updatingSupportId === request._id}
+                              onClick={() =>
+                                handleSupportStatusChange(request, status)
+                              }
+                              className={`rounded-2xl border px-3 py-2 text-sm font-medium transition ${
+                                request.status === status
+                                  ? "border-slate-900 bg-slate-900 text-white"
+                                  : "border-slate-200 text-slate-700 hover:bg-slate-50"
+                              }`}
+                            >
+                              {status === "in_progress"
+                                ? "In Progress"
+                                : status === "resolved"
+                                  ? "Resolve"
+                                  : "Open"}
+                            </button>
+                          ))}
+                        </div>
+
+                        <button
+                          type="button"
+                          disabled={
+                            updatingSupportId === request._id || !responseChanged
+                          }
+                          onClick={() => handleSupportResponseSave(request)}
+                          className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-60"
+                        >
+                          {updatingSupportId === request._id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Send className="h-4 w-4" />
+                          )}
+                          Save Response
+                        </button>
+                      </div>
                     </div>
-                    <div className="flex flex-wrap gap-2">
-                      {request.status !== "in_progress" ? <button type="button" disabled={updatingSupportId === request._id} onClick={() => handleSupportStatusChange(request._id, "in_progress")} className="rounded-2xl border border-sky-200 px-3 py-2 text-sm font-medium text-sky-700 hover:bg-sky-50">
-                          In Progress
-                        </button> : null}
-                      {request.status !== "resolved" ? <button type="button" disabled={updatingSupportId === request._id} onClick={() => handleSupportStatusChange(request._id, "resolved")} className="rounded-2xl border border-emerald-200 px-3 py-2 text-sm font-medium text-emerald-700 hover:bg-emerald-50">
-                          {updatingSupportId === request._id ? "Saving..." : "Resolve"}
-                        </button> : null}
-                      {request.status !== "open" ? <button type="button" disabled={updatingSupportId === request._id} onClick={() => handleSupportStatusChange(request._id, "open")} className="rounded-2xl border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
-                          Reopen
-                        </button> : null}
-                    </div>
-                  </div>
-                  <div className="mt-3 flex items-start gap-2 rounded-2xl bg-slate-50 px-3 py-2 text-xs text-slate-500">
-                    <ShieldAlert className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" />
-                    <span>Category: {request.category}. Workspace route: {request.tenant?.slug ? `/${request.tenant.slug}/${request.tenant.key}` : "Unavailable"}.</span>
-                  </div>
-                </article>)}
+                  </article>
+                );
+              })
+            )}
           </div>
-        </section>}
-    </div>;
+        </section>
+      )}
+
+      <AdminModal
+        isOpen={isCreateTenantModalOpen}
+        onClose={() => {
+          if (submitting) {
+            return;
+          }
+          setIsCreateTenantModalOpen(false);
+        }}
+        title="Register Tenant Workspace"
+        subtitle="Create a new restaurant workspace from the Super Admin panel."
+        maxWidth="max-w-3xl"
+        footer={
+          <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
+            <button
+              type="button"
+              onClick={() => setIsCreateTenantModalOpen(false)}
+              disabled={submitting}
+              className="rounded-2xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              form="create-tenant-form"
+              disabled={submitting}
+              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-60"
+            >
+              {submitting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <PlusCircle className="h-4 w-4" />
+              )}
+              {submitting ? "Creating..." : "Create Tenant"}
+            </button>
+          </div>
+        }
+      >
+        <form
+          id="create-tenant-form"
+          className="space-y-5 p-4 sm:p-5"
+          onSubmit={handleCreateTenant}
+        >
+          <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50/90 p-4">
+            <p className="text-sm font-semibold text-slate-900">
+              Workspace Route Preview
+            </p>
+            <p className="mt-2 break-all rounded-2xl bg-slate-900 px-3 py-3 font-mono text-[13px] text-white">
+              {createRoutePreview}
+            </p>
+            <p className="mt-2 text-xs leading-5 text-slate-500">
+              Slugs now support lowercase letters, numbers, and hyphens.
+            </p>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label className="block text-sm font-semibold text-slate-800">
+              Restaurant Name
+              <input
+                className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+                placeholder="Example: Tableloom Restaurant"
+                value={form.restaurantName}
+                onChange={(event) =>
+                  handleChange("restaurantName", event.target.value)
+                }
+              />
+            </label>
+
+            <label className="block text-sm font-semibold text-slate-800">
+              Contact Phone Number
+              <input
+                className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+                placeholder="Example: +91 98765 43210"
+                value={form.phone}
+                onChange={(event) => handleChange("phone", event.target.value)}
+              />
+            </label>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label className="block text-sm font-semibold text-slate-800">
+              Workspace Slug
+              <input
+                className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+                placeholder="Example: tableloom-restaurant"
+                value={form.slug}
+                onChange={(event) => handleChange("slug", event.target.value)}
+              />
+              <p className="mt-2 text-xs leading-5 text-slate-500">
+                Lowercase letters, numbers, and hyphens are allowed.
+              </p>
+            </label>
+
+            <label className="block text-sm font-semibold text-slate-800">
+              Workspace Key
+              <input
+                className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+                placeholder="Example: main01"
+                value={form.key}
+                onChange={(event) => handleChange("key", event.target.value)}
+              />
+            </label>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label className="block text-sm font-semibold text-slate-800">
+              Admin Name
+              <input
+                className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+                placeholder="Example: Ayesha Khan"
+                value={form.adminName}
+                onChange={(event) => handleChange("adminName", event.target.value)}
+              />
+            </label>
+
+            <label className="block text-sm font-semibold text-slate-800">
+              Admin Email
+              <input
+                className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+                placeholder="Example: admin@yourrestaurant.com"
+                type="email"
+                value={form.adminEmail}
+                onChange={(event) =>
+                  handleChange("adminEmail", event.target.value)
+                }
+              />
+            </label>
+          </div>
+
+          <label className="block text-sm font-semibold text-slate-800">
+            Subscription Plan
+            <select
+              className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+              value={form.subscriptionPlan}
+              onChange={(event) =>
+                handleChange("subscriptionPlan", event.target.value)
+              }
+            >
+              <option value="starter">Starter</option>
+              <option value="growth">Growth</option>
+              <option value="enterprise">Enterprise</option>
+            </select>
+          </label>
+        </form>
+      </AdminModal>
+    </div>
+  );
 }

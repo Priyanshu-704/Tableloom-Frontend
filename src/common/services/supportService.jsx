@@ -25,11 +25,9 @@ export const supportService = {
       handleApiError(error, "Failed to send support request");
     }
   },
-  updateSupportRequestStatus: async (requestId, status) => {
+  updateSupportRequestStatus: async (requestId, payload = {}) => {
     try {
-      const response = await axiosInstance.patch(`/support/${requestId}/status`, {
-        status,
-      });
+      const response = await axiosInstance.patch(`/support/${requestId}/status`, payload);
       return toServiceResponse(response, {
         data: null,
       });

@@ -4,6 +4,11 @@ import { Link } from "react-router-dom";
 import { useSettings } from "../../common/context/SettingsContext";
 import { tenantService } from "../../common/services";
 import { buildAdminPath } from "../../common/utils/routes";
+import {
+  buildTenantWorkspacePath,
+  normalizeTenantKeyInput,
+  normalizeTenantSlugInput,
+} from "../../common/utils/tenantWorkspace";
 import { AdminAuthShell } from "../components/layout/AdminAuthShell";
 
 const initialForm = {
@@ -16,17 +21,6 @@ const initialForm = {
   subscriptionPlan: "starter",
 };
 
-const normalizeSlugInput = (value = "") =>
-  String(value)
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-
-const normalizeKeyInput = (value = "") =>
-  String(value)
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "");
-
 export function TenantRegistration() {
   const { settings } = useSettings();
   const [form, setForm] = useState(initialForm);
@@ -38,7 +32,10 @@ export function TenantRegistration() {
   const labelClassName = "block text-sm font-semibold text-slate-800";
   const hintClassName = "mt-2 text-xs leading-5 text-slate-500";
   const routePreview = form.slug && form.key
-    ? `/${normalizeSlugInput(form.slug)}/${normalizeKeyInput(form.key)}`
+    ? buildTenantWorkspacePath({
+        slug: normalizeTenantSlugInput(form.slug),
+        key: normalizeTenantKeyInput(form.key),
+      })
     : "/your-slug/yourkey";
 
   const handleChange = (field, value) => {
@@ -46,9 +43,9 @@ export function TenantRegistration() {
       ...current,
       [field]:
         field === "slug"
-          ? normalizeSlugInput(value)
+          ? normalizeTenantSlugInput(value)
           : field === "key"
-            ? normalizeKeyInput(value)
+            ? normalizeTenantKeyInput(value)
             : value,
     }));
   };
