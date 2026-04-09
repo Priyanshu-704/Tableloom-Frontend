@@ -91,7 +91,8 @@ export const customerSessionService = {
     try {
       const response = await axiosInstance.post(`/customers/session/${sessionId}/request-bill`, {
         email: options?.email || "",
-        forceNew: Boolean(options?.forceNew)
+        forceNew: Boolean(options?.forceNew),
+        paymentMethod: options?.paymentMethod || ""
       });
       return normalizeResponse(response);
     } catch (error) {

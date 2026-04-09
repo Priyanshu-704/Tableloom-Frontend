@@ -1,14 +1,17 @@
 import { logger } from "../../common/utils/logger.js";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Bell, Megaphone, RefreshCw, Search, CheckCheck, AlertCircle, Trash2 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../common/context/AuthContext";
 import { notificationAdminService } from "../../common/services";
 import { useAdmin } from "../context/AdminContext";
 import { AdminModal } from "../components/common/AdminModal";
 import AdminPagination from "../components/common/AdminPagination";
 import { AdminListSkeleton } from "../components/common/AdminSkeleton";
+import ResponsiveFilterSection from "../components/common/ResponsiveFilterSection";
 import { useMonitoringMode } from "../hooks/useMonitoringMode";
 import { MonitoringBanner } from "../components/common/MonitoringBanner";
+import { getNotificationNavigationLabel, getNotificationNavigationTarget } from "../utils/notificationRouting";
 const STATUS_OPTIONS = [{
   value: "all",
   label: "All Statuses"
@@ -94,6 +97,7 @@ const formatDateTime = value => {
 };
 export function Notifications() {
   const PAGE_SIZE = 10;
+  const navigate = useNavigate();
   const {
     hasPermission
   } = useAuth();
@@ -290,53 +294,55 @@ export function Notifications() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 rounded-lg border border-gray-200 bg-white p-4 lg:grid-cols-5">
-        <div className="relative lg:col-span-2">
+      <ResponsiveFilterSection title="Notification Filters">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
+          <div className="relative lg:col-span-2">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
           <input type="text" value={filters.search} onChange={event => setFilters(current => ({
           ...current,
           search: event.target.value
         }))} placeholder="Search title, message, sender, or type" className="w-full rounded-lg border border-gray-300 py-2 pl-10 pr-4" />
-        </div>
-        <select value={filters.status} onChange={event => setFilters(current => ({
+          </div>
+          <select value={filters.status} onChange={event => setFilters(current => ({
         ...current,
         status: event.target.value
       }))} className="w-full rounded-lg border border-gray-300 px-3 py-2">
-          {STATUS_OPTIONS.map(option => <option key={option.value} value={option.value}>
+            {STATUS_OPTIONS.map(option => <option key={option.value} value={option.value}>
               {option.label}
             </option>)}
-        </select>
-        <select value={filters.type} onChange={event => setFilters(current => ({
+          </select>
+          <select value={filters.type} onChange={event => setFilters(current => ({
         ...current,
         type: event.target.value
       }))} className="w-full rounded-lg border border-gray-300 px-3 py-2">
-          {TYPE_OPTIONS.map(option => <option key={option.value} value={option.value}>
+            {TYPE_OPTIONS.map(option => <option key={option.value} value={option.value}>
               {option.label}
             </option>)}
-        </select>
-        <select value={filters.priority} onChange={event => setFilters(current => ({
+          </select>
+          <select value={filters.priority} onChange={event => setFilters(current => ({
         ...current,
         priority: event.target.value
       }))} className="w-full rounded-lg border border-gray-300 px-3 py-2">
-          {PRIORITY_OPTIONS.map(option => <option key={option.value} value={option.value}>
+            {PRIORITY_OPTIONS.map(option => <option key={option.value} value={option.value}>
               {option.label}
             </option>)}
-        </select>
-        <label className="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700">
-          <input type="checkbox" checked={filters.unreadOnly} onChange={event => setFilters(current => ({
+          </select>
+          <label className="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700">
+            <input type="checkbox" checked={filters.unreadOnly} onChange={event => setFilters(current => ({
           ...current,
           unreadOnly: event.target.checked
         }))} className="rounded border-gray-300" />
-          Unread only
-        </label>
-        <label className="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700">
-          <input type="checkbox" checked={filters.actionRequired} onChange={event => setFilters(current => ({
+            Unread only
+          </label>
+          <label className="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700">
+            <input type="checkbox" checked={filters.actionRequired} onChange={event => setFilters(current => ({
           ...current,
           actionRequired: event.target.checked
         }))} className="rounded border-gray-300" />
-          Action required
-        </label>
-      </div>
+            Action required
+          </label>
+        </div>
+      </ResponsiveFilterSection>
 
       {loading ? <AdminListSkeleton rows={6} /> : notifications.length === 0 ? <div className="rounded-lg border border-gray-200 bg-white p-10 text-center">
           <Bell className="mx-auto mb-4 h-12 w-12 text-gray-300" />
@@ -350,6 +356,8 @@ export function Notifications() {
           <div className="space-y-4">
             {notifications.map(item => {
           const canAcknowledge = item.actionRequired && !["acknowledged", "dismissed", "action_taken"].includes(item.status);
+          const navigationTarget = getNotificationNavigationTarget(item);
+          const navigationLabel = getNotificationNavigationLabel(item);
           return <div key={item._id} className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                   <div className="space-y-2">
@@ -379,7 +387,10 @@ export function Notifications() {
                       </div> : null}
                   </div>
 
-                  {!isMonitoringMode && <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                  {!isMonitoringMode && <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                      {navigationTarget ? <button type="button" onClick={() => navigate(navigationTarget)} className="rounded-lg border border-sky-200 px-4 py-2 text-sm text-sky-700 transition-colors hover:bg-sky-50">
+                          {navigationLabel}
+                        </button> : null}
                       {item.status === "unread" && <button type="button" disabled={activeId === item._id} onClick={() => runNotificationAction(item._id, () => notificationAdminService.markAsRead(item._id), "Notification marked as read")} className="rounded-lg border border-gray-300 px-4 py-2 text-sm transition-colors hover:bg-gray-50 disabled:opacity-60">
                           Mark Read
                         </button>}

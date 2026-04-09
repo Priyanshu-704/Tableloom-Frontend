@@ -5,6 +5,7 @@ import { feedbackService } from "../../common/services";
 import { useAdmin } from "../context/AdminContext";
 import AdminPagination from "../components/common/AdminPagination";
 import { AdminListSkeleton } from "../components/common/AdminSkeleton";
+import ResponsiveFilterSection from "../components/common/ResponsiveFilterSection";
 const STATUS_OPTIONS = [{
   value: "all",
   label: "All Statuses"
@@ -174,31 +175,33 @@ export function FeedbackManagement() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 rounded-lg border border-gray-200 bg-white p-4 lg:grid-cols-3">
-        <div className="relative">
+      <ResponsiveFilterSection title="Feedback Filters">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+          <div className="relative">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
           <input type="text" value={filters.search} onChange={event => setFilters(current => ({
           ...current,
           search: event.target.value
         }))} placeholder="Search comments, customer, or order" className="w-full rounded-lg border border-gray-300 py-2 pl-10 pr-4 focus:border-transparent focus:ring-2 focus:ring-primary-500" />
-        </div>
-        <select value={filters.status} onChange={event => setFilters(current => ({
+          </div>
+          <select value={filters.status} onChange={event => setFilters(current => ({
         ...current,
         status: event.target.value
       }))} className="w-full rounded-lg border border-gray-300 px-3 py-2">
-          {STATUS_OPTIONS.map(option => <option key={option.value} value={option.value}>
+            {STATUS_OPTIONS.map(option => <option key={option.value} value={option.value}>
               {option.label}
             </option>)}
-        </select>
-        <select value={filters.sentiment} onChange={event => setFilters(current => ({
+          </select>
+          <select value={filters.sentiment} onChange={event => setFilters(current => ({
         ...current,
         sentiment: event.target.value
       }))} className="w-full rounded-lg border border-gray-300 px-3 py-2">
-          {SENTIMENT_OPTIONS.map(option => <option key={option.value} value={option.value}>
+            {SENTIMENT_OPTIONS.map(option => <option key={option.value} value={option.value}>
               {option.label}
             </option>)}
-        </select>
-      </div>
+          </select>
+        </div>
+      </ResponsiveFilterSection>
 
       {loading ? <AdminListSkeleton rows={5} /> : feedback.length === 0 ? <div className="rounded-lg border border-gray-200 bg-white p-10 text-center">
           <MessageSquareText className="mx-auto mb-4 h-12 w-12 text-gray-300" />

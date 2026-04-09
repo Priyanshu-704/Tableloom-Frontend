@@ -44,6 +44,23 @@ export const inventoryService = {
       handleApiError(error, "Failed to adjust inventory stock");
     }
   },
+  bulkUploadInventory: async file => {
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const response = await axiosInstance.post("/inventory/bulk-upload", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data"
+        }
+      });
+      return response?.data ?? {
+        success: true,
+        data: null
+      };
+    } catch (error) {
+      handleApiError(error, "Failed to bulk upload inventory");
+    }
+  },
   deleteInventoryItem: async id => {
     try {
       const response = await axiosInstance.delete(`/inventory/${id}`);

@@ -1,8 +1,54 @@
 export const INVENTORY_PAGE_SIZE = 10;
+export const INVENTORY_UNIT_OPTIONS = [{
+  value: "kg",
+  label: "Kilogram (kg)"
+}, {
+  value: "pieces",
+  label: "Pieces"
+}, {
+  value: "gram",
+  label: "Gram (g)"
+}, {
+  value: "milligram",
+  label: "Milligram (mg)"
+}, {
+  value: "liter",
+  label: "Liter (L)"
+}, {
+  value: "ton",
+  label: "Ton"
+}];
+export const INVENTORY_UNIT_ALIASES = {
+  pcs: "pieces",
+  piece: "pieces",
+  pieces: "pieces",
+  kg: "kg",
+  kgs: "kg",
+  gram: "gram",
+  grams: "gram",
+  g: "gram",
+  gm: "gram",
+  milligram: "milligram",
+  milligrams: "milligram",
+  mg: "milligram",
+  liter: "liter",
+  litre: "liter",
+  litres: "liter",
+  l: "liter",
+  ton: "ton",
+  tons: "ton",
+  tonne: "ton",
+  tonnes: "ton"
+};
+export const normalizeInventoryUnitValue = value => {
+  const normalized = String(value || "pieces").trim().toLowerCase();
+  return INVENTORY_UNIT_ALIASES[normalized] || normalized || "pieces";
+};
+export const formatInventoryUnitLabel = value => INVENTORY_UNIT_OPTIONS.find(option => option.value === normalizeInventoryUnitValue(value))?.label || String(value || "pieces");
 export const INVENTORY_FORM_DEFAULTS = {
   ingredientName: "",
   sku: "",
-  unit: "pcs",
+  unit: "pieces",
   currentStock: "",
   minimumStock: "",
   reorderQuantity: "",

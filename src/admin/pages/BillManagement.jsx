@@ -1,12 +1,13 @@
 import { logger } from "../../common/utils/logger.js";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { CreditCard, Download, Eye, Mail, QrCode, Receipt, RefreshCw, Search, Wallet } from "lucide-react";
+import { CreditCard, Download, QrCode, Receipt, RefreshCw, Search, Wallet } from "lucide-react";
 import { billService } from "../../common/services";
 import { useAuth } from "../../common/context/AuthContext";
 import { useAdmin } from "../context/AdminContext";
 import AdminPagination from "../components/common/AdminPagination";
 import { AdminModal } from "../components/common/AdminModal";
 import { AdminPageSkeleton } from "../components/common/AdminSkeleton";
+import ResponsiveFilterSection from "../components/common/ResponsiveFilterSection";
 import { useMonitoringMode } from "../hooks/useMonitoringMode";
 import { useSettings } from "../../common/context/SettingsContext";
 const PAGE_SIZE = 12;
@@ -106,7 +107,6 @@ export function BillManagement() {
   const currency = settings?.taxSettings?.currency || "INR";
   const isMonitoringMode = useMonitoringMode();
   const canViewBillStats = hasPermission("view_statistics");
-  const canSendBillEmail = hasPermission("session_view_all");
   const canProcessBillPayment = !isMonitoringMode && hasAnyPermission("order_process_payment", "session_complete_offline");
   const [bills, setBills] = useState([]);
   const [stats, setStats] = useState({
@@ -132,11 +132,6 @@ export function BillManagement() {
     total: 0
   });
   const [actionLoadingId, setActionLoadingId] = useState("");
-  const [emailModal, setEmailModal] = useState({
-    isOpen: false,
-    bill: null,
-    email: ""
-  });
   const [paymentModal, setPaymentModal] = useState({
     isOpen: false,
     bill: null,
@@ -234,46 +229,6 @@ export function BillManagement() {
   const openPdf = (billId, type = "view") => {
     const url = type === "download" ? billService.getBillDownloadUrl(billId) : billService.getBillViewUrl(billId);
     window.open(url, "_blank", "noopener,noreferrer");
-  };
-  const openEmailModal = bill => {
-    if (!canSendBillEmail) {
-      addNotification("You do not have permission to email bills", "error");
-      return;
-    }
-    setEmailModal({
-      isOpen: true,
-      bill,
-      email: bill.emailRecipient || bill.customerEmail || ""
-    });
-  };
-  const closeEmailModal = () => {
-    setEmailModal({
-      isOpen: false,
-      bill: null,
-      email: ""
-    });
-  };
-  const submitSendEmail = async () => {
-    if (!canSendBillEmail) {
-      addNotification("You do not have permission to email bills", "error");
-      return;
-    }
-    if (!emailModal.bill?._id || !emailModal.email.trim()) {
-      addNotification("Email address is required", "error");
-      return;
-    }
-    try {
-      setActionLoadingId(emailModal.bill._id);
-      await billService.sendBillEmail(emailModal.bill._id, emailModal.email.trim());
-      addNotification("Bill email sent successfully", "success");
-      closeEmailModal();
-      await loadBills(true);
-    } catch (error) {
-      logger.error("Failed to send bill email:", error);
-      addNotification(error.response?.data?.message || "Failed to send bill email", "error");
-    } finally {
-      setActionLoadingId("");
-    }
   };
   const openPaymentModal = bill => {
     if (!canProcessBillPayment) {
@@ -399,7 +354,7 @@ export function BillManagement() {
       })}
       </div> : null}
 
-      <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+      <ResponsiveFilterSection title="Bill Filters" className="rounded-2xl shadow-sm">
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
           <div className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
@@ -436,7 +391,7 @@ export function BillManagement() {
               </option>)}
           </select>
         </div>
-      </div>
+      </ResponsiveFilterSection>
 
       {bills.length === 0 ? <div className="rounded-2xl border border-gray-200 bg-white p-10 text-center shadow-sm">
           <Receipt className="mx-auto h-12 w-12 text-gray-300" />
@@ -508,24 +463,16 @@ export function BillManagement() {
                   </p>
                 </div>
 
-                <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-5">
-                  <button type="button" onClick={() => openPdf(bill._id, "view")} className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-gray-300 px-3 py-2 text-sm hover:bg-gray-50">
-                    <Eye className="h-4 w-4" />
-                    View
-                  </button>
-                  <button type="button" onClick={() => openPdf(bill._id, "download")} className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-gray-300 px-3 py-2 text-sm hover:bg-gray-50">
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <button type="button" onClick={() => openPdf(bill._id, "download")} className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-gray-300 px-3 py-2 text-sm hover:bg-gray-50 sm:w-auto sm:min-w-[8rem]">
                     <Download className="h-4 w-4" />
                     PDF
                   </button>
-                  <button type="button" onClick={() => openEmailModal(bill)} disabled={!canSendBillEmail || actionLoadingId === bill._id} className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-gray-300 px-3 py-2 text-sm hover:bg-gray-50 disabled:opacity-60">
-                    <Mail className="h-4 w-4" />
-                    Email
-                  </button>
-                  <button type="button" onClick={() => openQrModal(bill)} className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-gray-300 px-3 py-2 text-sm hover:bg-gray-50">
+                  {bill.paymentStatus !== "paid" ? <button type="button" onClick={() => openQrModal(bill)} className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-gray-300 px-3 py-2 text-sm hover:bg-gray-50 sm:w-auto sm:min-w-[8rem]">
                     <QrCode className="h-4 w-4" />
                     Payment QR
-                  </button>
-                  {bill.paymentStatus !== "paid" ? <button type="button" onClick={() => openPaymentModal(bill)} disabled={!canProcessBillPayment || actionLoadingId === bill._id} className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-primary-600 px-3 py-2 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-60">
+                  </button> : null}
+                  {bill.paymentStatus !== "paid" ? <button type="button" onClick={() => openPaymentModal(bill)} disabled={!canProcessBillPayment || actionLoadingId === bill._id} className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-primary-600 px-3 py-2 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-60 sm:w-auto sm:min-w-[8rem]">
                       <CreditCard className="h-4 w-4" />
                       Mark Paid
                     </button> : null}
@@ -535,23 +482,6 @@ export function BillManagement() {
 
           <AdminPagination page={pagination.page} totalPages={pagination.pages} totalItems={pagination.total} pageSize={PAGE_SIZE} itemLabel="bills" onPageChange={setCurrentPage} />
         </>}
-
-      <AdminModal isOpen={emailModal.isOpen} title="Send Bill Email" subtitle="Choose the email recipient for this bill." onClose={closeEmailModal} maxWidth="max-w-lg" footer={<div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-            <button type="button" onClick={closeEmailModal} className="w-full rounded-lg border border-gray-300 px-4 py-2 hover:bg-gray-50 sm:w-auto">
-              Cancel
-            </button>
-            <button type="button" onClick={submitSendEmail} disabled={actionLoadingId === emailModal.bill?._id} className="w-full rounded-lg bg-primary-600 px-4 py-2 text-white hover:bg-primary-700 disabled:opacity-60 sm:w-auto">
-              Send Email
-            </button>
-          </div>}>
-        <div className="p-4 sm:p-5">
-          <label className="mb-2 block text-sm font-medium text-gray-700">Email Address</label>
-          <input type="email" value={emailModal.email} onChange={event => setEmailModal(current => ({
-          ...current,
-          email: event.target.value
-        }))} className="w-full rounded-lg border border-gray-300 px-3 py-2" placeholder="customer@example.com" />
-        </div>
-      </AdminModal>
 
       <AdminModal isOpen={paymentModal.isOpen} title="Mark Bill As Paid" subtitle="Store payment method details and complete the bill." onClose={closePaymentModal} maxWidth="max-w-lg" footer={<div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
             <button type="button" onClick={closePaymentModal} className="w-full rounded-lg border border-gray-300 px-4 py-2 hover:bg-gray-50 sm:w-auto">

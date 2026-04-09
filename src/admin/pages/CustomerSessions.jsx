@@ -5,6 +5,7 @@ import { customerAdminService } from "../../common/services";
 import { useAdmin } from "../context/AdminContext";
 import AdminPagination from "../components/common/AdminPagination";
 import { AdminListSkeleton } from "../components/common/AdminSkeleton";
+import ResponsiveFilterSection from "../components/common/ResponsiveFilterSection";
 import { useSettings } from "../../common/context/SettingsContext";
 const MODE_OPTIONS = [{
   value: "active",
@@ -148,31 +149,33 @@ export function CustomerSessions() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 rounded-lg border border-gray-200 bg-white p-4 lg:grid-cols-4">
-        <div className="relative lg:col-span-2">
+      <ResponsiveFilterSection title="Session Filters">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-4">
+          <div className="relative lg:col-span-2">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
           <input type="text" value={filters.search} onChange={event => setFilters(current => ({
           ...current,
           search: event.target.value
         }))} placeholder="Search session, phone, guest, or table" className="w-full rounded-lg border border-gray-300 py-2 pl-10 pr-4" />
-        </div>
-        <select value={filters.mode} onChange={event => setFilters(current => ({
+          </div>
+          <select value={filters.mode} onChange={event => setFilters(current => ({
         ...current,
         mode: event.target.value
       }))} className="w-full rounded-lg border border-gray-300 px-3 py-2">
-          {MODE_OPTIONS.map(option => <option key={option.value} value={option.value}>
+            {MODE_OPTIONS.map(option => <option key={option.value} value={option.value}>
               {option.label}
             </option>)}
-        </select>
-        <select value={filters.status} onChange={event => setFilters(current => ({
+          </select>
+          <select value={filters.status} onChange={event => setFilters(current => ({
         ...current,
         status: event.target.value
       }))} className="w-full rounded-lg border border-gray-300 px-3 py-2">
-          {STATUS_OPTIONS.map(option => <option key={option.value} value={option.value}>
+            {STATUS_OPTIONS.map(option => <option key={option.value} value={option.value}>
               {option.label}
             </option>)}
-        </select>
-      </div>
+          </select>
+        </div>
+      </ResponsiveFilterSection>
 
       {loading ? <AdminListSkeleton rows={5} /> : sessions.length === 0 ? <div className="rounded-lg border border-gray-200 bg-white p-10 text-center">
           <Users className="mx-auto mb-4 h-12 w-12 text-gray-300" />

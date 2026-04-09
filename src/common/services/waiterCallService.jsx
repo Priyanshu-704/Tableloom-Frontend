@@ -1,8 +1,10 @@
 import { axiosInstance } from "./api";
 import handleApiError from "../utils/handleApiError";
+import { createRequestCache } from "../utils/requestCache";
 const TEST_SESSION_ID = "sess_634cc306334465fde6a5011813d95e1a_1773924197354";
 const activeCallCache = new Map();
 const activeCallRequestCache = new Map();
+const waiterCallRequestCache = createRequestCache(10000);
 const getResolvedSessionId = (sessionId = "") => {
   const resolvedSessionId = sessionId || sessionStorage.getItem("sessionId") || localStorage.getItem("sessionId") || TEST_SESSION_ID;
   if (resolvedSessionId === TEST_SESSION_ID) {
@@ -91,11 +93,13 @@ export const waiterCallService = {
   },
   getDashboard: async () => {
     try {
-      const response = await axiosInstance.get("/waiter-calls/dashboard");
-      return response?.data ?? {
-        success: true,
-        data: {}
-      };
+      return await waiterCallRequestCache.run("waiter-calls:dashboard", async () => {
+        const response = await axiosInstance.get("/waiter-calls/dashboard");
+        return response?.data ?? {
+          success: true,
+          data: {}
+        };
+      });
     } catch (error) {
       handleApiError(error, "Failed to fetch waiter call dashboard");
     }
@@ -107,13 +111,18 @@ export const waiterCallService = {
       } : {
         ...(options || {})
       };
-      const response = await axiosInstance.get("/waiter-calls/statistics", {
+      return await waiterCallRequestCache.run({
+        scope: "waiter-calls:statistics",
         params
+      }, async () => {
+        const response = await axiosInstance.get("/waiter-calls/statistics", {
+          params
+        });
+        return response?.data ?? {
+          success: true,
+          data: {}
+        };
       });
-      return response?.data ?? {
-        success: true,
-        data: {}
-      };
     } catch (error) {
       handleApiError(error, "Failed to fetch waiter call statistics");
     }

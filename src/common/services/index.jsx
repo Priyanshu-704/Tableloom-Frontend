@@ -16,3 +16,5 @@ export { default as backupAdminService } from './backupAdminService';
 export { default as billService } from './billService';
 export { default as inventoryService } from './inventoryService';
 export { default as tenantService } from './tenantService';
+export { default as supportService } from './supportService';
+export { default as reportService } from './reportService';

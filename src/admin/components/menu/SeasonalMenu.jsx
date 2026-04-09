@@ -1,11 +1,12 @@
 import { logger } from "../../../common/utils/logger.js";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Calendar, Edit, Eye, EyeOff, Loader2, Plus, RefreshCw, Tag, LineChart, Ruler, Tags } from "lucide-react";
+import { Calendar, Eye, EyeOff, Loader2, Plus, RefreshCw, Tag, LineChart, Ruler, Tags } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { menuService } from "../../../common/services";
 import { useAdmin } from "../../context/AdminContext";
 import { ItemForm } from "./ItemForm";
 import { AdminPageSkeleton } from "../common/AdminSkeleton";
+import { AdminModal } from "../common/AdminModal";
 import { buildAdminPath } from "../../../common/utils/routes";
 import { useSettings } from "../../../common/context/SettingsContext";
 const FILTER_OPTIONS = [{
@@ -43,6 +44,13 @@ export function SeasonalMenu() {
   const [showItemForm, setShowItemForm] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [savingId, setSavingId] = useState("");
+  const [seasonalModal, setSeasonalModal] = useState({
+    isOpen: false,
+    item: null,
+    seasonName: "",
+    startDate: "",
+    endDate: ""
+  });
   const loadSeasonalData = useCallback(async () => {
     setLoading(true);
     try {
@@ -100,10 +108,6 @@ export function SeasonalMenu() {
     });
     setShowItemForm(true);
   };
-  const openEditForm = item => {
-    setEditingItem(item);
-    setShowItemForm(true);
-  };
   const handleSaveItem = async (itemData, imageFile) => {
     try {
       if (editingItem?._id) {
@@ -120,36 +124,76 @@ export function SeasonalMenu() {
       addNotification(error.response?.data?.message || "Failed to save seasonal item.", "error");
     }
   };
+  const buildSeasonalPayload = (item, seasonal) => ({
+    name: item.name,
+    description: item.description,
+    category: item.category?._id || item.category,
+    preparationTime: item.preparationTime,
+    ingredients: item.ingredients || [],
+    spiceLevel: item.spiceLevel,
+    isVegetarian: item.isVegetarian,
+    isVegan: item.isVegan,
+    isGlutenFree: item.isGlutenFree,
+    isAvailable: item.isAvailable,
+    tags: item.tags || [],
+    nutritionalInfo: item.nutritionalInfo || {},
+    prices: (item.prices || []).map(price => ({
+      sizeId: price?.size?._id || price?.sizeId?._id || price?.sizeId,
+      price: price?.price,
+      costPrice: price?.costPrice
+    })),
+    seasonal
+  });
+  const openSeasonalModal = item => {
+    setSeasonalModal({
+      isOpen: true,
+      item,
+      seasonName: item?.seasonal?.seasonName || "",
+      startDate: item?.seasonal?.startDate ? new Date(item.seasonal.startDate).toISOString().slice(0, 10) : "",
+      endDate: item?.seasonal?.endDate ? new Date(item.seasonal.endDate).toISOString().slice(0, 10) : ""
+    });
+  };
+  const closeSeasonalModal = () => {
+    setSeasonalModal({
+      isOpen: false,
+      item: null,
+      seasonName: "",
+      startDate: "",
+      endDate: ""
+    });
+  };
+  const submitSeasonalModal = async () => {
+    if (!seasonalModal.item?._id) {
+      return;
+    }
+    try {
+      setSavingId(seasonalModal.item._id);
+      await menuService.updateMenuItem(seasonalModal.item._id, buildSeasonalPayload(seasonalModal.item, {
+        isSeasonal: true,
+        seasonName: seasonalModal.seasonName.trim(),
+        startDate: seasonalModal.startDate || undefined,
+        endDate: seasonalModal.endDate || undefined
+      }));
+      closeSeasonalModal();
+      await loadSeasonalData();
+      addNotification("Seasonal item updated successfully.", "success");
+    } catch (error) {
+      logger.error("Failed to update seasonal status:", error);
+      addNotification(error.response?.data?.message || "Failed to update seasonal status.", "error");
+    } finally {
+      setSavingId("");
+    }
+  };
   const toggleSeasonalStatus = async item => {
+    if (!item?.seasonal?.isSeasonal) {
+      openSeasonalModal(item);
+      return;
+    }
     try {
       setSavingId(item._id);
-      await menuService.updateMenuItem(item._id, {
-        name: item.name,
-        description: item.description,
-        category: item.category?._id || item.category,
-        preparationTime: item.preparationTime,
-        ingredients: item.ingredients || [],
-        spiceLevel: item.spiceLevel,
-        isVegetarian: item.isVegetarian,
-        isVegan: item.isVegan,
-        isGlutenFree: item.isGlutenFree,
-        isAvailable: item.isAvailable,
-        tags: item.tags || [],
-        nutritionalInfo: item.nutritionalInfo || {},
-        prices: (item.prices || []).map(price => ({
-          sizeId: price?.size?._id || price?.sizeId,
-          price: price?.price,
-          costPrice: price?.costPrice
-        })),
-        seasonal: item?.seasonal?.isSeasonal ? {
-          isSeasonal: false
-        } : {
-          isSeasonal: true,
-          seasonName: item?.seasonal?.seasonName || "",
-          startDate: item?.seasonal?.startDate || undefined,
-          endDate: item?.seasonal?.endDate || undefined
-        }
-      });
+      await menuService.updateMenuItem(item._id, buildSeasonalPayload(item, {
+        isSeasonal: false
+      }));
       await loadSeasonalData();
       addNotification("Seasonal status updated successfully.", "success");
     } catch (error) {
@@ -281,11 +325,6 @@ export function SeasonalMenu() {
                   </div>
 
                   <div className="flex flex-wrap gap-2">
-                    <button type="button" onClick={() => openEditForm(item)} className="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-3 py-2 text-sm transition-colors hover:bg-gray-50">
-                      <Edit className="h-4 w-4" />
-                      Edit
-                    </button>
-
                     <button type="button" disabled={savingId === item._id} onClick={() => toggleSeasonalStatus(item)} className="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-3 py-2 text-sm transition-colors hover:bg-gray-50 disabled:opacity-60">
                       {item?.seasonal?.isSeasonal ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       {item?.seasonal?.isSeasonal ? "Remove Seasonal" : "Mark Seasonal"}
@@ -300,5 +339,40 @@ export function SeasonalMenu() {
       setShowItemForm(false);
       setEditingItem(null);
     }} categories={categories} sizes={sizes} /> : null}
+
+      <AdminModal isOpen={seasonalModal.isOpen} title="Mark Seasonal Item" subtitle={seasonalModal.item ? `Set season details for ${seasonalModal.item.name}.` : ""} onClose={closeSeasonalModal} maxWidth="max-w-lg" footer={<div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+            <button type="button" onClick={closeSeasonalModal} className="w-full rounded-lg border border-gray-300 px-4 py-2 hover:bg-gray-50 sm:w-auto">
+              Cancel
+            </button>
+            <button type="button" onClick={submitSeasonalModal} disabled={savingId === seasonalModal.item?._id} className="w-full rounded-lg bg-primary-600 px-4 py-2 text-white hover:bg-primary-700 disabled:opacity-60 sm:w-auto">
+              Save Seasonal Details
+            </button>
+          </div>}>
+        <div className="grid grid-cols-1 gap-4 p-4 sm:p-5">
+          <div>
+            <label className="mb-2 block text-sm font-medium text-gray-700">Season Name</label>
+            <input type="text" value={seasonalModal.seasonName} onChange={event => setSeasonalModal(current => ({
+            ...current,
+            seasonName: event.target.value
+          }))} className="w-full rounded-lg border border-gray-300 px-3 py-2" placeholder="e.g. Summer Special" />
+          </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div>
+              <label className="mb-2 block text-sm font-medium text-gray-700">Start Date</label>
+              <input type="date" value={seasonalModal.startDate} onChange={event => setSeasonalModal(current => ({
+              ...current,
+              startDate: event.target.value
+            }))} className="w-full rounded-lg border border-gray-300 px-3 py-2" />
+            </div>
+            <div>
+              <label className="mb-2 block text-sm font-medium text-gray-700">End Date</label>
+              <input type="date" value={seasonalModal.endDate} onChange={event => setSeasonalModal(current => ({
+              ...current,
+              endDate: event.target.value
+            }))} className="w-full rounded-lg border border-gray-300 px-3 py-2" />
+            </div>
+          </div>
+        </div>
+      </AdminModal>
     </div>;
 }

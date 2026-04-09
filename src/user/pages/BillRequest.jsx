@@ -20,16 +20,6 @@ const formatCurrency = (value, currency = "INR") => new Intl.NumberFormat("en-IN
   maximumFractionDigits: 2
 }).format(Number(value || 0));
 const normalizeBillItems = (payload = {}) => {
-  if (Array.isArray(payload?.bill?.items) && payload.bill.items.length > 0) {
-    return payload.bill.items.map((item, index) => ({
-      id: item?._id || `${item?.menuItem || "bill-item"}-${index}`,
-      name: item?.name || "Menu item",
-      size: item?.size || "",
-      quantity: Number(item?.quantity) || 0,
-      unitPrice: Number(item?.unitPrice) || 0,
-      totalPrice: Number(item?.totalPrice) || (Number(item?.unitPrice) || 0) * (Number(item?.quantity) || 0)
-    }));
-  }
   if (Array.isArray(payload?.orders) && payload.orders.length > 0) {
     return payload.orders.flatMap((order, orderIndex) => (order?.items || []).map((item, itemIndex) => ({
       id: item?._id || `${order?._id || orderIndex}-${item?.menuItem?._id || itemIndex}`,
@@ -39,6 +29,16 @@ const normalizeBillItems = (payload = {}) => {
       unitPrice: Number(item?.unitPrice || item?.price) || 0,
       totalPrice: Number(item?.totalPrice) || (Number(item?.unitPrice || item?.price) || 0) * (Number(item?.quantity) || 0)
     })));
+  }
+  if (Array.isArray(payload?.bill?.items) && payload.bill.items.length > 0) {
+    return payload.bill.items.map((item, index) => ({
+      id: item?._id || `${item?.menuItem || "bill-item"}-${index}`,
+      name: item?.name || "Menu item",
+      size: item?.size || "",
+      quantity: Number(item?.quantity) || 0,
+      unitPrice: Number(item?.unitPrice) || 0,
+      totalPrice: Number(item?.totalPrice) || (Number(item?.unitPrice) || 0) * (Number(item?.quantity) || 0)
+    }));
   }
   const currentOrderItems = payload?.session?.currentOrder?.items || [];
   return currentOrderItems.map((item, index) => ({
@@ -69,6 +69,7 @@ export function BillRequest() {
   const [isRequestingBill, setIsRequestingBill] = useState(false);
   const [isPaying, setIsPaying] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState("online");
+  const [splitCount, setSplitCount] = useState(2);
   const [lastPaymentSummary, setLastPaymentSummary] = useState(null);
   const [paymentQrState, setPaymentQrState] = useState({
     isOpen: false,
@@ -89,6 +90,12 @@ export function BillRequest() {
       setSelectedPayment(paymentOptions[0]);
     }
   }, [paymentOptions, selectedPayment]);
+  useEffect(() => {
+    const persistedPaymentMethod = billData?.session?.paymentMethod || "";
+    if (persistedPaymentMethod && paymentOptions.includes(persistedPaymentMethod) && persistedPaymentMethod !== selectedPayment) {
+      setSelectedPayment(persistedPaymentMethod);
+    }
+  }, [billData?.session?.paymentMethod, paymentOptions, selectedPayment]);
   const loadBillData = useCallback(async (showRefresh = false) => {
     if (!sessionId) {
       setBillData(null);
@@ -126,23 +133,36 @@ export function BillRequest() {
   useEffect(() => {
     loadBillData();
   }, [loadBillData]);
-  const handleRequestBill = async () => {
+  const requestBillForSelection = async ({
+    notifyUser = true
+  } = {}) => {
     if (!sessionId) {
-      notify("Customer session is not active", "error");
-      return;
+      if (notifyUser) {
+        notify("Customer session is not active", "error");
+      }
+      return null;
     }
     setIsRequestingBill(true);
     const response = await customerSessionService.requestBill(sessionId, {
       email,
-      forceNew: false
+      forceNew: false,
+      paymentMethod: selectedPayment
     });
     setIsRequestingBill(false);
     if (!response?.success) {
-      notify(response?.message || "Failed to request bill", "error");
-      return;
+      if (notifyUser) {
+        notify(response?.message || "Failed to request bill", "error");
+      }
+      return null;
     }
-    notify(response?.message || "Bill requested successfully", "success");
+    if (notifyUser) {
+      notify(response?.message || "Bill requested successfully", "success");
+    }
     await loadBillData(true);
+    return response;
+  };
+  const handleRequestBill = async () => {
+    await requestBillForSelection();
   };
   const openBillDocument = (mode = "view") => {
     const billId = billData?.bill?._id || lastPaymentSummary?.bill?.id;
@@ -228,7 +248,8 @@ export function BillRequest() {
       setIsRequestingBill(true);
       const billResponse = await customerSessionService.requestBill(sessionId, {
         email,
-        forceNew: false
+        forceNew: false,
+        paymentMethod: selectedPayment
       });
       setIsRequestingBill(false);
       if (!billResponse?.success) {
@@ -274,7 +295,14 @@ export function BillRequest() {
   };
   const handlePayment = async () => {
     if (selectedPayment === "cash") {
-      notify("Cash payment will be marked as paid by admin, manager, or waiter from the admin panel.", "info");
+      const response = await requestBillForSelection({
+        notifyUser: false
+      });
+      if (!response?.success) {
+        notify(response?.message || "Failed to request cash payment", "error");
+        return;
+      }
+      notify("Cash payment selected. Staff has been notified. You can now logout to open the Thank You page.", "success");
       return;
     }
     await openPaymentQr();
@@ -309,6 +337,9 @@ export function BillRequest() {
   const totalAmount = Number(billData?.summary?.totalAmount || billData?.bill?.totalAmount || 0);
   const hasGeneratedBill = Boolean(billData?.bill?._id);
   const isPaid = (billData?.bill?.paymentStatus || billData?.session?.paymentStatus) === "paid";
+  const splitBillEnabled = settings?.paymentMethods?.splitBill !== false;
+  const normalizedSplitCount = Math.min(Math.max(Number(splitCount) || 2, 2), 12);
+  const splitPerPersonAmount = normalizedSplitCount > 0 ? totalAmount / normalizedSplitCount : totalAmount;
   return <div className="min-h-screen bg-gray-50 pb-24">
       {paymentQrState.isOpen ? <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4">
           <div className="w-full max-w-md rounded-t-3xl bg-white p-6 shadow-2xl sm:rounded-2xl">
@@ -552,9 +583,41 @@ export function BillRequest() {
           </div>
         </div>
 
+        {splitBillEnabled && totalAmount > 0 ? <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-6 shadow-sm">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h3 className="text-lg font-semibold text-emerald-950">Equal Split</h3>
+                <p className="mt-2 text-sm text-emerald-800">
+                  Divide the current session bill equally before collecting payment.
+                </p>
+              </div>
+              <div className="w-28">
+                <label className="block text-xs font-medium uppercase tracking-[0.16em] text-emerald-700">
+                  People
+                </label>
+                <input type="number" min="2" max="12" value={normalizedSplitCount} onChange={event => setSplitCount(event.target.value)} className="mt-2 w-full rounded-xl border border-emerald-300 bg-white px-3 py-2 text-sm font-semibold text-emerald-950 focus:border-emerald-500 focus:outline-none" />
+              </div>
+            </div>
+
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <div className="rounded-xl bg-white/80 p-4">
+                <p className="text-xs uppercase tracking-[0.16em] text-emerald-700">Total bill</p>
+                <p className="mt-2 text-2xl font-bold text-emerald-950">
+                  {formatCurrency(totalAmount, currency)}
+                </p>
+              </div>
+              <div className="rounded-xl bg-white/80 p-4">
+                <p className="text-xs uppercase tracking-[0.16em] text-emerald-700">Per person</p>
+                <p className="mt-2 text-2xl font-bold text-emerald-950">
+                  {formatCurrency(splitPerPersonAmount, currency)}
+                </p>
+              </div>
+            </div>
+          </div> : null}
+
         <button type="button" onClick={handlePayment} disabled={isPaying || !billData?.canCompleteSession} className="mb-28 flex w-full cursor-pointer items-center justify-center rounded-xl bg-primary-600 px-6 py-4 text-center font-semibold text-white shadow-lg hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-60">
           <CheckCircle className="mr-2 h-5 w-5" />
-          {isPaying ? "Processing..." : selectedPayment === "cash" ? "Await Staff Cash Confirmation" : `Show QR To Pay ${formatCurrency(totalAmount, currency)}`}
+          {isPaying ? "Processing..." : selectedPayment === "cash" ? "Request Cash Payment & Finish Visit" : `Show QR To Pay ${formatCurrency(totalAmount, currency)}`}
         </button>
 
         {selectedPayment !== "cash" ? <div className="rounded-2xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800">

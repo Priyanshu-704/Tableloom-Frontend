@@ -28,6 +28,7 @@ export function StaffCard({
   const menuRef = useRef(null);
   const [showMenu, setShowMenu] = useState(false);
   const RoleIcon = roleIcons[staff.role] || Users;
+  const isCurrentUser = String(staff?._id || "") === String(currentUserId || "");
   const handleMenuToggle = e => {
     e.stopPropagation();
     setShowMenu(!showMenu);
@@ -65,10 +66,15 @@ export function StaffCard({
             </div>
             <div className="min-w-0">
               <h3 className="truncate font-semibold text-gray-900">{staff.name}</h3>
-              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${roleColors[staff.role]}`}>
-                <RoleIcon className="h-3 w-3 mr-1" />
-                {staff.role?.charAt(0).toUpperCase() + staff.role?.slice(1)}
-              </span>
+              <div className="mt-1 flex flex-wrap items-center gap-2">
+                <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${roleColors[staff.role]}`}>
+                  <RoleIcon className="h-3 w-3 mr-1" />
+                  {staff.role?.charAt(0).toUpperCase() + staff.role?.slice(1)}
+                </span>
+                {isCurrentUser ? <span className="inline-flex rounded-full bg-slate-100 px-2 py-1 text-xs font-medium text-slate-600">
+                    You
+                  </span> : null}
+              </div>
             </div>
           </div>
 
@@ -78,28 +84,31 @@ export function StaffCard({
               </button>
 
               {showMenu && <div className="absolute right-0 top-8 w-48 bg-white rounded-lg shadow-lg border z-10">
-                  <button onClick={handleToggleStatus} className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2">
-                    {staff.isActive ? <>
-                        <UserX className="h-4 w-4" />
-                        <span>Deactivate</span>
-                      </> : <>
-                        <UserCheck className="h-4 w-4" />
-                        <span>Activate</span>
-                      </>}
-                  </button>
+                  {!isCurrentUser ? <button onClick={handleToggleStatus} className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2">
+                      {staff.isActive ? <>
+                          <UserX className="h-4 w-4" />
+                          <span>Deactivate</span>
+                        </> : <>
+                          <UserCheck className="h-4 w-4" />
+                          <span>Activate</span>
+                        </>}
+                    </button> : null}
 
-                  {canManagePermissions && staff._id !== currentUserId && <button onClick={() => onManagePermissions(staff)} className="w-full text-left px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 flex items-center space-x-2">
+                  {canManagePermissions && !isCurrentUser && <button onClick={() => onManagePermissions(staff)} className="w-full text-left px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 flex items-center space-x-2">
                       <Shield className="h-4 w-4" />
                       <span>Manage Permissions</span>
                     </button>}
-                  <button onClick={handleDelete} className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center space-x-2">
-                    <Trash2 className="h-4 w-4" />
-                    <span>Delete</span>
-                  </button>
-                  {canUpdateRoles && onUpdateRole && staff._id !== currentUserId && <button onClick={() => onUpdateRole(staff)} className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2">
+                  {!isCurrentUser ? <button onClick={handleDelete} className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center space-x-2">
+                      <Trash2 className="h-4 w-4" />
+                      <span>Delete</span>
+                    </button> : null}
+                  {canUpdateRoles && onUpdateRole && !isCurrentUser && <button onClick={() => onUpdateRole(staff)} className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2">
                         <Pencil className="h-4 w-4" />
                         <span>Update Role</span>
                       </button>}
+                  {isCurrentUser ? <div className="px-4 py-3 text-xs text-slate-500">
+                      You cannot deactivate or delete your own account.
+                    </div> : null}
                 </div>}
             </div>}
         </div>

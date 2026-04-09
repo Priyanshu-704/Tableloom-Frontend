@@ -10,6 +10,34 @@ export function useCart(options = {}) {
   const [error, setError] = useState(null);
   const isFetchingRef = useRef(false);
   const mountedRef = useRef(true);
+  const syncCartState = useCallback(cartData => {
+    setCart(cartData || null);
+    if (!cartData) {
+      setCartSummary(null);
+      return;
+    }
+    const summary = cartData.summary || {};
+    const items = cartData.items || [];
+    setCartSummary({
+      itemCount: summary.itemCount || 0,
+      subtotal: summary.subtotal || 0,
+      tax: summary.tax || 0,
+      taxRate: summary.taxRate || 0,
+      taxInclusive: Boolean(summary.taxInclusive),
+      discount: summary.discount || 0,
+      itemDiscount: summary.itemDiscount || 0,
+      couponDiscount: summary.couponDiscount || 0,
+      appliedCoupon: summary.appliedCoupon || null,
+      deliveryFee: summary.deliveryFee || 0,
+      serviceCharge: summary.serviceCharge || summary.deliveryFee || 0,
+      serviceChargeRate: summary.serviceChargeRate || 0,
+      currency: summary.currency || "INR",
+      currencySymbol: summary.currencySymbol || "₹",
+      total: summary.total || 0,
+      table: cartData.table,
+      items
+    });
+  }, []);
   const fetchCart = useCallback(async (forceRefresh = false) => {
     if (isFetchingRef.current && !forceRefresh) {
       return;
@@ -20,43 +48,16 @@ export function useCart(options = {}) {
     try {
       const result = await cartService.getCart(forceRefresh);
       if (result.success && mountedRef.current) {
-        const cartData = result.data;
-        setCart(cartData);
-        if (cartData) {
-          const summary = cartData.summary || {};
-          const items = cartData.items || [];
-          const cartSummaryData = {
-            itemCount: summary.itemCount || 0,
-            subtotal: summary.subtotal || 0,
-            tax: summary.tax || 0,
-            taxRate: summary.taxRate || 0,
-            taxInclusive: Boolean(summary.taxInclusive),
-            discount: summary.discount || 0,
-            itemDiscount: summary.itemDiscount || 0,
-            couponDiscount: summary.couponDiscount || 0,
-            appliedCoupon: summary.appliedCoupon || null,
-            deliveryFee: summary.deliveryFee || 0,
-            serviceCharge: summary.serviceCharge || summary.deliveryFee || 0,
-            serviceChargeRate: summary.serviceChargeRate || 0,
-            currency: summary.currency || "INR",
-            currencySymbol: summary.currencySymbol || "₹",
-            total: summary.total || 0,
-            table: cartData.table,
-            items: items
-          };
-          setCartSummary(cartSummaryData);
-        }
+        syncCartState(result.data);
         setError(null);
       } else if (mountedRef.current) {
         setError(result.message || "Failed to load cart");
-        setCart(null);
-        setCartSummary(null);
+        syncCartState(null);
       }
     } catch (err) {
       if (mountedRef.current) {
         setError(err.message || "Failed to fetch cart");
-        setCart(null);
-        setCartSummary(null);
+        syncCartState(null);
       }
     } finally {
       if (mountedRef.current) {
@@ -64,7 +65,7 @@ export function useCart(options = {}) {
       }
       isFetchingRef.current = false;
     }
-  }, []);
+  }, [syncCartState]);
   const fetchCartSummary = useCallback(async () => {
     try {
       const result = await cartService.getCartSummary();
@@ -97,7 +98,9 @@ export function useCart(options = {}) {
       }
       const result = await cartService.addItemToCart(menuItemId, quantity, specialInstructions, sizeId);
       if (result.success) {
-        await fetchCart(true);
+        if (mountedRef.current) {
+          syncCartState(result.data);
+        }
         return {
           success: true,
           message: result.message,
@@ -120,7 +123,7 @@ export function useCart(options = {}) {
     } finally {
       setLoading(false);
     }
-  }, [fetchCart]);
+  }, [syncCartState]);
   const updateQuantity = useCallback(async (itemId, quantity, sizeId = null) => {
     setLoading(true);
     setError(null);
@@ -130,7 +133,9 @@ export function useCart(options = {}) {
       }
       const result = await cartService.updateItemQuantity(itemId, quantity, sizeId);
       if (result.success) {
-        await fetchCart(true);
+        if (mountedRef.current) {
+          syncCartState(result.data);
+        }
         return {
           success: true,
           message: result.message
@@ -152,7 +157,7 @@ export function useCart(options = {}) {
     } finally {
       setLoading(false);
     }
-  }, [fetchCart]);
+  }, [syncCartState]);
   const removeFromCart = useCallback(async (itemId, sizeId = null) => {
     setLoading(true);
     setError(null);
@@ -162,7 +167,9 @@ export function useCart(options = {}) {
       }
       const result = await cartService.removeItemFromCart(itemId, sizeId);
       if (result.success) {
-        await fetchCart(true);
+        if (mountedRef.current) {
+          syncCartState(result.data);
+        }
         return {
           success: true,
           message: result.message
@@ -184,15 +191,14 @@ export function useCart(options = {}) {
     } finally {
       setLoading(false);
     }
-  }, [fetchCart]);
+  }, [syncCartState]);
   const clearCart = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       const result = await cartService.clearCart();
       if (result.success) {
-        setCart(null);
-        setCartSummary(null);
+        syncCartState(result.data);
         return {
           success: true,
           message: result.message
@@ -214,7 +220,7 @@ export function useCart(options = {}) {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [syncCartState]);
   const getCartTotal = useCallback(async () => {
     try {
       const result = await cartService.getCartTotals();

@@ -32,6 +32,9 @@ const Feedback = lazy(() => import("./pages/Feedback").then(m => ({
 const RestaurantInfo = lazy(() => import("./pages/RestaurantInfo").then(m => ({
   default: m.RestaurantInfo
 })));
+const ThankYou = lazy(() => import("./pages/ThankYou").then(m => ({
+  default: m.ThankYou
+})));
 const CustomerLayout = lazy(() => import("./components/layout/CustomerLayout"));
 const RouteLoader = () => <div className="flex min-h-[40vh] items-center justify-center">
     <div className="h-10 w-10 animate-spin rounded-full border-b-2 border-t-2 border-primary-600" />
@@ -125,6 +128,7 @@ function CustomerApp() {
       <Suspense fallback={<RouteLoader />}>
         <Routes>
           <Route path="/" element={sessionId || BYPASS_CUSTOMER_SESSION_GUARD ? <Navigate to={buildCustomerPath("/home")} replace /> : <CustomerInfoForm />} />
+          <Route path="/thank-you" element={<ThankYou />} />
           <Route path="/home" element={<SessionRequiredRoute hasSession={Boolean(sessionId)} isHydrating={isHydratingSession}>
                 <CustomerLayout />
               </SessionRequiredRoute>}>

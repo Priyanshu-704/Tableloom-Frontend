@@ -125,6 +125,10 @@ export function StaffManagement() {
     if (isMonitoringMode) {
       return;
     }
+    if (String(staffId) === String(user?._id)) {
+      addNotification("You cannot change your own account status.", "warning");
+      return;
+    }
     const confirmed = await confirmAction({
       title: `${isActive ? "Activate" : "Deactivate"} Staff Member`,
       message: `Are you sure you want to ${isActive ? "activate" : "deactivate"} this staff member?`,
@@ -172,6 +176,10 @@ export function StaffManagement() {
   const canManagePermissions = hasPermission("user_manage_permissions");
   const deleteStaff = async staffId => {
     if (isMonitoringMode) {
+      return;
+    }
+    if (String(staffId) === String(user?._id)) {
+      addNotification("You cannot delete your own account.", "warning");
       return;
     }
     const confirmed = await confirmAction({

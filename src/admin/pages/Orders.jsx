@@ -6,6 +6,7 @@ import { OrderCard } from "../components/orders/OrderCard";
 import { KitchenDisplay } from "../components/orders/KitchenDisplay";
 import AdminPagination from "../components/common/AdminPagination";
 import { AdminListSkeleton } from "../components/common/AdminSkeleton";
+import ResponsiveFilterSection from "../components/common/ResponsiveFilterSection";
 import { orderService } from "../../common/services";
 import { useSettings } from "../../common/context/SettingsContext";
 const ORDER_STATUS = [{
@@ -257,7 +258,7 @@ export function Orders() {
           </button>)}
       </div>
 
-      <div className="rounded-lg border border-gray-200 bg-white p-4">
+      <ResponsiveFilterSection title="Order Filters">
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
@@ -285,7 +286,7 @@ export function Orders() {
               </option>)}
           </select>
         </div>
-      </div>
+      </ResponsiveFilterSection>
 
       {loading ? <AdminListSkeleton rows={6} /> : orders.length === 0 ? <div className="rounded-lg border border-gray-200 bg-white p-10 text-center">
           <ClipboardList className="mx-auto mb-4 h-12 w-12 text-gray-300" />

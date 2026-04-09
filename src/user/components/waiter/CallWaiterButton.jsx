@@ -6,7 +6,8 @@ export function CallWaiterButton({
   className = "",
   tableNumber,
   onCallWaiter,
-  hasActiveCall = false
+  hasActiveCall = false,
+  inline = false
 }) {
   const [isLoading, setIsLoading] = useState(false);
   const {
@@ -25,7 +26,7 @@ export function CallWaiterButton({
       setIsLoading(false);
     }
   };
-  return <div className="fixed bottom-4 right-6 z-50">
+  return <div className={inline ? "w-full" : "fixed bottom-4 right-6 z-50"}>
       {hasActiveCall ? <div className="bg-green-500 text-white px-6 py-3 rounded-full shadow-lg flex items-center space-x-3 animate-pulse">
           <Check className="h-5 w-5" />
           <span className="font-semibold">{t("waiterNotified")}</span>

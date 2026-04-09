@@ -25,23 +25,30 @@ const getDiscountedPrice = (price, discount) => {
   const nextDiscount = discount.type === "fixed" ? Number(discount.value || 0) : basePrice * Number(discount.value || 0) / 100;
   return Math.max(basePrice - nextDiscount, 0);
 };
-const transformMenuItem = item => ({
+const transformMenuItem = item => {
+  const discount = item.activeDiscount || item.discount;
+  const sizes = item.prices?.map(priceEntry => {
+    const size = priceEntry?.size || priceEntry?.sizeId || null;
+    const originalPrice = Number(priceEntry?.price || 0);
+    return {
+      id: size?._id || size?.id || size || null,
+      name: size?.name || "",
+      code: size?.code || "",
+      price: getDiscountedPrice(originalPrice, discount),
+      originalPrice
+    };
+  }).filter(size => size.id && size.price > 0) || [];
+  return {
   id: item._id,
   name: item.name,
   description: item.description,
   image: item.image,
   category: item.category?.name || "Uncategorized",
   categoryId: item.category?._id || null,
-  price: getDiscountedPrice(item.prices?.[0]?.price || 0, item.activeDiscount || item.discount),
+  price: sizes[0]?.price || getDiscountedPrice(item.prices?.[0]?.price || 0, discount),
   prices: item.prices || [],
-  sizes: item.prices?.map(priceEntry => ({
-    id: priceEntry.size?._id,
-    name: priceEntry.size?.name,
-    code: priceEntry.size?.code,
-    price: getDiscountedPrice(priceEntry.price, item.activeDiscount || item.discount),
-    originalPrice: priceEntry.price
-  })) || [],
-  activeDiscount: item.activeDiscount || item.discount || null,
+  sizes,
+  activeDiscount: discount || null,
   isAvailable: item.isAvailable,
   isActive: item.isActive,
   isVegetarian: item.isVegetarian,
@@ -52,7 +59,8 @@ const transformMenuItem = item => ({
   orderCount: item.orderCount || 0,
   preparationTime: item.preparationTime,
   tags: item.tags || []
-});
+  };
+};
 export function Menu() {
   const {
     t
@@ -86,7 +94,7 @@ export function Menu() {
       try {
         setLoadingFilters(true);
         setError(null);
-        const [categoriesResponse, filterResponse] = await Promise.all([menuService.getCategories(true, true, {
+        const [categoriesResponse, filterResponse] = await Promise.all([menuService.getCategories(true, undefined, {
           view: "customer"
         }), menuService.getMenuFilterOptions()]);
         const categoryArray = Array.isArray(categoriesResponse?.data) ? categoriesResponse.data : categoriesResponse?.data?.data || [];
@@ -184,9 +192,6 @@ export function Menu() {
     return grouped;
   }, [menuItems]);
   const visibleCategories = useMemo(() => {
-    if (categories.length > 0) {
-      return categories;
-    }
     const derivedCategories = new Map();
     menuItems.forEach(item => {
       if (!item.category || item.category === "Uncategorized") {
@@ -202,7 +207,30 @@ export function Menu() {
         });
       }
     });
-    return Array.from(derivedCategories.values()).sort((a, b) => a.name.localeCompare(b.name));
+
+    const knownCategories = Array.isArray(categories) ? categories.filter(category => {
+      if (!category?.isActive) {
+        return false;
+      }
+      return derivedCategories.has(category._id) || derivedCategories.has(category.name);
+    }) : [];
+
+    if (!knownCategories.length) {
+      return Array.from(derivedCategories.values()).sort((a, b) => a.name.localeCompare(b.name));
+    }
+
+    derivedCategories.forEach((value, key) => {
+      const exists = knownCategories.some(category => category._id === key || category.name === value.name);
+      if (!exists) {
+        knownCategories.push(value);
+      }
+    });
+
+    return knownCategories.sort((a, b) => {
+      const orderA = Number.isFinite(a.displayOrder) ? a.displayOrder : Number.MAX_SAFE_INTEGER;
+      const orderB = Number.isFinite(b.displayOrder) ? b.displayOrder : Number.MAX_SAFE_INTEGER;
+      return orderA === orderB ? a.name.localeCompare(b.name) : orderA - orderB;
+    });
   }, [categories, menuItems]);
   const categoryMeta = useMemo(() => {
     const map = new Map();

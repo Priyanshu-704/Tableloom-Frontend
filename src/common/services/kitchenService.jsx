@@ -1,15 +1,23 @@
 import { axiosInstance } from "./api";
 import handleApiError from "../utils/handleApiError";
+import { createRequestCache } from "../utils/requestCache";
+
+const kitchenRequestCache = createRequestCache(10000);
 export const kitchenService = {
   getAnalytics: async (filters = {}) => {
     try {
-      const response = await axiosInstance.get("/kitchen/analytics", {
-        params: filters
+      return await kitchenRequestCache.run({
+        scope: "kitchen:analytics",
+        filters
+      }, async () => {
+        const response = await axiosInstance.get("/kitchen/analytics", {
+          params: filters
+        });
+        return response?.data ?? {
+          success: true,
+          data: {}
+        };
       });
-      return response?.data ?? {
-        success: true,
-        data: {}
-      };
     } catch (error) {
       handleApiError(error, "Failed to fetch kitchen analytics");
     }

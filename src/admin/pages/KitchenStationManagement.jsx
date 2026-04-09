@@ -1,6 +1,6 @@
 import { logger } from "../../common/utils/logger.js";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { ChefHat, Plus, Edit, Trash2, Loader, Link2, Unlink } from "lucide-react";
+import { ChefHat, Plus, Edit, Trash2, Loader, Unlink } from "lucide-react";
 import { kitchenStationService, menuService } from "../../common/services";
 import { useAdmin } from "../context/AdminContext";
 import { AdminModal } from "../components/common/AdminModal";
@@ -44,7 +44,7 @@ export function KitchenStationManagement() {
     try {
       setLoading(true);
       setPageError("");
-      const [stationsResponse, categoriesResponse] = await Promise.all([kitchenStationService.getKitchenStations(), menuService.getCategories(true, true)]);
+      const [stationsResponse, categoriesResponse] = await Promise.all([kitchenStationService.getKitchenStations(), menuService.getCategories(true, undefined)]);
       setStations(stationsResponse.data || []);
       setCategories(categoriesResponse.data || []);
     } catch (error) {
@@ -59,7 +59,7 @@ export function KitchenStationManagement() {
   useEffect(() => {
     loadData();
   }, [loadData]);
-  const unassignedCategories = useMemo(() => categories.filter(category => !category.kitchenStation), [categories]);
+  const unassignedCategories = useMemo(() => categories.filter(category => !category?.kitchenStation?._id && !category?.kitchenStation), [categories]);
   const handleOpenCreate = () => {
     if (isMonitoringMode) {
       return;
@@ -330,7 +330,7 @@ export function KitchenStationManagement() {
 
               {!isMonitoringMode && <div className="mt-auto border-t border-gray-100 pt-4">
                 <p className="text-sm font-medium text-gray-700 mb-2">Assign Category</p>
-                <div className="flex flex-col gap-2 sm:flex-row">
+                <div className="flex flex-col gap-2">
                   <select className="w-full flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm" defaultValue="" onChange={e => {
               const value = e.target.value;
               if (value) {
@@ -343,9 +343,6 @@ export function KitchenStationManagement() {
                         {category.name}
                       </option>)}
                   </select>
-                  <button className="inline-flex w-full items-center justify-center border border-gray-300 px-3 py-2 text-sm text-gray-700 rounded-lg sm:w-auto" disabled>
-                    <Link2 className="h-4 w-4" />
-                  </button>
                 </div>
               </div>}
             </div>)}

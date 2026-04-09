@@ -46,6 +46,7 @@ export function Cart() {
   }).format(Number(value || 0));
   const currentTableNumber = cart?.table?.number || cart?.table?.tableNumber || tableNumber || "1";
   const activeSummary = cart?.summary || cartSummary || null;
+  const activeCouponCode = activeSummary?.appliedCoupon?.code || "";
   const isTaxInclusive = Boolean(activeSummary?.taxInclusive ?? settings?.taxSettings?.taxInclusive);
   useEffect(() => {
     let mounted = true;
@@ -113,7 +114,8 @@ export function Cart() {
         notify(result.message || "Failed to apply coupon", "error");
         return;
       }
-      notify("Coupon applied successfully", "success");
+      setCouponCode("");
+      notify(result.message || "Coupon applied successfully", "success");
     } finally {
       setIsApplyingDiscount(false);
     }
@@ -306,12 +308,13 @@ export function Cart() {
           <div className="flex flex-col gap-3 sm:flex-row">
             <input id="couponCode" type="text" value={couponCode} onChange={event => setCouponCode(event.target.value)} placeholder="Enter coupon code" className="flex-1 rounded-lg border border-gray-300 px-3 py-2 focus:border-transparent focus:ring-2 focus:ring-primary-500" />
             <button type="button" onClick={handleApplyDiscount} disabled={isApplyingDiscount || loading} className="cursor-pointer w-full rounded-lg bg-primary-600 px-4 py-2 font-semibold text-white transition-colors hover:bg-primary-700 disabled:bg-gray-400 sm:w-auto">
-              {isApplyingDiscount ? "Applying..." : "Apply Coupon"}
+              {isApplyingDiscount ? "Applying..." : activeCouponCode ? "Replace Coupon" : "Apply Coupon"}
             </button>
           </div>
-          {cart?.summary?.appliedCoupon?.code ? <p className="mt-3 text-sm text-green-600">
-              Active coupon: {cart.summary.appliedCoupon.code}
-            </p> : null}
+          {activeCouponCode ? <div className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+              <p>Active coupon: <span className="font-semibold">{activeCouponCode}</span></p>
+              <p className="mt-1 text-xs text-emerald-600">Applying a new coupon will replace the current one.</p>
+            </div> : null}
         </div>
 
         <div className="mb-6">

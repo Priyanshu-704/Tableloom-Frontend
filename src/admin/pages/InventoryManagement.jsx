@@ -1,12 +1,13 @@
 import { logger } from "../../common/utils/logger.js";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Boxes, Plus, RefreshCw, Search, Pencil, Trash2, ArrowUpCircle, AlertTriangle, PackageX, PackageCheck, UtensilsCrossed } from "lucide-react";
+import { Boxes, Plus, RefreshCw, Search, Pencil, Trash2, ArrowUpCircle, AlertTriangle, PackageX, PackageCheck, UtensilsCrossed, Upload, Download } from "lucide-react";
 import { inventoryService, menuService } from "../../common/services";
 import { useAdmin } from "../context/AdminContext";
 import { AdminModal } from "../components/common/AdminModal";
 import AdminPagination from "../components/common/AdminPagination";
 import { AdminListSkeleton } from "../components/common/AdminSkeleton";
-import { INVENTORY_ADJUSTMENT_DEFAULTS, INVENTORY_ADJUSTMENT_OPTIONS, INVENTORY_FORM_DEFAULTS, INVENTORY_PAGE_SIZE, INVENTORY_STATUS_OPTIONS, normalizeInventoryRelations } from "../../common/utils/inventory";
+import ResponsiveFilterSection from "../components/common/ResponsiveFilterSection";
+import { INVENTORY_ADJUSTMENT_DEFAULTS, INVENTORY_ADJUSTMENT_OPTIONS, INVENTORY_FORM_DEFAULTS, INVENTORY_PAGE_SIZE, INVENTORY_STATUS_OPTIONS, INVENTORY_UNIT_OPTIONS, formatInventoryUnitLabel, normalizeInventoryRelations, normalizeInventoryUnitValue } from "../../common/utils/inventory";
 import InventoryStatusBadge from "../components/InventoryStatusBadge.jsx";
 
 const renderMenuLinks = (item) => {
@@ -47,11 +48,14 @@ export function InventoryManagement() {
   });
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isAdjustOpen, setIsAdjustOpen] = useState(false);
+  const [isBulkUploadOpen, setIsBulkUploadOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [activeItem, setActiveItem] = useState(null);
   const [formState, setFormState] = useState(INVENTORY_FORM_DEFAULTS);
   const [adjustmentState, setAdjustmentState] = useState(INVENTORY_ADJUSTMENT_DEFAULTS);
+  const [bulkFile, setBulkFile] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [bulkUploading, setBulkUploading] = useState(false);
   const loadInventory = useCallback(async () => {
     try {
       setLoading(true);
@@ -98,7 +102,7 @@ export function InventoryManagement() {
     setFormState({
       ingredientName: item.ingredientName || "",
       sku: item.sku || "",
-      unit: item.unit || "pcs",
+      unit: normalizeInventoryUnitValue(item.unit),
       currentStock: item.currentStock ?? "",
       minimumStock: item.minimumStock ?? "",
       reorderQuantity: item.reorderQuantity ?? "",
@@ -113,11 +117,30 @@ export function InventoryManagement() {
     setAdjustmentState(INVENTORY_ADJUSTMENT_DEFAULTS);
     setIsAdjustOpen(true);
   };
+  const closeBulkUploadModal = () => {
+    setIsBulkUploadOpen(false);
+    setBulkFile(null);
+  };
+  const handleDownloadTemplate = () => {
+    const csvContent = ["ingredientName,sku,unit,currentStock,minimumStock,reorderQuantity,notes", "Tomato,TOM-001,kg,18,5,10,Fresh red tomatoes", "Paper Cup,CUP-012,pieces,240,60,120,12 oz disposable cups", "Olive Oil,OIL-011,liter,8,2,4,Cold pressed olive oil"].join("\n");
+    const blob = new Blob([csvContent], {
+      type: "text/csv;charset=utf-8;"
+    });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "inventory-bulk-upload-template.csv";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  };
   const handleSave = async () => {
     try {
       setSaving(true);
       const payload = {
         ...formState,
+        unit: normalizeInventoryUnitValue(formState.unit),
         currentStock: Number(formState.currentStock || 0),
         minimumStock: Number(formState.minimumStock || 0),
         reorderQuantity: Number(formState.reorderQuantity || 0),
@@ -161,6 +184,25 @@ export function InventoryManagement() {
       addNotification(error.response?.data?.message || "Failed to adjust inventory.", "error");
     } finally {
       setSaving(false);
+    }
+  };
+  const handleBulkUpload = async () => {
+    if (!bulkFile) {
+      addNotification("Choose a CSV file to upload inventory data.", "error");
+      return;
+    }
+    try {
+      setBulkUploading(true);
+      const response = await inventoryService.bulkUploadInventory(bulkFile);
+      const uploadStats = response?.data || {};
+      closeBulkUploadModal();
+      await loadInventory();
+      addNotification(`Bulk upload completed. Created ${uploadStats.created || 0}, updated ${uploadStats.updated || 0}, failed ${uploadStats.failed || 0}.`, uploadStats.failed ? "warning" : "success");
+    } catch (error) {
+      logger.error("Failed to bulk upload inventory:", error);
+      addNotification(error.response?.data?.message || "Failed to bulk upload inventory.", "error");
+    } finally {
+      setBulkUploading(false);
     }
   };
   const handleDelete = async item => {
@@ -237,6 +279,14 @@ export function InventoryManagement() {
             <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
             Refresh
           </button>
+          <button type="button" onClick={handleDownloadTemplate} className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 transition-colors hover:bg-gray-50 sm:w-auto">
+            <Download className="h-4 w-4" />
+            CSV Template
+          </button>
+          <button type="button" onClick={() => setIsBulkUploadOpen(true)} className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-primary-200 bg-primary-50 px-4 py-2 text-primary-700 transition-colors hover:bg-primary-100 sm:w-auto">
+            <Upload className="h-4 w-4" />
+            Bulk Upload
+          </button>
           <button type="button" onClick={openCreateForm} className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-white transition-colors hover:bg-primary-700 sm:w-auto">
             <Plus className="h-4 w-4" />
             Add Ingredient
@@ -251,31 +301,37 @@ export function InventoryManagement() {
         {renderStatsCard("Out of Stock", stats?.outOfStock || 0, PackageX, "bg-rose-50 text-rose-600")}
       </div>
 
-      <div className="grid grid-cols-1 gap-4 rounded-lg border border-gray-200 bg-white p-4 lg:grid-cols-4">
-        <div className="relative lg:col-span-2">
+      <ResponsiveFilterSection title="Inventory Filters">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-4">
+          <div className="relative lg:col-span-2">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
           <input type="text" value={filters.search} onChange={event => setFilters(current => ({
           ...current,
           search: event.target.value
         }))} placeholder="Search by ingredient name or SKU" className="w-full rounded-lg border border-gray-300 py-2 pl-10 pr-4" />
-        </div>
-        <select value={filters.status} onChange={event => setFilters(current => ({
+          </div>
+          <select value={filters.status} onChange={event => setFilters(current => ({
         ...current,
         status: event.target.value
       }))} className="w-full rounded-lg border border-gray-300 px-3 py-2">
-          {INVENTORY_STATUS_OPTIONS.map(option => <option key={option.value} value={option.value}>
+            {INVENTORY_STATUS_OPTIONS.map(option => <option key={option.value} value={option.value}>
               {option.label}
             </option>)}
-        </select>
-        <select value={filters.category} onChange={event => setFilters(current => ({
+          </select>
+          <select value={filters.category} onChange={event => setFilters(current => ({
         ...current,
         category: event.target.value
       }))} className="w-full rounded-lg border border-gray-300 px-3 py-2">
-          <option value="all">All Categories</option>
-          {categories.map(category => <option key={category._id} value={category._id}>
+            <option value="all">All Categories</option>
+            {categories.map(category => <option key={category._id} value={category._id}>
               {category.name}
             </option>)}
-        </select>
+          </select>
+        </div>
+      </ResponsiveFilterSection>
+
+      <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+        Upload inventory in CSV format with supported units only: kg, pieces, gram, milligram, liter, and ton.
       </div>
 
       {loading ? <AdminListSkeleton rows={6} /> : inventoryItems.length === 0 ? <div className="rounded-lg border border-gray-200 bg-white p-10 text-center">
@@ -291,7 +347,7 @@ export function InventoryManagement() {
                   <div>
                     <p className="font-semibold text-gray-900">{item.ingredientName}</p>
                     <p className="mt-1 text-sm text-gray-500">
-                      SKU: {item.sku || "Not set"} • Unit: {item.unit}
+                      SKU: {item.sku || "Not set"} • Unit: {formatInventoryUnitLabel(item.unit)}
                     </p>
                   </div>
                   <InventoryStatusBadge status={item.stockStatus} />
@@ -301,17 +357,17 @@ export function InventoryManagement() {
                   <div className="rounded-xl bg-slate-50 px-3 py-3 text-sm">
                     <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Stock</p>
                     <p className="mt-1 font-semibold text-slate-900">
-                      {item.currentStock} {item.unit}
+                      {item.currentStock} {formatInventoryUnitLabel(item.unit)}
                     </p>
                     <p className="mt-1 text-slate-500">
-                      Reorder at {item.reorderQuantity} {item.unit}
+                      Reorder at {item.reorderQuantity} {formatInventoryUnitLabel(item.unit)}
                     </p>
                   </div>
 
                   <div className="rounded-xl bg-slate-50 px-3 py-3 text-sm">
                     <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Minimum Threshold</p>
                     <p className="mt-1 font-semibold text-slate-900">
-                      {item.minimumStock} {item.unit}
+                      {item.minimumStock} {formatInventoryUnitLabel(item.unit)}
                     </p>
                   </div>
                 </div>
@@ -320,7 +376,7 @@ export function InventoryManagement() {
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Related Menu Items</p>
                   <div className="mt-2 space-y-1 text-sm text-gray-600">
                     {(item.relatedMenuItems || []).length > 0 ? item.relatedMenuItems.slice(0, 3).map(relation => <p key={`${item._id}-${relation.menuItem?._id || relation.menuItem}`}>
-                          {relation.menuItem?.name || "Unknown item"} • {relation.quantityRequired} {item.unit}
+                          {relation.menuItem?.name || "Unknown item"} • {relation.quantityRequired} {formatInventoryUnitLabel(item.unit)}
                         </p>) : <p>No linked menu items</p>}
                     {(item.relatedMenuItems || []).length > 3 ? <p className="text-xs text-gray-400">+{item.relatedMenuItems.length - 3} more</p> : null}
                   </div>
@@ -349,70 +405,70 @@ export function InventoryManagement() {
 
           <div className="hidden overflow-hidden rounded-lg border border-gray-200 bg-white md:block">
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
+              <table className="min-w-[1120px] table-fixed divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    <th className="w-[220px] px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
                       Ingredient
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    <th className="w-[260px] px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
                       Related Menu Items
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    <th className="w-[170px] px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
                       Stock
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    <th className="w-[150px] px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
                       Threshold
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    <th className="w-[140px] px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
                       Status
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    <th className="w-[230px] px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
                       Availability Impact
                     </th>
-                    <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    <th className="w-[150px] px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500">
                       Actions
                     </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200 bg-white">
                   {inventoryItems.map(item => <tr key={item._id}>
-                      <td className="px-4 py-4">
+                      <td className="px-4 py-4 align-top">
                         <div>
                           <p className="font-medium text-gray-900">{item.ingredientName}</p>
                           <p className="text-sm text-gray-500">
-                            SKU: {item.sku || "Not set"} • Unit: {item.unit}
+                            SKU: {item.sku || "Not set"} • Unit: {formatInventoryUnitLabel(item.unit)}
                           </p>
                         </div>
                       </td>
-                      <td className="px-4 py-4 text-sm text-gray-600">
-                        <div className="space-y-1">
+                      <td className="px-4 py-4 align-top text-sm text-gray-600">
+                        <div className="space-y-1 break-words">
                           {(item.relatedMenuItems || []).length > 0 ? item.relatedMenuItems.slice(0, 3).map(relation => <p key={`${item._id}-${relation.menuItem?._id || relation.menuItem}`}>
-                                {relation.menuItem?.name || "Unknown item"} • {relation.quantityRequired} {item.unit}
+                                {relation.menuItem?.name || "Unknown item"} • {relation.quantityRequired} {formatInventoryUnitLabel(item.unit)}
                               </p>) : <p>No linked menu items</p>}
                           {(item.relatedMenuItems || []).length > 3 ? <p className="text-xs text-gray-400">
                               +{item.relatedMenuItems.length - 3} more
                             </p> : null}
                         </div>
                       </td>
-                      <td className="px-4 py-4">
+                      <td className="px-4 py-4 align-top">
                         <p className="font-semibold text-gray-900">
-                          {item.currentStock} {item.unit}
+                          {item.currentStock} {formatInventoryUnitLabel(item.unit)}
                         </p>
                         <p className="text-sm text-gray-500">
-                          Reorder at {item.reorderQuantity} {item.unit}
+                          Reorder at {item.reorderQuantity} {formatInventoryUnitLabel(item.unit)}
                         </p>
                       </td>
-                      <td className="px-4 py-4 text-sm text-gray-600">
-                        Min {item.minimumStock} {item.unit}
+                      <td className="px-4 py-4 align-top text-sm text-gray-600">
+                        Min {item.minimumStock} {formatInventoryUnitLabel(item.unit)}
                       </td>
-                      <td className="px-4 py-4">
+                      <td className="px-4 py-4 align-top">
                         <InventoryStatusBadge status={item.stockStatus} />
                       </td>
-                      <td className="px-4 py-4 text-sm">
+                      <td className="px-4 py-4 align-top text-sm">
                         {renderMenuLinks(item)}
                       </td>
-                      <td className="px-4 py-4">
+                      <td className="px-4 py-4 align-top">
                         <div className="flex justify-end gap-2">
                           <button type="button" onClick={() => openAdjustmentForm(item)} className="rounded-lg border border-gray-300 p-2 text-gray-600 transition-colors hover:bg-gray-50" title="Adjust stock">
                             <ArrowUpCircle className="h-4 w-4" />
@@ -462,28 +518,32 @@ export function InventoryManagement() {
           </label>
           <label className="space-y-2">
             <span className="text-sm font-medium text-gray-700">Unit</span>
-            <input type="text" value={formState.unit} onChange={event => setFormState(current => ({
+            <select value={normalizeInventoryUnitValue(formState.unit)} onChange={event => setFormState(current => ({
             ...current,
             unit: event.target.value
-          }))} className="w-full rounded-lg border border-gray-300 px-3 py-2" />
+          }))} className="w-full rounded-lg border border-gray-300 px-3 py-2">
+              {INVENTORY_UNIT_OPTIONS.map(option => <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>)}
+            </select>
           </label>
           <label className="space-y-2">
             <span className="text-sm font-medium text-gray-700">Current Stock</span>
-            <input type="number" min="0" value={formState.currentStock} onChange={event => setFormState(current => ({
+            <input type="number" min="0" step="0.01" value={formState.currentStock} onChange={event => setFormState(current => ({
             ...current,
             currentStock: event.target.value
           }))} className="w-full rounded-lg border border-gray-300 px-3 py-2" />
           </label>
           <label className="space-y-2">
             <span className="text-sm font-medium text-gray-700">Minimum Stock</span>
-            <input type="number" min="0" value={formState.minimumStock} onChange={event => setFormState(current => ({
+            <input type="number" min="0" step="0.01" value={formState.minimumStock} onChange={event => setFormState(current => ({
             ...current,
             minimumStock: event.target.value
           }))} className="w-full rounded-lg border border-gray-300 px-3 py-2" />
           </label>
           <label className="space-y-2">
             <span className="text-sm font-medium text-gray-700">Reorder Quantity</span>
-            <input type="number" min="0" value={formState.reorderQuantity} onChange={event => setFormState(current => ({
+            <input type="number" min="0" step="0.01" value={formState.reorderQuantity} onChange={event => setFormState(current => ({
             ...current,
             reorderQuantity: event.target.value
           }))} className="w-full rounded-lg border border-gray-300 px-3 py-2" />
@@ -538,6 +598,41 @@ export function InventoryManagement() {
         </div>
       </AdminModal>
 
+      <AdminModal isOpen={isBulkUploadOpen} title="Bulk Upload Inventory" subtitle="Upload a CSV file to create new ingredients or update existing items by SKU or ingredient name." onClose={closeBulkUploadModal} maxWidth="max-w-2xl" footer={<div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+            <button type="button" onClick={closeBulkUploadModal} className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 sm:w-auto">
+              Cancel
+            </button>
+            <button type="button" onClick={handleBulkUpload} disabled={bulkUploading || !bulkFile} className="w-full rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-60 sm:w-auto">
+              {bulkUploading ? "Uploading..." : "Upload CSV"}
+            </button>
+          </div>}>
+        <div className="space-y-5 p-5">
+          <div className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-600">
+            <p className="font-semibold text-slate-900">Supported units</p>
+            <p className="mt-1">kg, pieces, gram, milligram, liter, ton</p>
+            <p className="mt-3 font-semibold text-slate-900">Required columns</p>
+            <p className="mt-1">ingredientName, unit, currentStock, minimumStock, reorderQuantity</p>
+            <p className="mt-3 text-slate-500">Optional columns: sku, notes. Existing rows update automatically when SKU or ingredient name already exists.</p>
+          </div>
+
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <button type="button" onClick={handleDownloadTemplate} className="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50">
+              <Download className="h-4 w-4" />
+              Download Sample CSV
+            </button>
+          </div>
+
+          <label className="block space-y-2">
+            <span className="text-sm font-medium text-gray-700">CSV File</span>
+            <input type="file" accept=".csv,text/csv" onChange={event => setBulkFile(event.target.files?.[0] || null)} className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 file:mr-4 file:rounded-md file:border-0 file:bg-primary-50 file:px-3 file:py-2 file:text-primary-700" />
+          </label>
+
+          {bulkFile ? <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+              Ready to upload: {bulkFile.name}
+            </div> : null}
+        </div>
+      </AdminModal>
+
       <AdminModal isOpen={isAdjustOpen} title="Adjust Stock" subtitle={activeItem?.ingredientName ? `Update stock for ${activeItem.ingredientName}` : "Update stock quantity"} onClose={() => {
       setIsAdjustOpen(false);
       setActiveItem(null);
@@ -563,7 +658,7 @@ export function InventoryManagement() {
           </label>
           <label className="space-y-2">
             <span className="text-sm font-medium text-gray-700">Quantity</span>
-            <input type="number" min="1" value={adjustmentState.quantity} onChange={event => setAdjustmentState(current => ({
+            <input type="number" min="0.01" step="0.01" value={adjustmentState.quantity} onChange={event => setAdjustmentState(current => ({
             ...current,
             quantity: event.target.value
           }))} className="w-full rounded-lg border border-gray-300 px-3 py-2" />

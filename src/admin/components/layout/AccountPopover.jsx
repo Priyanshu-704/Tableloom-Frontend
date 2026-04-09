@@ -23,14 +23,21 @@ export function AccountPopover({
     hasPermission
   } = useAuth();
   useEffect(() => {
-    const handleClickOutside = event => {
+    const handlePointerDown = event => {
       if (popoverRef.current && !popoverRef.current.contains(event.target)) {
         setIsOpen(false);
       }
     };
-    document.addEventListener("mousedown", handleClickOutside);
+    const handleKeyDown = event => {
+      if (event.key === "Escape") {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
     };
   }, []);
   const handleLogout = async () => {

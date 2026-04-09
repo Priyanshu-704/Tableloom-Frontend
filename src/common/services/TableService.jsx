@@ -1,5 +1,8 @@
 import { logger } from "../utils/logger.js";
 import api from './api';
+import { createRequestCache } from "../utils/requestCache";
+
+const tableRequestCache = createRequestCache(10000);
 class TableService {
   async getTables(filters = {}) {
     const params = this.processTableFilters(filters);
@@ -42,8 +45,10 @@ class TableService {
     return response.data;
   }
   async getTableStats() {
-    const response = await api.get('/tables/dashboard/stats');
-    return response.data;
+    return tableRequestCache.run("tables:dashboard:stats", async () => {
+      const response = await api.get('/tables/dashboard/stats');
+      return response.data;
+    });
   }
   async downloadQRCode(tableId) {
     const response = await api.get(`/tables/${tableId}/qr-download`, {

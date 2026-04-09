@@ -420,11 +420,15 @@ export const menuService = {
   },
   getMenuStatistics: async () => {
     try {
-      const response = await axiosInstance.get("/menu/statistics");
-      return response?.data ?? {
-        success: true,
-        data: {}
-      };
+      return await menuRequestCache.run("menu:statistics", async () => {
+        const response = await axiosInstance.get("/menu/statistics");
+        return response?.data ?? {
+          success: true,
+          data: {}
+        };
+      }, {
+        ttlMs: 10000
+      });
     } catch (error) {
       handleApiError(error, "Failed to fetch menu statistics");
     }

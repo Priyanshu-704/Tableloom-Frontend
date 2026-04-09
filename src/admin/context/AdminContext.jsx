@@ -1,5 +1,5 @@
 import { logger } from "../../common/utils/logger.js";
-import React, { createContext, useContext, useReducer, useEffect, useRef, useState } from "react";
+import React, { createContext, useCallback, useContext, useMemo, useReducer, useEffect, useRef, useState } from "react";
 import { userService } from "../../common/services";
 import { useNavigate, useLocation } from "react-router-dom";
 import { buildAdminPath, stripAdminRoutePrefix } from "../../common/utils/routes";
@@ -85,21 +85,21 @@ function adminReducer(state, action) {
 function useAdminNavigation() {
   const navigate = useNavigate();
   const location = useLocation();
-  const navigateTo = (path, options = {}) => {
+  const navigateTo = useCallback((path, options = {}) => {
     navigate(path, options);
-  };
-  const getCurrentPath = () => {
+  }, [navigate]);
+  const getCurrentPath = useCallback(() => {
     return location.pathname;
-  };
-  const getCurrentViewFromPath = () => {
+  }, [location.pathname]);
+  const getCurrentViewFromPath = useCallback(() => {
     const path = stripAdminRoutePrefix(location.pathname).replace(/^\/+/, "");
     return path === "" ? "dashboard" : path;
-  };
-  return {
+  }, [location.pathname]);
+  return useMemo(() => ({
     navigateTo,
     getCurrentPath,
     getCurrentViewFromPath
-  };
+  }), [getCurrentPath, getCurrentViewFromPath, navigateTo]);
 }
 export function AdminProvider({
   children
@@ -127,7 +127,7 @@ export function AdminProvider({
       });
     }
   }, [getCurrentViewFromPath]);
-  const updateProfile = async profileData => {
+  const updateProfile = useCallback(async profileData => {
     try {
       dispatch({
         type: "SET_LOADING",
@@ -152,8 +152,8 @@ export function AdminProvider({
         payload: false
       });
     }
-  };
-  const updatePassword = async (currentPassword, newPassword) => {
+  }, []);
+  const updatePassword = useCallback(async (currentPassword, newPassword) => {
     try {
       dispatch({
         type: "SET_LOADING",
@@ -174,8 +174,8 @@ export function AdminProvider({
         payload: false
       });
     }
-  };
-  const updateOrderStatus = (orderId, status) => {
+  }, []);
+  const updateOrderStatus = useCallback((orderId, status) => {
     dispatch({
       type: "UPDATE_ORDER_STATUS",
       payload: {
@@ -183,8 +183,8 @@ export function AdminProvider({
         status
       }
     });
-  };
-  const addNotification = (message, type = "info", fallbackMessage = "") => {
+  }, []);
+  const addNotification = useCallback((message, type = "info", fallbackMessage = "") => {
     const resolvedMessage = getApiMessage(
       message,
       fallbackMessage || (type === "success" ? "Action completed successfully" : "Something went wrong"),
@@ -206,27 +206,27 @@ export function AdminProvider({
         payload: notification.id
       });
     }, 5000);
-  };
-  const removeNotification = notificationId => {
+  }, []);
+  const removeNotification = useCallback(notificationId => {
     dispatch({
       type: "REMOVE_NOTIFICATION",
       payload: notificationId
     });
-  };
-  const toggleKitchenView = () => {
+  }, []);
+  const toggleKitchenView = useCallback(() => {
     dispatch({
       type: "TOGGLE_KITCHEN_VIEW"
     });
-  };
-  const navigateToView = view => {
+  }, []);
+  const navigateToView = useCallback(view => {
     const path = view === "dashboard" ? buildAdminPath("/") : buildAdminPath(`/${view}`);
     navigateTo(path);
     dispatch({
       type: "SET_CURRENT_VIEW",
       payload: view
     });
-  };
-  const confirmAction = (options = {}) => {
+  }, [navigateTo]);
+  const confirmAction = useCallback((options = {}) => {
     return new Promise(resolve => {
       confirmationResolverRef.current = resolve;
       setConfirmationState({
@@ -238,8 +238,8 @@ export function AdminProvider({
         tone: options.tone || "danger"
       });
     });
-  };
-  const closeConfirmation = confirmed => {
+  }, []);
+  const closeConfirmation = useCallback(confirmed => {
     setConfirmationState(current => ({
       ...current,
       isOpen: false
@@ -248,8 +248,8 @@ export function AdminProvider({
       confirmationResolverRef.current(confirmed);
       confirmationResolverRef.current = null;
     }
-  };
-  const value = {
+  }, []);
+  const value = useMemo(() => ({
     ...state,
     dispatch,
     updateProfile,
@@ -261,7 +261,7 @@ export function AdminProvider({
     setCurrentView: navigateToView,
     navigateTo,
     confirmAction
-  };
+  }), [state, updateProfile, updatePassword, updateOrderStatus, addNotification, removeNotification, toggleKitchenView, navigateToView, navigateTo, confirmAction]);
   return <AdminContext.Provider value={value}>
       {children}
       <ToastContainer toasts={state.notifications} onRemoveToast={removeNotification} />

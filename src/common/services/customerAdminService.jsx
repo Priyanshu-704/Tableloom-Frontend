@@ -1,5 +1,8 @@
 import { axiosInstance } from "./api";
 import handleApiError from "../utils/handleApiError";
+import { createRequestCache } from "../utils/requestCache";
+
+const customerAdminRequestCache = createRequestCache(10000);
 export const customerAdminService = {
   getSessions: async (filters = {}) => {
     try {
@@ -21,13 +24,18 @@ export const customerAdminService = {
       } : {
         ...(options || {})
       };
-      const response = await axiosInstance.get("/customers/analytics", {
+      return await customerAdminRequestCache.run({
+        scope: "customers:analytics",
         params
+      }, async () => {
+        const response = await axiosInstance.get("/customers/analytics", {
+          params
+        });
+        return response?.data ?? {
+          success: true,
+          data: {}
+        };
       });
-      return response?.data ?? {
-        success: true,
-        data: {}
-      };
     } catch (error) {
       handleApiError(error, "Failed to fetch session analytics");
     }

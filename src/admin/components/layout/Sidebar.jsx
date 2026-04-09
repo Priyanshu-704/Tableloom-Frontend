@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo } from "react";
-import { LayoutDashboard, BarChart3, ClipboardList, ChefHat, CookingPot, Users, List, Tags, Ruler, TrendingUp, Percent, RefreshCw, Boxes, Download, Table, QrCode, MessageSquareText, ConciergeBell, Bell, DatabaseBackup, Settings, Utensils, Receipt, Building2 } from "lucide-react";
+import { LayoutDashboard, BarChart3, ClipboardList, ChefHat, CookingPot, Users, List, Tags, Ruler, TrendingUp, Percent, RefreshCw, Boxes, Download, Table, QrCode, MessageSquareText, ConciergeBell, Bell, DatabaseBackup, Settings, Utensils, Receipt, Building2, LifeBuoy } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAdmin } from "../../context/AdminContext";
 import { useAuth } from "../../../common/context/AuthContext";
@@ -185,6 +185,13 @@ const navigationSections = [{
   id: "system",
   title: "System",
   items: [{
+    id: "support",
+    label: "Contact Super Admin",
+    description: "Tenant and platform help",
+    icon: LifeBuoy,
+    path: buildAdminPath("/support"),
+    roles: ["admin"]
+  }, {
     id: "settings-restaurant",
     label: "Restaurant Settings",
     description: "Business identity and defaults",

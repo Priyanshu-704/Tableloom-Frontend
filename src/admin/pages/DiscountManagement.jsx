@@ -1,6 +1,6 @@
 import { logger } from "../../common/utils/logger.js";
 import React, { useEffect, useState } from "react";
-import { Percent, Plus, RefreshCw } from "lucide-react";
+import { ChevronDown, Percent, Plus, RefreshCw } from "lucide-react";
 import { menuService } from "../../common/services";
 import { useAdmin } from "../context/AdminContext";
 import { AdminModal } from "../components/common/AdminModal";
@@ -153,6 +153,19 @@ export function DiscountManagement() {
                       {" • "}
                       Min order ₹{coupon.minOrderAmount || 0}
                     </p>
+                    <details className="mt-3 group rounded-xl border border-slate-200 bg-slate-50">
+                      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-2 text-sm font-medium text-slate-700">
+                        Coupon details
+                        <ChevronDown className="h-4 w-4 transition group-open:rotate-180" />
+                      </summary>
+                      <div className="grid gap-2 border-t border-slate-200 px-3 py-3 text-sm text-slate-600 sm:grid-cols-2">
+                        <div>Max discount: {coupon.maxDiscountAmount ? `₹${coupon.maxDiscountAmount}` : "No cap"}</div>
+                        <div>Usage: {coupon.usageLimit ? `${coupon.usageCount || 0} / ${coupon.usageLimit}` : "Unlimited"}</div>
+                        <div>Starts: {coupon.startDate ? new Date(coupon.startDate).toLocaleDateString() : "Immediately"}</div>
+                        <div>Ends: {coupon.endDate ? new Date(coupon.endDate).toLocaleDateString() : "No expiry"}</div>
+                        <div className="sm:col-span-2">Created: {coupon.createdAt ? new Date(coupon.createdAt).toLocaleString() : "N/A"}</div>
+                      </div>
+                    </details>
                   </div>
                   <div className="flex gap-2">
                     <button type="button" onClick={() => startEdit(coupon)} className="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700">

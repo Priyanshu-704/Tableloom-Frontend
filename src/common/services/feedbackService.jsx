@@ -1,5 +1,8 @@
 import { axiosInstance } from "./api";
 import handleApiError from "../utils/handleApiError";
+import { createRequestCache } from "../utils/requestCache";
+
+const feedbackRequestCache = createRequestCache(10000);
 export const feedbackService = {
   submitFeedback: async (payload = {}) => {
     try {
@@ -57,11 +60,13 @@ export const feedbackService = {
   },
   getDashboard: async () => {
     try {
-      const response = await axiosInstance.get("/feedback/dashboard");
-      return response?.data ?? {
-        success: true,
-        data: {}
-      };
+      return await feedbackRequestCache.run("feedback:dashboard", async () => {
+        const response = await axiosInstance.get("/feedback/dashboard");
+        return response?.data ?? {
+          success: true,
+          data: {}
+        };
+      });
     } catch (error) {
       handleApiError(error, "Failed to fetch feedback dashboard");
     }
@@ -73,13 +78,18 @@ export const feedbackService = {
       } : {
         ...(options || {})
       };
-      const response = await axiosInstance.get("/feedback/statistics", {
+      return await feedbackRequestCache.run({
+        scope: "feedback:statistics",
         params
+      }, async () => {
+        const response = await axiosInstance.get("/feedback/statistics", {
+          params
+        });
+        return response?.data ?? {
+          success: true,
+          data: {}
+        };
       });
-      return response?.data ?? {
-        success: true,
-        data: {}
-      };
     } catch (error) {
       handleApiError(error, "Failed to fetch feedback statistics");
     }
@@ -91,13 +101,18 @@ export const feedbackService = {
       } : {
         ...(options || {})
       };
-      const response = await axiosInstance.get("/feedback/nps", {
+      return await feedbackRequestCache.run({
+        scope: "feedback:nps",
         params
+      }, async () => {
+        const response = await axiosInstance.get("/feedback/nps", {
+          params
+        });
+        return response?.data ?? {
+          success: true,
+          data: {}
+        };
       });
-      return response?.data ?? {
-        success: true,
-        data: {}
-      };
     } catch (error) {
       handleApiError(error, "Failed to fetch feedback NPS");
     }

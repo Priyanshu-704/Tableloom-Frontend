@@ -9,6 +9,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { WaiterModal } from "../components/waiter/WaiterModal";
 import { buildCustomerPath } from "../../common/utils/routes";
 import { useSettings } from "../../common/context/SettingsContext";
+const FINAL_STATUS_KEY = ORDER_STATUS.SERVED;
 const STATUS_STEPS = [{
   key: ORDER_STATUS.PENDING,
   label: "Order Placed",
@@ -35,6 +36,7 @@ const STATUS_STEPS = [{
   icon: Truck,
   description: "Enjoy your meal!"
 }];
+const getResolvedOrderStatus = status => status === "completed" ? FINAL_STATUS_KEY : status;
 export function OrderStatus({
   onBack
 }) {
@@ -124,11 +126,13 @@ export function OrderStatus({
       </div>;
   }
   const getCurrentStepIndex = () => {
-    return STATUS_STEPS.findIndex(step => step.key === order.status);
+    return STATUS_STEPS.findIndex(step => step.key === getResolvedOrderStatus(order.status));
   };
   const getEstimatedTime = () => {
-    if (!order.estimatedReadyTime) return 0;
-    const estimated = new Date(order.estimatedReadyTime);
+    const fallbackPreparationTime = Number(order?.preparationTime || 0);
+    const fallbackReadyAt = fallbackPreparationTime > 0 ? new Date(new Date(order?.createdAt || Date.now()).getTime() + fallbackPreparationTime * 60000) : null;
+    const estimated = order.estimatedReadyTime ? new Date(order.estimatedReadyTime) : fallbackReadyAt;
+    if (!estimated) return 0;
     const now = new Date();
     const diffMs = estimated - now;
     const diffMins = Math.max(0, Math.round(diffMs / 60000));
@@ -140,6 +144,8 @@ export function OrderStatus({
     return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
   const currentStepIndex = getCurrentStepIndex();
+  const resolvedStatus = getResolvedOrderStatus(order.status);
+  const isFinalStatus = resolvedStatus === FINAL_STATUS_KEY;
   return <div className="min-h-screen bg-gray-50 mb-14">
       <WaiterModal isOpen={waiterModalState.isOpen} onClose={() => setWaiterModalState({
       isOpen: false,
@@ -223,7 +229,7 @@ export function OrderStatus({
             <h2 className="text-lg font-semibold text-gray-900">
               Order Progress
             </h2>
-            {order.status !== ORDER_STATUS.SERVED && <div className="text-sm text-gray-600">
+            {!isFinalStatus && <div className="text-sm text-gray-600">
                 Est. {getEstimatedTime()} min
               </div>}
           </div>
@@ -250,11 +256,11 @@ export function OrderStatus({
                     <p className="text-sm text-gray-600 mt-1">
                       {step.description}
                     </p>
-                    {isCurrent && <div className="flex items-center mt-2 text-sm text-primary-600">
+                    {isCurrent && !isFinalStatus ? <div className="flex items-center mt-2 text-sm text-primary-600">
                         <Clock className="h-4 w-4 mr-1" />
                         In progress...
-                      </div>}
-                    {isCompleted && <div className="flex items-center mt-2 text-sm text-green-600">
+                      </div> : null}
+                    {(isCompleted || isFinalStatus && isCurrent) && <div className="flex items-center mt-2 text-sm text-green-600">
                         <CheckCircle2 className="h-4 w-4 mr-1" />
                         Completed
                       </div>}
@@ -285,28 +291,14 @@ export function OrderStatus({
           </div>
         </div>
 
-        {}
-        <div className="bg-blue-50 rounded-lg border border-blue-200 p-6 mb-6">
-          <h3 className="font-semibold text-blue-900 mb-2">Need Help?</h3>
-          <p className="text-blue-800 text-sm mb-4">
-            If you have any questions about your order or need assistance,
-            please don't hesitate to call our staff.
-          </p>
-          <button onClick={() => handleQuickCall("menu_help")} disabled={isCalling} className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
-            {isCalling ? "Calling..." : "Need Help"}
-          </button>
-        </div>
-
-        {}
         <div className="bg-orange-50 rounded-lg border border-orange-200 p-6">
           <h3 className="font-semibold text-orange-900 mb-2">
             Need Help with Your Order?
           </h3>
           <p className="text-orange-800 text-sm mb-4">
-            If there's an issue with your order or you need to make changes, our
-            staff is here to help.
+            If there is an issue with your order or you need general assistance, our staff is here to help.
           </p>
-          <div className="flex space-x-3">
+          <div className="grid grid-cols-2 gap-3">
             <button onClick={() => handleQuickCall("order_issue")} disabled={isCalling} className="bg-orange-600 hover:bg-orange-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex-1">
               {isCalling ? "Calling..." : "Order Issue"}
             </button>

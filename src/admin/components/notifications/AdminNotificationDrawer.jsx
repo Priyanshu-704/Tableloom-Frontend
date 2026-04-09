@@ -1,16 +1,17 @@
 import React from "react";
 import { Bell, CheckCheck, Circle, Filter, RefreshCw, ShieldAlert, Trash2, X } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../../common/context/AuthContext";
 import { useAdminNotificationCenter } from "../../context/AdminNotificationCenterContext";
 import { Badge } from "../../../common/components/ui/badge";
 import { Button } from "../../../common/components/ui/button";
 import { Checkbox } from "../../../common/components/ui/checkbox";
 import { Input } from "../../../common/components/ui/input";
-import { ScrollArea } from "../../../common/components/ui/scroll-area";
 import { AdminListSkeleton } from "../common/AdminSkeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../common/components/ui/select";
 import { Separator } from "../../../common/components/ui/separator";
 import { Sheet, SheetContent } from "../../../common/components/ui/sheet";
+import { getNotificationNavigationLabel, getNotificationNavigationTarget } from "../../utils/notificationRouting";
 const STATUS_OPTIONS = [{
   value: "all",
   label: "All statuses"
@@ -87,6 +88,7 @@ function NotificationGroup({
   title,
   items
 }) {
+  const navigate = useNavigate();
   const {
     activeAction,
     acknowledge,
@@ -108,6 +110,8 @@ function NotificationGroup({
       {items.map(item => {
       const status = item.effectiveStatus || item.status || "unread";
       const canAcknowledge = item.actionRequired && !["acknowledged", "dismissed", "action_taken"].includes(status);
+      const navigationTarget = getNotificationNavigationTarget(item);
+      const navigationLabel = getNotificationNavigationLabel(item);
       return <article key={item._id} className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
             <div className="flex items-start justify-between gap-3">
               <div className="space-y-2">
@@ -145,6 +149,9 @@ function NotificationGroup({
             </div>
 
             <div className="mt-4 flex flex-wrap gap-2">
+              {navigationTarget ? <Button type="button" onClick={() => navigate(navigationTarget)} variant="outline" size="sm" className="text-xs">
+                  {navigationLabel}
+                </Button> : null}
               {!item.isRead ? <Button type="button" onClick={() => markAsRead(item._id)} disabled={activeAction === item._id} variant="outline" size="sm" className="text-xs">
                   Mark read
                 </Button> : null}
@@ -183,7 +190,7 @@ export function AdminNotificationDrawer() {
     return null;
   }
   return <Sheet open={isDrawerOpen} onOpenChange={open => !open && closeDrawer()}>
-      <SheetContent side="right" className="inset-y-16 right-0 h-[calc(100vh-4rem)] w-full border-l border-gray-200 bg-[#f7f7f4] p-0 md:w-[min(72rem,calc(100vw-16rem))] sm:max-w-none">
+      <SheetContent side="right" onPointerDownOutside={closeDrawer} className="left-2 right-2 top-[4.5rem] bottom-2 h-auto w-auto rounded-[1.5rem] border border-gray-200 bg-[#f7f7f4] p-0 sm:left-auto sm:w-[min(92vw,42rem)] sm:max-w-none md:bottom-0 md:right-0 md:top-16 md:h-[calc(100vh-4rem)] md:w-[min(72rem,calc(100vw-14rem))] md:rounded-none md:rounded-tl-[1.5rem]">
         <div className="flex h-full min-h-0 flex-col">
           <div className="border-b border-gray-200 bg-white px-5 py-4">
             <div className="flex items-start justify-between gap-4">
@@ -248,9 +255,8 @@ export function AdminNotificationDrawer() {
           </div>
 
           <div className="grid min-h-0 flex-1 grid-cols-1 md:grid-cols-[18rem_minmax(0,1fr)]">
-            <div className="border-b border-gray-200 bg-[#fcfcfa] md:border-b-0 md:border-r">
-              <ScrollArea className="h-full">
-                <div className="px-4 py-4">
+            <div className="min-h-0 border-b border-gray-200 bg-[#fcfcfa] md:border-b-0 md:border-r">
+              <div className="h-full overflow-y-auto overscroll-contain px-4 py-4">
                 <div className="mb-3 flex items-center gap-2 text-sm font-medium text-gray-700">
                   <Filter className="h-4 w-4" />
                   Filters
@@ -317,13 +323,11 @@ export function AdminNotificationDrawer() {
                     Reset filters
                   </Button>
                 </div>
-                </div>
-              </ScrollArea>
+              </div>
             </div>
 
             <div className="min-h-0 bg-[#f7f7f4]">
-              <ScrollArea className="h-full">
-                <div className="px-5 py-4">
+              <div className="h-full overflow-y-auto overscroll-contain px-5 py-4">
                 {loading ? <AdminListSkeleton rows={4} /> : notifications.length === 0 ? <div className="rounded-2xl border border-dashed border-gray-300 bg-white px-4 py-12 text-center">
                     <Bell className="mx-auto h-10 w-10 text-gray-300" />
                     <h3 className="mt-3 text-sm font-semibold text-gray-900">
@@ -338,7 +342,6 @@ export function AdminNotificationDrawer() {
                     <NotificationGroup title="Everything Else" items={otherNotifications} />
                   </div>}
               </div>
-              </ScrollArea>
             </div>
           </div>
         </div>

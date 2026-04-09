@@ -25,6 +25,12 @@ const ensureSuccess = (response, fallbackMessage) => {
   }
   return response.data;
 };
+const extractCartData = data => {
+  const cartData = data?.data ?? null;
+  cachedCartData = cartData;
+  cartRequestPromise = null;
+  return cartData;
+};
 export const cartService = {
   sessionId: "",
   getCachedCart() {
@@ -58,10 +64,9 @@ export const cartService = {
         }
       }).then(response => {
         const data = ensureSuccess(response, "Failed to get cart");
-        cachedCartData = data?.data ?? null;
         return {
           success: true,
-          data: cachedCartData,
+          data: extractCartData(data),
           message: data?.message || "Cart fetched successfully"
         };
       }).finally(() => {
@@ -92,7 +97,7 @@ export const cartService = {
       const data = ensureSuccess(response, "Failed to add item to cart");
       return {
         success: true,
-        data: data?.data ?? null,
+        data: extractCartData(data),
         message: data?.message || "Item added to cart successfully"
       };
     } catch (error) {
@@ -119,7 +124,7 @@ export const cartService = {
       const data = ensureSuccess(response, "Failed to update item quantity");
       return {
         success: true,
-        data: data?.data ?? null,
+        data: extractCartData(data),
         message: data?.message || "Item quantity updated successfully"
       };
     } catch (error) {
@@ -144,7 +149,7 @@ export const cartService = {
       const data = ensureSuccess(response, "Failed to remove item from cart");
       return {
         success: true,
-        data: data?.data ?? null,
+        data: extractCartData(data),
         message: data?.message || "Item removed from cart successfully"
       };
     } catch (error) {
@@ -160,7 +165,7 @@ export const cartService = {
         }
       });
       const data = ensureSuccess(response, "Failed to clear cart");
-      cartService.clearCachedCart();
+      extractCartData(data);
       return {
         success: true,
         data: data?.data ?? null,

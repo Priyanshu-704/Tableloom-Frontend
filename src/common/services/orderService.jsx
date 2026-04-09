@@ -59,13 +59,18 @@ export const orderService = {
   },
   getOrderStatistics: async (filters = {}) => {
     try {
-      const response = await axiosInstance.get("/orders/dashboard/stats", {
-        params: filters
+      return await orderRequestCache.run({
+        scope: "orders:statistics",
+        filters
+      }, async () => {
+        const response = await axiosInstance.get("/orders/dashboard/stats", {
+          params: filters
+        });
+        return response?.data ?? {
+          success: true,
+          data: {}
+        };
       });
-      return response?.data ?? {
-        success: true,
-        data: {}
-      };
     } catch (error) {
       handleApiError(error, "Failed to fetch order statistics");
     }

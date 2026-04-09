@@ -18,10 +18,12 @@ import {
   kitchenService,
   menuService,
   orderService,
+  reportService,
   waiterCallService
 } from "../../common/services";
 import tableService from "../../common/services/TableService";
 import { useAdmin } from "../context/AdminContext";
+import { AdminModal } from "../components/common/AdminModal";
 import { AdminPageSkeleton } from "../components/common/AdminSkeleton";
 import { useSettings } from "../../common/context/SettingsContext";
 
@@ -81,6 +83,18 @@ const getCurrentFinancialYearRange = (baseDate = new Date()) => {
     startDate: `${year}-04-01`,
     endDate: formatDateInputValue(today)
   };
+};
+
+const getDefaultReportTitle = reportType => reportType === "finance" ? "Finance Report" : "Analytics Report";
+
+const getDownloadFilename = (headers = {}, fallback = "report.pdf") => {
+  const contentDisposition = headers?.["content-disposition"] || headers?.["Content-Disposition"] || "";
+  const utfMatch = contentDisposition.match(/filename\*=UTF-8''([^;]+)/i);
+  if (utfMatch?.[1]) {
+    return decodeURIComponent(utfMatch[1]);
+  }
+  const simpleMatch = contentDisposition.match(/filename="?([^"]+)"?/i);
+  return simpleMatch?.[1] || fallback;
 };
 
 const escapeHtml = value => String(value ?? "")
@@ -402,46 +416,6 @@ const openPdfReport = ({
   return true;
 };
 
-const fetchReportDataset = async ({ startDate, endDate }) => {
-  const filters = buildCustomDateFilters({
-    startDate,
-    endDate
-  });
-
-  const [
-    orders,
-    sessions,
-    kitchen,
-    feedbackStatistics,
-    nps,
-    menu,
-    tables,
-    waiterCalls
-  ] = await Promise.all([
-    orderService.getOrderStatistics(filters),
-    customerAdminService.getAnalytics(filters),
-    kitchenService.getAnalytics(filters),
-    feedbackService.getStatistics(filters),
-    feedbackService.getNps(filters),
-    menuService.getMenuStatistics(),
-    tableService.getTableStats(),
-    waiterCallService.getStatistics(filters)
-  ]);
-
-  return {
-    orders: orders?.data || {},
-    sessions: sessions?.data || {},
-    kitchen: kitchen?.data || {},
-    feedback: {
-      statistics: feedbackStatistics?.data || {},
-      nps: nps?.data || {}
-    },
-    menu: menu?.data || {},
-    tables: tables?.data || {},
-    waiterCalls: waiterCalls?.data || {}
-  };
-};
-
 export function Analytics() {
   const { settings } = useSettings();
   const currency = settings?.taxSettings?.currency || "INR";
@@ -449,9 +423,14 @@ export function Analytics() {
   const [loading, setLoading] = useState(true);
   const [timeRange, setTimeRange] = useState("30days");
   const [activeTab, setActiveTab] = useState("overview");
-  const [exportFormat, setExportFormat] = useState("csv");
   const [exporting, setExporting] = useState(false);
-  const [reportDates, setReportDates] = useState(() => getCurrentFinancialYearRange());
+  const [showReportDialog, setShowReportDialog] = useState(false);
+  const [reportForm, setReportForm] = useState(() => ({
+    reportType: "analytics",
+    title: getDefaultReportTitle("analytics"),
+    format: "pdf",
+    ...getCurrentFinancialYearRange()
+  }));
   const [analytics, setAnalytics] = useState({
     dashboard: {},
     orders: {},
@@ -575,49 +554,59 @@ export function Analytics() {
     }];
   }, [analytics]);
 
-  const reportDateLabel = useMemo(() => buildRangeLabel(reportDates.startDate, reportDates.endDate), [reportDates]);
+  const reportDateLabel = useMemo(() => buildRangeLabel(reportForm.startDate, reportForm.endDate), [reportForm.endDate, reportForm.startDate]);
 
   const applyCurrentFinancialYear = () => {
-    setReportDates(getCurrentFinancialYearRange());
+    setReportForm(current => ({
+      ...current,
+      ...getCurrentFinancialYearRange()
+    }));
   };
 
-  const handleExportReport = async () => {
-    if (!reportDates.startDate || !reportDates.endDate) {
+  const handleGenerateReport = async () => {
+    if (!reportForm.startDate || !reportForm.endDate) {
       addNotification("Select both start date and end date to export the report", "error");
       return;
     }
 
-    if (new Date(reportDates.startDate) > new Date(reportDates.endDate)) {
+    if (new Date(reportForm.startDate) > new Date(reportForm.endDate)) {
       addNotification("Start date cannot be after end date", "error");
       return;
     }
 
     try {
       setExporting(true);
-      const report = await fetchReportDataset(reportDates);
-      const filenameBase = `analytics-report-${reportDates.startDate}-to-${reportDates.endDate}`;
-
-      if (exportFormat === "pdf") {
-        const opened = openPdfReport({
-          report,
-          currency,
-          dateLabel: reportDateLabel
-        });
-
-        if (!opened) {
-          addNotification("Unable to open the PDF print window. Please allow popups for this site.", "error");
-          return;
-        }
-
-        addNotification("Print window opened. Save it as PDF from your browser.", "success");
-        return;
+      const response = await reportService.generateAnalyticsReport({
+        reportType: reportForm.reportType,
+        format: reportForm.format,
+        reportTitle: reportForm.title.trim() || getDefaultReportTitle(reportForm.reportType),
+        restaurantName: settings?.restaurant?.name || "Restaurant",
+        dateRange: {
+          startDate: reportForm.startDate,
+          endDate: reportForm.endDate
+        },
+        dateRangeLabel: reportDateLabel,
+        currency,
+        download: true
+      }, {
+        responseType: "blob"
+      });
+      const blob = response?.data;
+      if (!blob) {
+        throw new Error("Report generation failed");
       }
-
-      const csvRows = buildReportRows(report, currency, reportDateLabel);
-      downloadCsv(`${filenameBase}.csv`, csvRows);
-      addNotification("Analytics report exported successfully", "success");
-    } catch {
-      addNotification("Failed to export analytics report", "error");
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = getDownloadFilename(response?.headers, `${reportForm.reportType}-report.${reportForm.format === "excel" ? "xls" : "pdf"}`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      setShowReportDialog(false);
+      addNotification(`${reportForm.reportType === "finance" ? "Finance" : "Analytics"} report generated successfully`, "success");
+    } catch (error) {
+      addNotification(error?.message || "Failed to export analytics report", "error");
     } finally {
       setExporting(false);
     }
@@ -646,50 +635,18 @@ export function Analytics() {
         </div>
 
         <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-            <div className="grid flex-1 grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-5">
-              <label className="flex flex-col gap-2 text-sm text-gray-600">
-                <span className="font-medium text-gray-700">Start date</span>
-                <input type="date" value={reportDates.startDate} onChange={event => setReportDates(current => ({
-                ...current,
-                startDate: event.target.value
-              }))} className="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900" />
-              </label>
-
-              <label className="flex flex-col gap-2 text-sm text-gray-600">
-                <span className="font-medium text-gray-700">End date</span>
-                <input type="date" value={reportDates.endDate} onChange={event => setReportDates(current => ({
-                ...current,
-                endDate: event.target.value
-              }))} className="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900" />
-              </label>
-
-              <label className="flex flex-col gap-2 text-sm text-gray-600">
-                <span className="font-medium text-gray-700">Export format</span>
-                <select value={exportFormat} onChange={event => setExportFormat(event.target.value)} className="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900">
-                  <option value="csv">CSV (Excel compatible)</option>
-                  <option value="pdf">PDF</option>
-                </select>
-              </label>
-
-              <div className="flex flex-col justify-end">
-                <button type="button" onClick={applyCurrentFinancialYear} className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50">
-                  Use Current FY
-                </button>
-              </div>
-
-              <div className="flex flex-col justify-end">
-                <button type="button" onClick={handleExportReport} disabled={exporting} className="flex items-center justify-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-60">
-                  {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-                  <span>{exporting ? "Generating..." : "Export Report"}</span>
-                </button>
-              </div>
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-700">Backend Generated Reports</p>
+              <p className="mt-1 text-sm text-gray-500">
+                Download polished PDF or Excel reports with restaurant details, summary cards, tables, and charts. Current range: {reportDateLabel}.
+              </p>
             </div>
+            <button type="button" onClick={() => setShowReportDialog(true)} className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-700">
+              <Download className="h-4 w-4" />
+              Generate Report
+            </button>
           </div>
-
-          <p className="mt-3 text-sm text-gray-500">
-            Export a detailed report for any custom duration, including a full financial year. Selected range: {reportDateLabel}.
-          </p>
         </div>
       </div>
 
@@ -763,6 +720,77 @@ export function Analytics() {
             </div> : null}
         </div>
       </div>
+
+      <AdminModal isOpen={showReportDialog} title={reportForm.reportType === "finance" ? "Generate Finance Report" : "Generate Analytics Report"} subtitle="Choose the report type, period, and format. One backend request will generate and download the file for you." onClose={() => {
+      if (!exporting) {
+        setShowReportDialog(false);
+      }
+    }} maxWidth="max-w-2xl" footer={<div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+            <button type="button" onClick={() => setShowReportDialog(false)} disabled={exporting} className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 sm:w-auto">
+              Cancel
+            </button>
+            <button type="button" onClick={handleGenerateReport} disabled={exporting} className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-60 sm:w-auto">
+              {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+              {exporting ? "Generating..." : "Generate & Download"}
+            </button>
+          </div>}>
+        <div className="grid grid-cols-1 gap-4 p-5 md:grid-cols-2">
+          <label className="space-y-2">
+            <span className="text-sm font-medium text-gray-700">Report Type</span>
+            <select value={reportForm.reportType} onChange={event => setReportForm(current => {
+            const nextType = event.target.value;
+            const currentDefaultTitle = getDefaultReportTitle(current.reportType);
+            return {
+              ...current,
+              reportType: nextType,
+              title: !current.title.trim() || current.title === currentDefaultTitle ? getDefaultReportTitle(nextType) : current.title
+            };
+          })} className="w-full rounded-lg border border-gray-300 px-3 py-2">
+              <option value="analytics">Analytics Report</option>
+              <option value="finance">Finance Report</option>
+            </select>
+          </label>
+          <label className="space-y-2 md:col-span-2">
+            <span className="text-sm font-medium text-gray-700">Report Title</span>
+            <input type="text" value={reportForm.title} onChange={event => setReportForm(current => ({
+            ...current,
+            title: event.target.value
+          }))} className="w-full rounded-lg border border-gray-300 px-3 py-2" placeholder="Analytics Report" />
+          </label>
+          <label className="space-y-2">
+            <span className="text-sm font-medium text-gray-700">Start Date</span>
+            <input type="date" value={reportForm.startDate} onChange={event => setReportForm(current => ({
+            ...current,
+            startDate: event.target.value
+          }))} className="w-full rounded-lg border border-gray-300 px-3 py-2" />
+          </label>
+          <label className="space-y-2">
+            <span className="text-sm font-medium text-gray-700">End Date</span>
+            <input type="date" value={reportForm.endDate} onChange={event => setReportForm(current => ({
+            ...current,
+            endDate: event.target.value
+          }))} className="w-full rounded-lg border border-gray-300 px-3 py-2" />
+          </label>
+          <label className="space-y-2">
+            <span className="text-sm font-medium text-gray-700">Download Format</span>
+            <select value={reportForm.format} onChange={event => setReportForm(current => ({
+            ...current,
+            format: event.target.value
+          }))} className="w-full rounded-lg border border-gray-300 px-3 py-2">
+              <option value="pdf">PDF</option>
+              <option value="excel">Excel</option>
+            </select>
+          </label>
+          <div className="flex items-end">
+            <button type="button" onClick={applyCurrentFinancialYear} className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50">
+              Use Current FY
+            </button>
+          </div>
+          <div className="rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-600 md:col-span-2">
+            {reportForm.reportType === "finance" ? "Finance report will include only income and revenue related cards, charts, and tables for the selected range." : "Analytics report will include restaurant name, generation date, summary cards, charts, and operational tables for the selected range."}
+          </div>
+        </div>
+      </AdminModal>
     </div>;
 }
 
