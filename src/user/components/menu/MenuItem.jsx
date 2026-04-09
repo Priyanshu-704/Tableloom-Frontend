@@ -140,8 +140,10 @@ export function MenuItem({
     <div className="relative overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition-shadow hover:shadow-md">
       <div className="flex flex-col sm:flex-row">
         {}
-        <div className="h-40 w-full flex-shrink-0 sm:h-24 sm:w-24">
-          <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+        <div className="h-40 w-full flex-shrink-0 bg-slate-100 sm:h-24 sm:w-24">
+          {item.thumbnail || item.image ? <img src={item.thumbnail || item.image} alt={item.name} className="w-full h-full object-cover" loading="lazy" /> : <div className="flex h-full w-full items-center justify-center text-xs font-medium uppercase tracking-[0.18em] text-slate-400">
+              No image
+            </div>}
         </div>
 
         {}

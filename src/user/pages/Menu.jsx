@@ -43,6 +43,7 @@ const transformMenuItem = item => {
   name: item.name,
   description: item.description,
   image: item.image,
+  thumbnail: item.thumbnail || item.image,
   category: item.category?.name || "Uncategorized",
   categoryId: item.category?._id || null,
   price: sizes[0]?.price || getDiscountedPrice(item.prices?.[0]?.price || 0, discount),

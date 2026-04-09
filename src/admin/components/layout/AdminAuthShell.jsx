@@ -20,7 +20,7 @@ export function AdminAuthShell({
 }) {
   const [showMobileForm, setShowMobileForm] = useState(mobileAuthMode !== "preview");
   const brandName = settings?.restaurant?.name || "Tableloom";
-  const logoSrc = settings?.restaurant?.logo || "/tableloom-mark.svg";
+  const logoSrc = settings?.restaurant?.logoThumbnail || settings?.restaurant?.logo || "/tableloom-mark.svg";
   const showMobilePreview = mobileAuthMode === "preview" && !showMobileForm;
   const hideSidePanelOnMobile = mobileAuthMode === "formOnly" || showMobileForm;
   const hideFormCardOnMobile = showMobilePreview;

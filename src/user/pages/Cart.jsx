@@ -230,8 +230,8 @@ export function Cart() {
         return <div key={lineItemKey} className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
               <div className="flex flex-col gap-4 sm:flex-row">
                 {}
-                {item.image && <div className="w-16 h-16 flex-shrink-0 mr-4">
-                    <img src={item.image} alt={item.name} className="w-full h-full object-cover rounded" />
+                {(item.thumbnail || item.image) && <div className="w-16 h-16 flex-shrink-0 mr-4">
+                    <img src={item.thumbnail || item.image} alt={item.name} className="w-full h-full object-cover rounded" loading="lazy" />
                   </div>}
 
                 <div className="flex-1">

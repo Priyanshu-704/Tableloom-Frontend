@@ -1,6 +1,12 @@
-import React, { useMemo, useState } from "react";
-import { Upload, Clock, Image as ImageIcon, Plus, Trash2 } from "lucide-react";
+import React, { useEffect, useMemo, useState } from "react";
+import { Clock, Image as ImageIcon, Loader2, Plus, Trash2 } from "lucide-react";
 import { AdminModal } from "../common/AdminModal";
+import {
+  createImagePreview,
+  IMAGE_UPLOAD_ACCEPT,
+  revokeImagePreview,
+  validateImageFile
+} from "../../../common/utils/imageUpload";
 const buildInitialPrices = (item, sizes) => {
   if (item?.prices?.length) {
     return item.prices.map(p => ({
@@ -27,7 +33,8 @@ export function ItemForm({
   onSave,
   onCancel,
   categories,
-  sizes = []
+  sizes = [],
+  isSaving = false
 }) {
   const [formData, setFormData] = useState({
     name: item?.name || "",
@@ -68,6 +75,9 @@ export function ItemForm({
   const [imageFile, setImageFile] = useState(null);
   const [errors, setErrors] = useState({});
   const usedSizeIds = useMemo(() => new Set(formData.prices.map(p => p.sizeId).filter(Boolean)), [formData.prices]);
+  useEffect(() => () => {
+    revokeImagePreview(formData.image);
+  }, [formData.image]);
   const validateForm = () => {
     const newErrors = {};
     if (!formData.name.trim()) newErrors.name = "Name is required";
@@ -100,6 +110,9 @@ export function ItemForm({
   };
   const handleSubmit = e => {
     e.preventDefault();
+    if (isSaving) {
+      return;
+    }
     if (!validateForm()) {
       return;
     }
@@ -185,11 +198,36 @@ export function ItemForm({
     if (!file) {
       return;
     }
+    const imageError = validateImageFile(file);
+    if (imageError) {
+      setErrors(prev => ({
+        ...prev,
+        image: imageError
+      }));
+      e.target.value = "";
+      return;
+    }
     setImageFile(file);
-    const imageUrl = URL.createObjectURL(file);
+    const imageUrl = createImagePreview(file);
     setFormData(prev => ({
       ...prev,
       image: imageUrl
+    }));
+    setErrors(prev => ({
+      ...prev,
+      image: ""
+    }));
+  };
+  const handleRemoveImage = () => {
+    revokeImagePreview(formData.image);
+    setFormData(prev => ({
+      ...prev,
+      image: ""
+    }));
+    setImageFile(null);
+    setErrors(prev => ({
+      ...prev,
+      image: ""
     }));
   };
   const updatePriceRow = (index, field, value) => {
@@ -230,10 +268,11 @@ export function ItemForm({
     });
   };
   return <AdminModal isOpen={true} title={item ? "Edit Menu Item" : "Add New Menu Item"} subtitle={item ? "Update the menu item details." : "Create a new item for your menu."} onClose={onCancel} maxWidth="max-w-5xl" footer={<div className="flex items-center justify-end space-x-4">
-          <button type="button" onClick={onCancel} className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+          <button type="button" onClick={onCancel} disabled={isSaving} className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-60">
             Cancel
           </button>
-          <button type="submit" form="menu-item-form" className="px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
+          <button type="submit" form="menu-item-form" disabled={isSaving} className="inline-flex items-center gap-2 px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-60">
+            {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
             {item ? "Update Item" : "Add Item"}
           </button>
         </div>}>
@@ -372,14 +411,8 @@ export function ItemForm({
                 </label>
                 <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
                   {formData.image ? <div className="space-y-3">
-                      <img src={formData.image} alt="Preview" className="mx-auto h-48 object-cover rounded-lg" />
-                      <button type="button" onClick={() => {
-                  setFormData(prev => ({
-                    ...prev,
-                    image: ""
-                  }));
-                  setImageFile(null);
-                }} className="text-red-600 hover:text-red-700 text-sm">
+                      <img src={formData.image} alt="Preview" className="mx-auto h-48 rounded-lg object-cover" />
+                      <button type="button" onClick={handleRemoveImage} className="text-red-600 hover:text-red-700 text-sm">
                         Remove Image
                       </button>
                     </div> : <div className="py-8">
@@ -394,17 +427,11 @@ export function ItemForm({
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Upload Image
                   </label>
-                  <input type="file" accept="image/*" onChange={handleImageChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent" />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Or Enter Image URL
-                  </label>
-                  <div className="relative">
-                    <Upload className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                    <input type="url" value={formData.image} onChange={e => handleChange("image", e.target.value)} className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent" placeholder="https://example.com/image.jpg" />
-                  </div>
+                  <input type="file" accept={IMAGE_UPLOAD_ACCEPT} onChange={handleImageChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent" />
+                  <p className="mt-2 text-xs text-gray-500">
+                    Upload a JPG or PNG image up to 2MB. Thumbnails are generated automatically after upload.
+                  </p>
+                  {errors.image ? <p className="mt-2 text-sm text-red-600">{errors.image}</p> : null}
                 </div>
               </div>
             </div>

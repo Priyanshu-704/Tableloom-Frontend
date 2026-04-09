@@ -72,7 +72,7 @@ export function Home() {
         <div className="mx-auto max-w-md text-center">
           {}
           <div className="mb-10 rounded-[2rem] bg-white/80 px-5 py-8 shadow-sm ring-1 ring-white/70 backdrop-blur sm:px-8">
-            <BrandBadge logoSrc={settings?.restaurant?.logo || "/tableloom-mark.svg"} name={settings?.restaurant?.name || "Tableloom"} size="lg" className="justify-center mb-4" nameClassName="text-4xl text-gray-900" />
+            <BrandBadge logoSrc={settings?.restaurant?.logoThumbnail || settings?.restaurant?.logo || "/tableloom-mark.svg"} name={settings?.restaurant?.name || "Tableloom"} size="lg" className="justify-center mb-4" nameClassName="text-4xl text-gray-900" />
             <p className="text-gray-600 mb-4">
               {t("welcomeTo")} {t("digitalOrderingSystem")}
             </p>

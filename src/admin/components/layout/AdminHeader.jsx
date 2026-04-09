@@ -36,7 +36,7 @@ export function AdminHeader({
         <div className={`hidden h-full shrink-0 items-center border-r border-slate-800/60 bg-[linear-gradient(180deg,rgba(15,23,42,0.92)_0%,rgba(17,24,39,0.88)_100%)] transition-[width,padding] duration-300 lg:flex ${isDesktopSidebarCollapsed ? "w-24 justify-center px-3" : "w-72 px-6"}`}>
           <div className={`flex min-w-0 items-center ${isDesktopSidebarCollapsed ? "justify-center" : "gap-4"}`}>
             <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white/8 ring-1 ring-white/10 shadow-inner">
-              <img src={settings?.restaurant?.logo || "/tableloom-mark.svg"} alt={settings?.restaurant?.name || "Tableloom"} className="h-8 w-8 object-contain" />
+              <img src={settings?.restaurant?.logoThumbnail || settings?.restaurant?.logo || "/tableloom-mark.svg"} alt={settings?.restaurant?.name || "Tableloom"} className="h-8 w-8 object-contain" loading="lazy" />
             </div>
             <div className={`min-w-0 ${isDesktopSidebarCollapsed ? "hidden" : ""}`}>
               <p className="truncate text-base font-bold text-white xl:text-lg">
@@ -56,7 +56,7 @@ export function AdminHeader({
                 {isMobileSidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
               </button>
               <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-2xl bg-white/10 ring-1 ring-white/10">
-                <img src={settings?.restaurant?.logo || "/tableloom-mark.svg"} alt={settings?.restaurant?.name || "Tableloom"} className="h-6 w-6 object-contain" />
+                <img src={settings?.restaurant?.logoThumbnail || settings?.restaurant?.logo || "/tableloom-mark.svg"} alt={settings?.restaurant?.name || "Tableloom"} className="h-6 w-6 object-contain" loading="lazy" />
               </div>
             </div>
 

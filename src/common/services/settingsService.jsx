@@ -3,6 +3,7 @@ import handleApiError from "../utils/handleApiError";
 import { createRequestCache } from "../utils/requestCache";
 import { extractTenantFromPath, stripAppBasePath } from "../utils/routes.js";
 import toServiceResponse from "./serviceResponse";
+import { appendImageToFormData } from "../utils/imageUpload";
 
 const settingsRequestCache = createRequestCache(15000);
 const getSettingsScope = () => {
@@ -51,16 +52,29 @@ export const settingsService = {
   updateSettings: async (payload = {}, imageFile = null) => {
     try {
       const hasImage = Boolean(imageFile);
-      const requestBody = hasImage ? new FormData() : payload;
+      const sanitizedPayload = {
+        ...(payload || {}),
+        restaurant: payload?.restaurant
+          ? {
+              ...payload.restaurant,
+            }
+          : undefined,
+      };
+      const requestBody = hasImage ? new FormData() : sanitizedPayload;
+
+      if (sanitizedPayload?.restaurant) {
+        delete sanitizedPayload.restaurant.logo;
+        delete sanitizedPayload.restaurant.logoThumbnail;
+      }
 
       if (hasImage) {
-        Object.entries(payload || {}).forEach(([key, value]) => {
+        Object.entries(sanitizedPayload || {}).forEach(([key, value]) => {
           requestBody.append(
             key,
             typeof value === "object" ? JSON.stringify(value) : value,
           );
         });
-        requestBody.append("image", imageFile);
+        appendImageToFormData(requestBody, imageFile);
       }
 
       const response = await axiosInstance.put("/settings", requestBody, hasImage ? {

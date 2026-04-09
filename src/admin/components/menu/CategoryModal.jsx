@@ -1,6 +1,7 @@
 import React from "react";
 import { Loader, X } from "lucide-react";
 import { AdminModal } from "../common/AdminModal";
+import { IMAGE_UPLOAD_ACCEPT } from "../../../common/utils/imageUpload";
 export function CategoryModal({
   isOpen,
   editingCategory,
@@ -79,7 +80,10 @@ export function CategoryModal({
                     <X className="h-3 w-3" />
                   </button>
                 </div>}
-              <input type="file" accept="image/*" onChange={onImageChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+              <input type="file" accept={IMAGE_UPLOAD_ACCEPT} onChange={onImageChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+              <p className="mt-2 text-xs text-gray-500">
+                JPG or PNG only, up to 2MB. A thumbnail preview is generated automatically.
+              </p>
             </div>
 
             <div className="flex items-center">

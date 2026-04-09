@@ -331,7 +331,7 @@ export function CustomerInfoForm() {
           <section className="relative border-b border-slate-200/80 px-6 py-8 sm:px-8 xl:border-b-0 xl:border-r">
             <div className="absolute right-10 top-12 h-4 w-4 rounded-full bg-cyan-500 shadow-[0_0_0_10px_rgba(6,182,212,0.12)]"></div>
             <div className="max-w-sm">
-              <BrandBadge logoSrc={settings?.restaurant?.logo || "/tableloom-mark.svg"} name={settings?.restaurant?.name || "Tableloom"} size="lg" className="items-start justify-start" nameClassName="bg-gradient-to-r from-slate-700 to-orange-600 bg-clip-text text-4xl font-semibold text-transparent sm:text-5xl" />
+              <BrandBadge logoSrc={settings?.restaurant?.logoThumbnail || settings?.restaurant?.logo || "/tableloom-mark.svg"} name={settings?.restaurant?.name || "Tableloom"} size="lg" className="items-start justify-start" nameClassName="bg-gradient-to-r from-slate-700 to-orange-600 bg-clip-text text-4xl font-semibold text-transparent sm:text-5xl" />
               <p className="mt-4 text-base text-slate-600">
                 Welcome to Digital Ordering System
               </p>

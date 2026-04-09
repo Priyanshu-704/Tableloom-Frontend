@@ -11,6 +11,7 @@ const defaultSettings = {
     website: "www.tableloom.app",
     description: "Tableloom turns table-side ordering into a polished dining flow with live menus, staff coordination, and smoother guest service.",
     logo: "/tableloom-mark.svg",
+    logoThumbnail: "/tableloom-mark.svg",
     theme: "light"
   },
   businessHours: {

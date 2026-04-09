@@ -1,6 +1,7 @@
 import { axiosInstance } from "./api";
 import handleApiError from "../utils/handleApiError";
 import { createRequestCache } from "../utils/requestCache";
+import { appendImageToFormData } from "../utils/imageUpload";
 
 const menuRequestCache = createRequestCache(5000);
 const buildMultipartFormData = (data = {}, imageFile = null) => {
@@ -10,15 +11,14 @@ const buildMultipartFormData = (data = {}, imageFile = null) => {
       formData.append(key, value);
     }
   });
-  if (imageFile) {
-    formData.append("image", imageFile);
-  }
-  return formData;
+  return appendImageToFormData(formData, imageFile);
 };
 const processMenuItemFormData = (data = {}) => {
   const processed = {
     ...(data || {})
   };
+  delete processed.image;
+  delete processed.thumbnail;
   if (Array.isArray(processed.ingredients)) {
     processed.ingredients = JSON.stringify(processed.ingredients);
   }

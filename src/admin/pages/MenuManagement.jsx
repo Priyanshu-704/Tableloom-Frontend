@@ -40,6 +40,7 @@ export function MenuManagement() {
   const [showItemForm, setShowItemForm] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [isSavingItem, setIsSavingItem] = useState(false);
   const [categories, setCategories] = useState([]);
   const [sizes, setSizes] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
@@ -155,6 +156,7 @@ export function MenuManagement() {
       return;
     }
     try {
+      setIsSavingItem(true);
       if (editingItem) {
         await menuService.updateMenuItem(editingItem._id, itemData, imageFile);
       } else {
@@ -167,6 +169,8 @@ export function MenuManagement() {
     } catch (error) {
       logger.error("Failed to save menu item:", error);
       addNotification(error.response?.data?.message || "Failed to save menu item.", "error");
+    } finally {
+      setIsSavingItem(false);
     }
   };
   const handleExportMenu = async () => {
@@ -334,7 +338,7 @@ export function MenuManagement() {
         {menuItems.map(item => <div key={item._id} className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
             <div className="flex items-start gap-3">
               <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center overflow-hidden rounded-xl bg-gray-200">
-                {item.image ? <img src={item.image} alt={item.name} className="h-full w-full object-cover" /> : <Package className="h-6 w-6 text-gray-400" />}
+                {item.thumbnail || item.image ? <img src={item.thumbnail || item.image} alt={item.name} className="h-full w-full object-cover" loading="lazy" /> : <Package className="h-6 w-6 text-gray-400" />}
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
@@ -394,7 +398,7 @@ export function MenuManagement() {
                   <td className="p-4">
                     <div className="flex items-center space-x-3">
                       <div className="w-12 h-12 bg-gray-200 rounded-lg overflow-hidden flex items-center justify-center">
-                        {item.image ? <img src={item.image} alt={item.name} className="w-full h-full object-cover" /> : <Package className="h-6 w-6 text-gray-400" />}
+                        {item.thumbnail || item.image ? <img src={item.thumbnail || item.image} alt={item.name} className="w-full h-full object-cover" loading="lazy" /> : <Package className="h-6 w-6 text-gray-400" />}
                       </div>
                       <div>
                         <p className="font-medium text-gray-900">{item.name}</p>
@@ -441,6 +445,6 @@ export function MenuManagement() {
       {!isMonitoringMode && showItemForm && <ItemForm item={editingItem} onSave={handleSaveItem} onCancel={() => {
       setShowItemForm(false);
       setEditingItem(null);
-    }} categories={categories} sizes={sizes} />}
+    }} categories={categories} sizes={sizes} isSaving={isSavingItem} />}
     </div>;
 }

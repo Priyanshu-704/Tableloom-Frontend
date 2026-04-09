@@ -88,7 +88,7 @@ export function Header() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex min-h-16 flex-wrap items-center justify-between gap-3 py-3 sm:flex-nowrap sm:py-2">
           <button type="button" onClick={() => navigate(buildCustomerPath("/home"))} className="flex min-w-0 flex-1 items-center text-left sm:flex-none">
-            <BrandBadge logoSrc={settings?.restaurant?.logo || "/tableloom-mark.svg"} name={settings?.restaurant?.name || "Tableloom"} size="sm" nameClassName="hidden max-w-[8rem] text-base text-slate-900 sm:block sm:max-w-[14rem] sm:text-xl" />
+            <BrandBadge logoSrc={settings?.restaurant?.logoThumbnail || settings?.restaurant?.logo || "/tableloom-mark.svg"} name={settings?.restaurant?.name || "Tableloom"} size="sm" nameClassName="hidden max-w-[8rem] text-base text-slate-900 sm:block sm:max-w-[14rem] sm:text-xl" />
             {tableNumber && <span className="ml-2 rounded-full bg-primary-100 px-2 py-1 text-xs text-primary-700 shadow-sm sm:ml-4 sm:text-sm">
                 {t("table")} {tableNumber}
               </span>}

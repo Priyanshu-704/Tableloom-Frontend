@@ -11,6 +11,12 @@ import { Input } from "../../common/components/ui/input";
 import { Checkbox } from "../../common/components/ui/checkbox";
 import { useMonitoringMode } from "../hooks/useMonitoringMode";
 import { MonitoringBanner } from "../components/common/MonitoringBanner";
+import {
+  createImagePreview,
+  IMAGE_UPLOAD_ACCEPT,
+  revokeImagePreview,
+  validateImageFile
+} from "../../common/utils/imageUpload";
 const DAYS_OF_WEEK = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 const CURRENCIES = [{
   code: "INR",
@@ -46,6 +52,7 @@ const DEFAULT_SETTINGS = {
     website: "www.tableloom.app",
     description: "Tableloom turns table-side ordering into a polished dining flow with live menus, staff coordination, and smoother guest service.",
     logo: "/tableloom-mark.svg",
+    logoThumbnail: "/tableloom-mark.svg",
     theme: "light"
   },
   businessHours: {
@@ -235,6 +242,9 @@ export function Settings() {
     };
     loadSettings();
   }, [canManageSettings]);
+  useEffect(() => () => {
+    revokeImagePreview(adminSettings?.restaurant?.logo);
+  }, [adminSettings?.restaurant?.logo]);
   const setActiveTab = tabId => {
     setSearchParams({
       tab: tabId
@@ -459,19 +469,29 @@ export function Settings() {
             {adminSettings?.restaurant?.logo ? <img src={adminSettings.restaurant.logo} alt={`${adminSettings?.restaurant?.name || "Restaurant"} logo`} className="h-full w-full object-contain p-2" /> : <span className="text-xs text-gray-400">No logo</span>}
           </div>
           <div className="flex-1">
-            <input type="file" accept="image/*" onChange={event => {
+            <input type="file" accept={IMAGE_UPLOAD_ACCEPT} onChange={event => {
             const file = event.target.files?.[0];
             if (!file) {
               return;
             }
-            if (file.size > 5 * 1024 * 1024) {
-              addNotification("Logo size should be less than 5MB", "error");
+            const imageError = validateImageFile(file);
+            if (imageError) {
+              addNotification(imageError, "error");
+              event.target.value = "";
               return;
             }
             setLogoFile(file);
-            updateNestedSettings("restaurant", "logo", URL.createObjectURL(file));
+            const previewUrl = createImagePreview(file);
+            setAdminSettings(current => ({
+              ...current,
+              restaurant: {
+                ...(current?.restaurant || {}),
+                logo: previewUrl,
+                logoThumbnail: previewUrl
+              }
+            }));
           }} className="block w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 file:mr-4 file:rounded-lg file:border-0 file:bg-primary-50 file:px-3 file:py-2 file:text-sm file:font-medium file:text-primary-700" />
-            <p className="mt-2 text-xs text-gray-500">Upload a PNG, JPG, GIF, or WebP logo. This branding will appear across tenant panels and the customer app.</p>
+            <p className="mt-2 text-xs text-gray-500">Upload a JPG or PNG logo up to 2MB. A thumbnail will be generated automatically for lightweight header and sidebar previews.</p>
           </div>
         </div>
       </div>

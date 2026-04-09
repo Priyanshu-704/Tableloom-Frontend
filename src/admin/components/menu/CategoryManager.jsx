@@ -10,6 +10,11 @@ import { AdminPageSkeleton } from "../common/AdminSkeleton";
 import { buildAdminPath } from "../../../common/utils/routes";
 import { useMonitoringMode } from "../../hooks/useMonitoringMode";
 import { MonitoringBanner } from "../common/MonitoringBanner";
+import {
+  createImagePreview,
+  revokeImagePreview,
+  validateImageFile
+} from "../../../common/utils/imageUpload";
 const initialFormData = {
   name: "",
   description: "",
@@ -39,6 +44,15 @@ export function CategoryManager({
   const [statusFilter, setStatusFilter] = useState("all");
   const [withStationFilter, setWithStationFilter] = useState("true");
   const activeKitchenStations = useMemo(() => kitchenStations.filter(station => station.status === "active").sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0)), [kitchenStations]);
+  const updateImagePreview = useCallback(nextPreview => {
+    setImagePreview(current => {
+      revokeImagePreview(current);
+      return nextPreview;
+    });
+  }, []);
+  useEffect(() => () => {
+    revokeImagePreview(imagePreview);
+  }, [imagePreview]);
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
@@ -62,7 +76,7 @@ export function CategoryManager({
       ...initialFormData
     });
     setImageFile(null);
-    setImagePreview("");
+    updateImagePreview("");
     setErrors({});
   };
   const validateForm = () => {
@@ -100,7 +114,7 @@ export function CategoryManager({
       ...initialFormData,
     });
     setImageFile(null);
-    setImagePreview("");
+    updateImagePreview("");
     setErrors({});
     setShowForm(true);
   };
@@ -117,7 +131,7 @@ export function CategoryManager({
       kitchenStation: category.kitchenStation?._id || category.kitchenStation || ""
     });
     setImageFile(null);
-    setImagePreview(category.image || "");
+    updateImagePreview(category.image || "");
     setErrors({});
     setShowForm(true);
   };
@@ -126,20 +140,17 @@ export function CategoryManager({
     if (!file) {
       return;
     }
-    if (!file.type.startsWith("image/")) {
-      addNotification("Please select a valid image file.", "error");
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      addNotification("Image size should be less than 5MB.", "error");
+    const imageError = validateImageFile(file);
+    if (imageError) {
+      addNotification(imageError, "error");
       return;
     }
     setImageFile(file);
-    setImagePreview(URL.createObjectURL(file));
+    updateImagePreview(createImagePreview(file));
   };
   const removeImage = () => {
     setImageFile(null);
-    setImagePreview("");
+    updateImagePreview("");
   };
   const handleSubmit = async event => {
     event.preventDefault();
@@ -253,7 +264,7 @@ export function CategoryManager({
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
         {categories.map(category => <div key={category._id} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
             <div className="h-36 bg-gray-100 relative">
-              {category.image ? <img src={category.image} alt={category.name} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center">
+              {category.thumbnail || category.image ? <img src={category.thumbnail || category.image} alt={category.name} className="w-full h-full object-cover" loading="lazy" /> : <div className="w-full h-full flex items-center justify-center">
                   <ImageIcon className="h-12 w-12 text-gray-400" />
                 </div>}
               <div className="absolute top-3 right-3">

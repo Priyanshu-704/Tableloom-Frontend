@@ -24,7 +24,7 @@ export function BrandBadge({
   const resolvedSizeClass = sizeClasses[size] || sizeClasses.md;
   const fallbackLabel = useMemo(() => String(name || "T").split(/\s+/).filter(Boolean).map(part => part[0]).join("").slice(0, 2).toUpperCase() || "T", [name]);
   return <div className={["flex min-w-0 items-center gap-3", className].filter(Boolean).join(" ")}>
-      {logoSrc && !hasImageError ? <img src={logoSrc} alt={`${name} logo`} className={[resolvedSizeClass, "shrink-0 rounded-2xl object-cover shadow-sm"].join(" ")} onError={() => setHasImageError(true)} /> : <div className={[resolvedSizeClass, fallbackTextSizes[size] || fallbackTextSizes.md, "flex shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-primary-500 to-primary-700 font-bold text-white shadow-sm"].join(" ")}>
+      {logoSrc && !hasImageError ? <img src={logoSrc} alt={`${name} logo`} className={[resolvedSizeClass, "shrink-0 rounded-2xl object-cover shadow-sm"].join(" ")} onError={() => setHasImageError(true)} loading="lazy" /> : <div className={[resolvedSizeClass, fallbackTextSizes[size] || fallbackTextSizes.md, "flex shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-primary-500 to-primary-700 font-bold text-white shadow-sm"].join(" ")}>
           {fallbackLabel}
         </div>}
       {showName ? <span className={["min-w-0 text-balance break-words font-bold leading-tight text-slate-900", nameClassName].filter(Boolean).join(" ")}>
