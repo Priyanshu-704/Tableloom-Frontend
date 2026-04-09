@@ -1,12 +1,10 @@
 import React, { useMemo } from "react";
 import { Bell, Menu, PanelLeftClose, PanelLeftOpen, Shield, X } from "lucide-react";
 import { useLocation } from "react-router-dom";
-import { useAdmin } from "../../context/AdminContext";
 import { useAdminNotificationCenter } from "../../context/AdminNotificationCenterContext";
 import { AccountPopover } from "./AccountPopover";
 import { useSettings } from "../../../common/context/SettingsContext";
 import { useAuth } from "../../../common/context/AuthContext";
-import { BrandBadge } from "../../../common/components/BrandBadge";
 import { isSuperAdminMonitoringPath } from "../../../common/utils/routes";
 export function AdminHeader({
   isMobileSidebarOpen = false,
@@ -14,9 +12,6 @@ export function AdminHeader({
   isDesktopSidebarCollapsed = false,
   onToggleDesktopSidebar
 }) {
-  const {
-    notifications
-  } = useAdmin();
   const {
     hasPermission,
     user
@@ -30,10 +25,11 @@ export function AdminHeader({
     openDrawer,
     closeDrawer,
     stats,
+    rawNotifications,
     importantNotifications,
     canViewNotifications
   } = useAdminNotificationCenter();
-  const unreadCount = useMemo(() => stats?.unreadCount ?? notifications.filter(n => !n.read).length, [notifications, stats?.unreadCount]);
+  const unreadCount = useMemo(() => stats?.unreadCount ?? rawNotifications.filter(notification => !notification.isRead).length, [rawNotifications, stats?.unreadCount]);
   const isMonitoringMode = isSuperAdminMonitoringPath(location.pathname, user?.role);
   return <header className="fixed top-0 left-0 right-0 z-50 h-16 border-b border-slate-800/60 bg-[linear-gradient(90deg,rgba(2,6,23,0.97)_0%,rgba(15,23,42,0.95)_42%,rgba(10,37,64,0.94)_100%)] shadow-lg shadow-slate-950/20 backdrop-blur-sm">
       <div className="flex h-full">
@@ -55,17 +51,12 @@ export function AdminHeader({
 
         <div className="flex min-w-0 flex-1 items-center justify-between gap-3 px-3 sm:px-5 lg:px-6">
           <div className="min-w-0 flex-1">
-            <div className="mb-1 flex items-center gap-3 lg:hidden">
+            <div className="mb-1 flex items-center gap-2 lg:hidden">
               <button type="button" onClick={onToggleMobileSidebar} className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-700 bg-slate-900/80 text-slate-100 transition hover:border-slate-500" aria-label={isMobileSidebarOpen ? "Close navigation menu" : "Open navigation menu"} aria-expanded={isMobileSidebarOpen}>
                 {isMobileSidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
               </button>
-              <div className="min-w-0 flex-1">
-                <div className="flex min-w-0 items-center gap-2">
-                  <BrandBadge logoSrc={settings?.restaurant?.logo || "/tableloom-mark.svg"} name={settings?.restaurant?.name || "Tableloom"} size="sm" nameClassName="text-sm font-semibold text-white" />
-                </div>
-                <p className="mt-1 truncate text-[10px] font-semibold uppercase tracking-[0.22em] text-sky-200/80">
-                  Admin Panel
-                </p>
+              <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-2xl bg-white/10 ring-1 ring-white/10">
+                <img src={settings?.restaurant?.logo || "/tableloom-mark.svg"} alt={settings?.restaurant?.name || "Tableloom"} className="h-6 w-6 object-contain" />
               </div>
             </div>
 
@@ -84,7 +75,7 @@ export function AdminHeader({
             </div>
           </div>
 
-          <div className="flex shrink-0 items-center gap-2 sm:gap-4">
+          <div className="flex shrink-0 items-center gap-2 sm:gap-3">
             <button type="button" onClick={onToggleDesktopSidebar} className="hidden rounded-2xl border border-white/10 bg-white/6 p-2.5 text-slate-200 transition hover:border-white/20 hover:bg-white/10 hover:text-white lg:inline-flex" aria-label={isDesktopSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"} title={isDesktopSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"} aria-pressed={isDesktopSidebarCollapsed}>
               {isDesktopSidebarCollapsed ? <PanelLeftOpen className="h-5 w-5" /> : <PanelLeftClose className="h-5 w-5" />}
             </button>
@@ -106,7 +97,7 @@ export function AdminHeader({
                 </button>
               </div> : null}
 
-            <div className="hidden h-8 w-px bg-white/10 sm:block"></div>
+            <div className="hidden h-8 w-px bg-white/10 md:block"></div>
 
             {user && <AccountPopover user={user} />}
           </div>

@@ -143,19 +143,19 @@ function NotificationGroup({
                 </div>
               </div>
 
-              <Button type="button" onClick={() => dismiss(item._id)} disabled={activeAction === item._id} variant="ghost" size="icon" className="h-8 w-8 rounded-full text-gray-400 hover:text-gray-600" aria-label="Clear notification">
+              <Button type="button" onClick={() => dismiss(item._id)} disabled={activeAction === item._id} variant="ghost" size="icon" className="h-8 w-8 cursor-pointer rounded-full text-gray-400 hover:text-gray-600" aria-label="Clear notification">
                 <X className="h-4 w-4" />
               </Button>
             </div>
 
             <div className="mt-4 flex flex-wrap gap-2">
-              {navigationTarget ? <Button type="button" onClick={() => navigate(navigationTarget)} variant="outline" size="sm" className="text-xs">
+              {navigationTarget ? <Button type="button" onClick={() => navigate(navigationTarget)} variant="outline" size="sm" className="cursor-pointer text-xs">
                   {navigationLabel}
                 </Button> : null}
-              {!item.isRead ? <Button type="button" onClick={() => markAsRead(item._id)} disabled={activeAction === item._id} variant="outline" size="sm" className="text-xs">
+              {!item.isRead ? <Button type="button" onClick={() => markAsRead(item._id)} disabled={activeAction === item._id} variant="outline" size="sm" className="cursor-pointer text-xs">
                   Mark read
                 </Button> : null}
-              {canAcknowledge ? <Button type="button" onClick={() => acknowledge(item._id)} disabled={activeAction === item._id} size="sm" className="text-xs">
+              {canAcknowledge ? <Button type="button" onClick={() => acknowledge(item._id)} disabled={activeAction === item._id} size="sm" className="cursor-pointer text-xs">
                   Acknowledge
                 </Button> : null}
             </div>
@@ -190,7 +190,7 @@ export function AdminNotificationDrawer() {
     return null;
   }
   return <Sheet open={isDrawerOpen} onOpenChange={open => !open && closeDrawer()}>
-      <SheetContent side="right" onPointerDownOutside={closeDrawer} className="left-2 right-2 top-[4.5rem] bottom-2 h-auto w-auto rounded-[1.5rem] border border-gray-200 bg-[#f7f7f4] p-0 sm:left-auto sm:w-[min(92vw,42rem)] sm:max-w-none md:bottom-0 md:right-0 md:top-16 md:h-[calc(100vh-4rem)] md:w-[min(72rem,calc(100vw-14rem))] md:rounded-none md:rounded-tl-[1.5rem]">
+      <SheetContent side="right" onPointerDownOutside={closeDrawer} className="left-2 right-2 top-16 bottom-0 h-auto w-auto max-w-xl rounded-none rounded-t-[1.5rem] border-x-0 border-b-0 border-gray-200 bg-[#f7f7f4] p-0 sm:left-3 sm:right-3 sm:top-[4.5rem] sm:bottom-3 sm:rounded-[1.5rem] sm:border sm:max-w-none md:left-auto md:right-0 md:top-16 md:bottom-0 md:h-[calc(100vh-4rem)] md:w-[min(72rem,calc(100vw-14rem))] md:max-w-none md:rounded-none">
         <div className="flex h-full min-h-0 flex-col">
           <div className="border-b border-gray-200 bg-white px-5 py-4">
             <div className="flex items-start justify-between gap-4">
@@ -208,25 +208,25 @@ export function AdminNotificationDrawer() {
                   Waiter calls and important alerts appear here in real time.
                 </p>
               </div>
-              <Button type="button" onClick={closeDrawer} variant="ghost" size="icon" className="rounded-full text-gray-500 hover:text-gray-700" aria-label="Close notification drawer">
+              <Button type="button" onClick={closeDrawer} variant="ghost" size="icon" className="rounded-full text-gray-500 hover:text-gray-700 cursor-pointer" aria-label="Close notification drawer">
                 <X className="h-4 w-4" />
               </Button>
             </div>
 
-            <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
-              <div className="rounded-2xl bg-slate-50 p-3">
+            <div className="mt-4 hidden gap-3 md:grid md:grid-cols-3">
+              <div className="min-w-[8.5rem] shrink-0 rounded-2xl bg-slate-50 p-3">
                 <p className="text-xs text-gray-500">Total</p>
                 <p className="mt-1 text-lg font-semibold text-gray-900">
                   {stats?.total ?? notifications.length}
                 </p>
               </div>
-              <div className="rounded-2xl bg-slate-50 p-3">
+              <div className="min-w-[8.5rem] shrink-0 rounded-2xl bg-slate-50 p-3">
                 <p className="text-xs text-gray-500">Unread</p>
                 <p className="mt-1 text-lg font-semibold text-gray-900">
                   {stats?.unreadCount ?? 0}
                 </p>
               </div>
-              <div className="rounded-2xl bg-slate-50 p-3">
+              <div className="min-w-[8.5rem] shrink-0 rounded-2xl bg-slate-50 p-3">
                 <p className="text-xs text-gray-500">Important</p>
                 <p className="mt-1 text-lg font-semibold text-gray-900">
                   {importantNotifications.length}
@@ -235,19 +235,19 @@ export function AdminNotificationDrawer() {
             </div>
 
             <div className="mt-4 flex flex-wrap gap-2">
-              <Button type="button" onClick={markAllAsRead} disabled={loading || activeAction === "mark-all"} variant="outline" size="sm">
+              <Button type="button" onClick={markAllAsRead} disabled={loading || activeAction === "mark-all"} variant="outline" size="sm" className="cursor-pointer">
                 <CheckCheck className="h-4 w-4" />
                 Mark all read
               </Button>
-              <Button type="button" onClick={clearAll} disabled={loading || activeAction === "clear-all"} variant="outline" size="sm">
+              <Button type="button" onClick={clearAll} disabled={loading || activeAction === "clear-all"} variant="outline" size="sm" className="cursor-pointer">
                 <Trash2 className="h-4 w-4" />
                 Clear all
               </Button>
-              {hasPermission("notification_announce") ? <Button type="button" onClick={cleanupExpired} disabled={activeAction === "cleanup"} variant="outline" size="sm">
+              {hasPermission("notification_announce") ? <Button type="button" onClick={cleanupExpired} disabled={activeAction === "cleanup"} variant="outline" size="sm" className="cursor-pointer">
                   <Trash2 className="h-4 w-4" />
                   Cleanup
                 </Button> : null}
-              <Button type="button" onClick={() => refreshNotifications()} disabled={loading} variant="outline" size="sm">
+              <Button type="button" onClick={() => refreshNotifications()} disabled={loading} variant="outline" size="sm" className="cursor-pointer">
                 <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
                 Refresh
               </Button>
@@ -255,7 +255,7 @@ export function AdminNotificationDrawer() {
           </div>
 
           <div className="grid min-h-0 flex-1 grid-cols-1 md:grid-cols-[18rem_minmax(0,1fr)]">
-            <div className="min-h-0 border-b border-gray-200 bg-[#fcfcfa] md:border-b-0 md:border-r">
+            <div className="hidden min-h-0 border-b border-gray-200 bg-[#fcfcfa] md:block md:border-b-0 md:border-r">
               <div className="h-full overflow-y-auto overscroll-contain px-4 py-4">
                 <div className="mb-3 flex items-center gap-2 text-sm font-medium text-gray-700">
                   <Filter className="h-4 w-4" />
@@ -270,7 +270,7 @@ export function AdminNotificationDrawer() {
                     ...current,
                     status: value
                   }))}>
-                    <SelectTrigger>
+                    <SelectTrigger className="cursor-pointer">
                       <SelectValue placeholder="Select status" />
                     </SelectTrigger>
                     <SelectContent>
@@ -283,7 +283,7 @@ export function AdminNotificationDrawer() {
                     ...current,
                     type: value
                   }))}>
-                    <SelectTrigger>
+                    <SelectTrigger className="cursor-pointer">
                       <SelectValue placeholder="Select type" />
                     </SelectTrigger>
                     <SelectContent>
@@ -296,7 +296,7 @@ export function AdminNotificationDrawer() {
                     ...current,
                     priority: value
                   }))}>
-                    <SelectTrigger>
+                    <SelectTrigger className="cursor-pointer">
                       <SelectValue placeholder="Select priority" />
                     </SelectTrigger>
                     <SelectContent>

@@ -6,7 +6,10 @@ import { buildAdminPath, stripAdminRoutePrefix } from "../../common/utils/routes
 import { getApiMessage } from "../../common/utils/handleApiError";
 import { ConfirmationDialog } from "../components/common/ConfirmationDialog";
 import { ToastContainer } from "../../user/components/common/Toast";
-const AdminContext = createContext();
+const noop = () => {};
+const noopAsync = async () => ({ success: false });
+const noopConfirm = async () => false;
+let hasWarnedMissingAdminProvider = false;
 const initialState = {
   isAuthenticated: false,
   orders: [],
@@ -18,6 +21,20 @@ const initialState = {
   kitchenView: false,
   settings: null
 };
+const defaultAdminContextValue = {
+  ...initialState,
+  dispatch: noop,
+  updateProfile: noopAsync,
+  updatePassword: noopAsync,
+  updateOrderStatus: noop,
+  addNotification: noop,
+  removeNotification: noop,
+  toggleKitchenView: noop,
+  setCurrentView: noop,
+  navigateTo: noop,
+  confirmAction: noopConfirm
+};
+const AdminContext = createContext(null);
 function adminReducer(state, action) {
   switch (action.type) {
     case "SET_ORDERS":
@@ -272,7 +289,11 @@ export function AdminProvider({
 export function useAdmin() {
   const context = useContext(AdminContext);
   if (!context) {
-    throw new Error("useAdmin must be used within an AdminProvider");
+    if (!hasWarnedMissingAdminProvider) {
+      hasWarnedMissingAdminProvider = true;
+      logger.warn("useAdmin was called outside AdminProvider. Falling back to a safe default context during route transition.");
+    }
+    return defaultAdminContextValue;
   }
   return context;
 }

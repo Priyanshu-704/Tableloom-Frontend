@@ -629,7 +629,7 @@ function TableCard({
         {}
         {tokenStatus && <div className={`mb-3 p-2 bg-${tokenStatus.color}-50 border border-${tokenStatus.color}-200 rounded-lg flex items-center justify-center`}>
             <span className={`text-xs font-medium text-${tokenStatus.color}-700`}>
-              ⚠️ {tokenStatus.label}
+              {tokenStatus.label}
             </span>
           </div>}
 
@@ -654,7 +654,7 @@ function TableCard({
                 </div>
                 {occupancyTime && <div className="flex-shrink-0 ml-2">
                     <span className="text-xs font-medium text-orange-600 bg-orange-100 px-2 py-1 rounded-lg whitespace-nowrap">
-                      ⏱️ {occupancyTime}
+                      Occupied for {occupancyTime}
                     </span>
                   </div>}
               </div>
@@ -676,10 +676,10 @@ function TableCard({
             </p>
             <div className="flex items-center justify-between mt-1">
               <p className="text-xs text-blue-700">
-                👥 {table.reservation.partySize} people
+                Party size: {table.reservation.partySize} people
               </p>
               <p className="text-xs text-blue-700">
-                🕐{" "}
+                Time:{" "}
                 {new Date(table.reservation.time).toLocaleTimeString([], {
               hour: "2-digit",
               minute: "2-digit"
@@ -715,7 +715,7 @@ function TableCard({
             </div>}
 
           {table.notes && <div className="text-xs text-gray-600 bg-gray-50 p-2 rounded-lg border border-gray-200">
-              <span className="font-medium text-gray-700">📝 Note:</span>{" "}
+              <span className="font-medium text-gray-700">Note:</span>{" "}
               <span className="text-gray-600 line-clamp-2">{table.notes}</span>
             </div>}
         </div>

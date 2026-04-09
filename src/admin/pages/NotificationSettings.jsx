@@ -105,8 +105,8 @@ export function NotificationSettings() {
       applySettings(response?.publicSettings || response?.data || {});
       setDelayMonitorStatus(response?.meta?.delayMonitorStatus || null);
       addNotification("Notification settings updated successfully", "success");
-    } catch {
-      addNotification("Failed to update notification settings", "error");
+    } catch (error) {
+      addNotification(error, "error", "Failed to update notification settings");
     } finally {
       setSaving(false);
     }
@@ -118,8 +118,8 @@ export function NotificationSettings() {
       setDelayMonitorStatus(response?.meta?.delayMonitorStatus || delayMonitorStatus);
       addNotification(response?.message || "Delay monitor check completed successfully", "success");
       await refreshDelayStatus();
-    } catch {
-      addNotification("Failed to run delay monitor check", "error");
+    } catch (error) {
+      addNotification(error, "error", "Failed to run delay monitor check");
     } finally {
       setRunningCheck(false);
     }

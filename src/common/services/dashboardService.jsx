@@ -12,7 +12,11 @@ export const dashboardService = {
           success: true,
           data: {
             stats: {},
-            recentActivity: []
+            recentActivity: [],
+            orderStats: {},
+            customerAnalytics: {},
+            feedbackDashboard: {},
+            waiterDashboard: {}
           }
         };
       });

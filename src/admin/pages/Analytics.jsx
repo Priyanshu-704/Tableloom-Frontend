@@ -6,11 +6,12 @@ import {
   Download,
   IndianRupee,
   Loader2,
-  PieChart,
+  PieChart as PieChartIcon,
   ShoppingCart,
   TrendingUp,
   Users
 } from "lucide-react";
+import { Cell, Pie, PieChart as RechartsPieChart, ResponsiveContainer, Tooltip } from "recharts";
 import {
   customerAdminService,
   dashboardService,
@@ -26,35 +27,6 @@ import { useAdmin } from "../context/AdminContext";
 import { AdminModal } from "../components/common/AdminModal";
 import { AdminPageSkeleton } from "../components/common/AdminSkeleton";
 import { useSettings } from "../../common/context/SettingsContext";
-
-const buildCsv = (rows = []) => {
-  if (!rows.length) {
-    return "";
-  }
-
-  const headers = Object.keys(rows[0]);
-  const values = rows.map(row => headers.map(header => {
-    const value = row?.[header] ?? "";
-    const stringValue = String(value).replace(/"/g, '""');
-    return `"${stringValue}"`;
-  }).join(","));
-  return [headers.join(","), ...values].join("\n");
-};
-
-const downloadCsv = (filename, rows) => {
-  const content = buildCsv(rows);
-  const blob = new Blob([content], {
-    type: "text/csv;charset=utf-8;"
-  });
-  const url = window.URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.setAttribute("download", filename);
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  window.URL.revokeObjectURL(url);
-};
 
 const formatCurrency = (value, currency = "INR") => new Intl.NumberFormat("en-IN", {
   style: "currency",
@@ -86,6 +58,19 @@ const getCurrentFinancialYearRange = (baseDate = new Date()) => {
 };
 
 const getDefaultReportTitle = reportType => reportType === "finance" ? "Finance Report" : "Analytics Report";
+const analyticsChartPalette = ["#0f766e", "#2563eb", "#f97316", "#dc2626", "#7c3aed", "#0891b2"];
+
+const escapeRegExp = value => String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+const normalizeReportTitle = (title, reportType) => {
+  const fallbackTitle = getDefaultReportTitle(reportType);
+  const normalizedTitle = String(title || "").trim().replace(/\s+/g, " ");
+  if (!normalizedTitle) {
+    return fallbackTitle;
+  }
+  const duplicateSuffixPattern = new RegExp(`^${escapeRegExp(fallbackTitle)}\\s+[0-9\\u00B9\\u00B2\\u00B3\\u2070-\\u2079]+$`, "i");
+  return duplicateSuffixPattern.test(normalizedTitle) ? fallbackTitle : normalizedTitle;
+};
 
 const getDownloadFilename = (headers = {}, fallback = "report.pdf") => {
   const contentDisposition = headers?.["content-disposition"] || headers?.["Content-Disposition"] || "";
@@ -96,13 +81,6 @@ const getDownloadFilename = (headers = {}, fallback = "report.pdf") => {
   const simpleMatch = contentDisposition.match(/filename="?([^"]+)"?/i);
   return simpleMatch?.[1] || fallback;
 };
-
-const escapeHtml = value => String(value ?? "")
-  .replace(/&/g, "&amp;")
-  .replace(/</g, "&lt;")
-  .replace(/>/g, "&gt;")
-  .replace(/"/g, "&quot;")
-  .replace(/'/g, "&#39;");
 
 const getCountValue = value => {
   if (typeof value === "number" && Number.isFinite(value)) {
@@ -149,11 +127,6 @@ const buildPeriodFilters = timeRange => {
   };
 };
 
-const buildCustomDateFilters = ({ startDate, endDate }) => ({
-  startDate,
-  endDate
-});
-
 const buildRangeLabel = (startDate, endDate) => {
   if (!startDate && !endDate) {
     return "Live snapshot";
@@ -161,259 +134,23 @@ const buildRangeLabel = (startDate, endDate) => {
   return `${startDate || "Beginning"} to ${endDate || "Today"}`;
 };
 
-const buildReportRows = (report = {}, currency = "INR", dateLabel = "") => {
-  const summaryRows = [{
-    section: "Summary",
-    metric: "Report period",
-    value: dateLabel
-  }, {
-    section: "Summary",
-    metric: "Revenue",
-    value: formatCurrency(report?.orders?.todayRevenue || report?.sessions?.revenue || 0, currency)
-  }, {
-    section: "Summary",
-    metric: "Orders",
-    value: Number(report?.orders?.todayOrders || 0).toLocaleString()
-  }, {
-    section: "Summary",
-    metric: "Pending orders",
-    value: Number(report?.orders?.pendingOrders || 0).toLocaleString()
-  }, {
-    section: "Summary",
-    metric: "Active sessions",
-    value: Number(report?.sessions?.activeSessions || 0).toLocaleString()
-  }, {
-    section: "Summary",
-    metric: "Completed sessions",
-    value: Number(report?.sessions?.completedSessions || 0).toLocaleString()
-  }, {
-    section: "Summary",
-    metric: "Average session time",
-    value: formatMinutes(report?.sessions?.averageSessionTime || 0)
-  }, {
-    section: "Summary",
-    metric: "NPS",
-    value: Math.round(report?.feedback?.nps?.nps || 0)
-  }, {
-    section: "Summary",
-    metric: "Kitchen prep time",
-    value: formatMinutes(report?.kitchen?.overallStats?.avgPreparationTime || 0)
-  }, {
-    section: "Summary",
-    metric: "Waiter calls",
-    value: Number(report?.waiterCalls?.totalCalls || 0).toLocaleString()
-  }];
+const getTimeRangeDateRange = (timeRange, baseDate = new Date()) => {
+  const startDate = new Date(baseDate);
+  const endDate = new Date(baseDate);
 
-  const orderStatusRows = Object.entries(report?.orders?.statusCounts || {}).map(([status, count]) => ({
-    section: "Order status",
-    metric: status,
-    value: count
-  }));
+  endDate.setHours(23, 59, 59, 999);
 
-  const salesRows = (report?.orders?.popularItems || []).map(item => ({
-    section: "Popular items",
-    metric: `${item?.name || "Menu item"}${item?.size ? ` (${item.size})` : ""}`,
-    value: `${item?.totalQuantity || 0} items | ${formatCurrency(item?.totalRevenue || 0, currency)}`
-  }));
-
-  const serviceRows = [{
-    section: "Service",
-    metric: "Pending waiter calls",
-    value: Number(report?.waiterCalls?.pendingCalls || 0).toLocaleString()
-  }, {
-    section: "Service",
-    metric: "Active waiter calls",
-    value: Number(report?.waiterCalls?.activeCalls || 0).toLocaleString()
-  }, {
-    section: "Service",
-    metric: "Avg response time",
-    value: formatMinutes(report?.waiterCalls?.avgResponseTime || 0)
-  }, {
-    section: "Service",
-    metric: "Avg resolution time",
-    value: formatMinutes(report?.waiterCalls?.avgResolutionTime || 0)
-  }];
-
-  return [...summaryRows, ...orderStatusRows, ...salesRows, ...serviceRows];
-};
-
-const buildStatusTableRows = rows => {
-  if (!rows.length) {
-    return "<tr><td colspan=\"3\">No status data available</td></tr>";
+  if (timeRange === "today") {
+    startDate.setHours(0, 0, 0, 0);
+  } else {
+    startDate.setDate(startDate.getDate() - 29);
+    startDate.setHours(0, 0, 0, 0);
   }
 
-  return rows.map(row => `
-    <tr>
-      <td>${escapeHtml(row.status)}</td>
-      <td>${escapeHtml(row.count)}</td>
-      <td>${escapeHtml(formatMinutes(row.avgResponseTime || row.avgResolutionTime || 0))}</td>
-    </tr>
-  `).join("");
-};
-
-const buildPopularItemsChart = (items = [], currency = "INR") => {
-  if (!items.length) {
-    return "<p class=\"muted\">No popular items found for the selected period.</p>";
-  }
-
-  const maxQuantity = Math.max(...items.map(item => Number(item?.totalQuantity || 0)), 1);
-  return items.map(item => {
-    const width = Math.max(12, Math.round(Number(item?.totalQuantity || 0) / maxQuantity * 100));
-    return `
-      <div class="chart-row">
-        <div class="chart-label">${escapeHtml(item?.name || "Menu item")}${item?.size ? ` <span class="muted">(${escapeHtml(item.size)})</span>` : ""}</div>
-        <div class="chart-bar-track">
-          <div class="chart-bar" style="width:${width}%"></div>
-        </div>
-        <div class="chart-value">${escapeHtml(item?.totalQuantity || 0)} | ${escapeHtml(formatCurrency(item?.totalRevenue || 0, currency))}</div>
-      </div>
-    `;
-  }).join("");
-};
-
-const openPdfReport = ({
-  report,
-  currency,
-  dateLabel
-}) => {
-  if (typeof window === "undefined") {
-    return false;
-  }
-
-  const popularItems = buildPopularItemsChart(report?.orders?.popularItems || [], currency);
-  const waiterStatusRows = buildStatusTableRows(report?.waiterCalls?.byStatus || []);
-  const orderStatusRows = Object.entries(report?.orders?.statusCounts || {}).map(([status, count]) => `
-    <tr>
-      <td>${escapeHtml(status)}</td>
-      <td>${escapeHtml(count)}</td>
-    </tr>
-  `).join("") || "<tr><td colspan=\"2\">No order status data available</td></tr>";
-
-  const html = `
-    <!DOCTYPE html>
-    <html>
-      <head>
-        <title>Analytics Report</title>
-        <style>
-          body { font-family: Arial, sans-serif; margin: 24px; color: #111827; }
-          h1, h2, h3 { margin: 0; }
-          .header { margin-bottom: 24px; padding: 24px; border: 1px solid #d1d5db; border-radius: 18px; background: linear-gradient(135deg, #eff6ff, #ffffff); }
-          .subtitle { margin-top: 8px; color: #4b5563; }
-          .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin: 20px 0; }
-          .card { border: 1px solid #e5e7eb; border-radius: 16px; padding: 16px; background: #f8fafc; }
-          .metric { font-size: 24px; font-weight: 700; margin-top: 8px; }
-          .muted { color: #6b7280; font-size: 12px; }
-          .section { margin-top: 26px; }
-          table { width: 100%; border-collapse: collapse; margin-top: 12px; }
-          th, td { border-bottom: 1px solid #e5e7eb; padding: 10px 8px; text-align: left; font-size: 13px; }
-          th { background: #f3f4f6; font-weight: 700; }
-          .chart-row { display: grid; grid-template-columns: 220px 1fr 170px; gap: 12px; align-items: center; margin-top: 12px; }
-          .chart-label { font-size: 13px; }
-          .chart-bar-track { height: 12px; background: #e5e7eb; border-radius: 999px; overflow: hidden; }
-          .chart-bar { height: 100%; background: linear-gradient(90deg, #0f766e, #14b8a6); border-radius: 999px; }
-          .chart-value { text-align: right; font-size: 12px; color: #374151; }
-          @media print { body { margin: 16px; } }
-        </style>
-      </head>
-      <body>
-        <div class="header">
-          <h1>Analytics & Finance Report</h1>
-          <p class="subtitle">Report period: ${escapeHtml(dateLabel)}</p>
-          <p class="subtitle">Generated on: ${escapeHtml(new Date().toLocaleString())}</p>
-        </div>
-
-        <div class="grid">
-          <div class="card">
-            <h3>Revenue</h3>
-            <div class="metric">${escapeHtml(formatCurrency(report?.orders?.todayRevenue || report?.sessions?.revenue || 0, currency))}</div>
-            <div class="muted">Paid revenue for the selected range</div>
-          </div>
-          <div class="card">
-            <h3>Orders</h3>
-            <div class="metric">${escapeHtml(report?.orders?.todayOrders || 0)}</div>
-            <div class="muted">Orders placed in the selected range</div>
-          </div>
-          <div class="card">
-            <h3>Sessions</h3>
-            <div class="metric">${escapeHtml(report?.sessions?.completedSessions || 0)}</div>
-            <div class="muted">Completed customer sessions</div>
-          </div>
-          <div class="card">
-            <h3>NPS</h3>
-            <div class="metric">${escapeHtml(Math.round(report?.feedback?.nps?.nps || 0))}</div>
-            <div class="muted">Customer recommendation score</div>
-          </div>
-        </div>
-
-        <div class="section">
-          <h2>Popular Items</h2>
-          ${popularItems}
-        </div>
-
-        <div class="section">
-          <h2>Order Status Breakdown</h2>
-          <table>
-            <thead>
-              <tr>
-                <th>Status</th>
-                <th>Count</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${orderStatusRows}
-            </tbody>
-          </table>
-        </div>
-
-        <div class="section">
-          <h2>Operations Summary</h2>
-          <table>
-            <thead>
-              <tr>
-                <th>Metric</th>
-                <th>Value</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr><td>Average session time</td><td>${escapeHtml(formatMinutes(report?.sessions?.averageSessionTime || 0))}</td></tr>
-              <tr><td>Average kitchen preparation time</td><td>${escapeHtml(formatMinutes(report?.kitchen?.overallStats?.avgPreparationTime || 0))}</td></tr>
-              <tr><td>Average total kitchen time</td><td>${escapeHtml(formatMinutes(report?.kitchen?.overallStats?.avgTotalTime || 0))}</td></tr>
-              <tr><td>Occupancy rate</td><td>${escapeHtml(`${Number(report?.tables?.occupancyRate || 0).toFixed(1)}%`)}</td></tr>
-              <tr><td>Waiter calls</td><td>${escapeHtml(report?.waiterCalls?.totalCalls || 0)}</td></tr>
-            </tbody>
-          </table>
-        </div>
-
-        <div class="section">
-          <h2>Waiter Call Status</h2>
-          <table>
-            <thead>
-              <tr>
-                <th>Status</th>
-                <th>Count</th>
-                <th>Average Time</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${waiterStatusRows}
-            </tbody>
-          </table>
-        </div>
-      </body>
-    </html>
-  `;
-
-  const printWindow = window.open("", "_blank", "noopener,noreferrer,width=1200,height=900");
-  if (!printWindow) {
-    return false;
-  }
-
-  printWindow.document.open();
-  printWindow.document.write(html);
-  printWindow.document.close();
-  printWindow.focus();
-  printWindow.print();
-  return true;
+  return {
+    startDate: formatDateInputValue(startDate),
+    endDate: formatDateInputValue(endDate)
+  };
 };
 
 export function Analytics() {
@@ -439,7 +176,12 @@ export function Analytics() {
     menu: {},
     tables: {},
     feedback: {},
-    waiterCalls: {}
+    waiterCalls: {},
+    finance: {
+      summary: {},
+      paymentMethods: [],
+      orderTypes: []
+    }
   });
 
   useEffect(() => {
@@ -451,6 +193,7 @@ export function Analytics() {
           sessionFilters,
           kitchenFilters
         } = buildPeriodFilters(timeRange);
+        const financeDateRange = getTimeRangeDateRange(timeRange);
 
         const [
           dashboard,
@@ -460,7 +203,8 @@ export function Analytics() {
           menu,
           tables,
           feedback,
-          waiterCalls
+          waiterCalls,
+          finance
         ] = await Promise.all([
           dashboardService.getOverview(),
           orderService.getOrderStatistics(orderFilters),
@@ -469,7 +213,12 @@ export function Analytics() {
           menuService.getMenuStatistics(),
           tableService.getTableStats(),
           feedbackService.getDashboard(),
-          waiterCallService.getDashboard()
+          waiterCallService.getDashboard(),
+          reportService.getReportDataset({
+            reportType: "finance",
+            startDate: financeDateRange.startDate,
+            endDate: financeDateRange.endDate
+          })
         ]);
 
         setAnalytics({
@@ -480,7 +229,12 @@ export function Analytics() {
           menu: menu?.data || {},
           tables: tables?.data || {},
           feedback: feedback?.data || {},
-          waiterCalls: normalizeWaiterDashboard(waiterCalls?.data || {})
+          waiterCalls: normalizeWaiterDashboard(waiterCalls?.data || {}),
+          finance: finance?.data || {
+            summary: {},
+            paymentMethods: [],
+            orderTypes: []
+          }
         });
       } catch {
         addNotification("Failed to load analytics reports", "error");
@@ -554,6 +308,40 @@ export function Analytics() {
     }];
   }, [analytics]);
 
+  const financePaymentMethodData = useMemo(() => (analytics?.finance?.paymentMethods || []).map((row, index) => ({
+    name: row?.method ? String(row.method).replace(/_/g, " ") : "Unknown",
+    value: Number(row?.revenue || 0),
+    orders: Number(row?.orders || 0),
+    color: analyticsChartPalette[index % analyticsChartPalette.length]
+  })).filter(row => row.value > 0), [analytics?.finance?.paymentMethods]);
+
+  const financeOrderTypeData = useMemo(() => (analytics?.finance?.orderTypes || []).map((row, index) => ({
+    name: row?.orderType ? String(row.orderType).replace(/_/g, " ") : "Unknown",
+    value: Number(row?.revenue || 0),
+    orders: Number(row?.orders || 0),
+    color: analyticsChartPalette[index % analyticsChartPalette.length]
+  })).filter(row => row.value > 0), [analytics?.finance?.orderTypes]);
+
+  const financeBreakdownRows = useMemo(() => [[
+    "Subtotal",
+    formatCurrency(analytics?.finance?.summary?.subtotal || 0, currency)
+  ], [
+    "Tax Collected",
+    formatCurrency(analytics?.finance?.summary?.taxAmount || 0, currency)
+  ], [
+    "Service Charge",
+    formatCurrency(analytics?.finance?.summary?.serviceCharge || 0, currency)
+  ], [
+    "Discounts",
+    formatCurrency(analytics?.finance?.summary?.discountAmount || 0, currency)
+  ], [
+    "Session Revenue",
+    formatCurrency(analytics?.finance?.summary?.totalSessionRevenue || 0, currency)
+  ], [
+    "Avg Session Revenue",
+    formatCurrency(analytics?.finance?.summary?.averageSessionRevenue || 0, currency)
+  ]], [analytics?.finance?.summary, currency]);
+
   const reportDateLabel = useMemo(() => buildRangeLabel(reportForm.startDate, reportForm.endDate), [reportForm.endDate, reportForm.startDate]);
 
   const applyCurrentFinancialYear = () => {
@@ -579,7 +367,7 @@ export function Analytics() {
       const response = await reportService.generateAnalyticsReport({
         reportType: reportForm.reportType,
         format: reportForm.format,
-        reportTitle: reportForm.title.trim() || getDefaultReportTitle(reportForm.reportType),
+        reportTitle: normalizeReportTitle(reportForm.title, reportForm.reportType),
         restaurantName: settings?.restaurant?.name || "Restaurant",
         dateRange: {
           startDate: reportForm.startDate,
@@ -681,9 +469,13 @@ export function Analytics() {
             label: "Sales",
             icon: IndianRupee
           }, {
+            id: "finance",
+            label: "Finance",
+            icon: PieChartIcon
+          }, {
             id: "menu",
             label: "Menu",
-            icon: PieChart
+            icon: PieChartIcon
           }, {
             id: "operations",
             label: "Operations",
@@ -709,8 +501,19 @@ export function Analytics() {
               <DataTable title="Popular Items" columns={["Item", "Quantity", "Revenue"]} rows={salesRows.map(row => [row.item, row.quantity, row.revenue])} />
             </div> : null}
 
+          {activeTab === "finance" ? <div className="space-y-6">
+              <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                <MetricCard title="Finance Snapshot" icon={IndianRupee} items={[["Total revenue", formatCurrency(analytics?.finance?.summary?.totalRevenue || 0, currency)], ["Paid orders", Number(analytics?.finance?.summary?.totalPaidOrders || 0).toLocaleString()], ["Average order value", formatCurrency(analytics?.finance?.summary?.averageOrderValue || 0, currency)], ["Completed sessions", Number(analytics?.finance?.summary?.completedSessions || 0).toLocaleString()]]} />
+                <MetricCard title="Revenue Breakdown" icon={TrendingUp} items={financeBreakdownRows} />
+              </div>
+              <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                <DistributionChartCard title="Payment Method Mix" subtitle="Revenue split by payment method instead of a very long day-by-day series." data={financePaymentMethodData} currency={currency} />
+                <DistributionChartCard title="Order Type Mix" subtitle="Revenue split by dine-in, takeaway, and delivery." data={financeOrderTypeData} currency={currency} />
+              </div>
+            </div> : null}
+
           {activeTab === "menu" ? <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-              <MetricCard title="Menu Inventory" icon={PieChart} items={[["Total items", analytics?.menu?.totalItems || 0], ["Available items", analytics?.menu?.availableItems || 0], ["Unavailable items", analytics?.menu?.unavailableItems || 0], ["Categories", analytics?.menu?.categoriesCount || 0]]} />
+              <MetricCard title="Menu Inventory" icon={PieChartIcon} items={[["Total items", analytics?.menu?.totalItems || 0], ["Available items", analytics?.menu?.availableItems || 0], ["Unavailable items", analytics?.menu?.unavailableItems || 0], ["Categories", analytics?.menu?.categoriesCount || 0]]} />
               <MetricCard title="Dietary Distribution" icon={TrendingUp} items={[["Vegetarian", analytics?.menu?.dietary?.vegetarian || 0], ["Non vegetarian", analytics?.menu?.dietary?.nonVegetarian || 0], ["Vegan", analytics?.menu?.dietary?.vegan || 0], ["Gluten free", analytics?.menu?.dietary?.glutenFree || 0]]} />
             </div> : null}
 
@@ -743,7 +546,7 @@ export function Analytics() {
             return {
               ...current,
               reportType: nextType,
-              title: !current.title.trim() || current.title === currentDefaultTitle ? getDefaultReportTitle(nextType) : current.title
+              title: !current.title.trim() || current.title === currentDefaultTitle ? getDefaultReportTitle(nextType) : normalizeReportTitle(current.title, current.reportType)
             };
           })} className="w-full rounded-lg border border-gray-300 px-3 py-2">
               <option value="analytics">Analytics Report</option>
@@ -754,7 +557,7 @@ export function Analytics() {
             <span className="text-sm font-medium text-gray-700">Report Title</span>
             <input type="text" value={reportForm.title} onChange={event => setReportForm(current => ({
             ...current,
-            title: event.target.value
+            title: normalizeReportTitle(event.target.value, current.reportType)
           }))} className="w-full rounded-lg border border-gray-300 px-3 py-2" placeholder="Analytics Report" />
           </label>
           <label className="space-y-2">
@@ -813,6 +616,56 @@ function MetricCard({
             <span className="font-semibold text-gray-900">{value}</span>
           </div>)}
       </div>
+    </div>;
+}
+
+function DistributionChartCard({
+  title,
+  subtitle,
+  data = [],
+  currency = "INR"
+}) {
+  const total = data.reduce((sum, item) => sum + Number(item?.value || 0), 0);
+  return <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:p-6">
+      <div className="mb-4">
+        <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
+        <p className="mt-1 text-sm text-gray-500">{subtitle}</p>
+      </div>
+
+      {data.length ? <>
+          <div className="h-72">
+            <ResponsiveContainer width="100%" height="100%">
+              <RechartsPieChart>
+                <Pie data={data} dataKey="value" nameKey="name" innerRadius={60} outerRadius={96} paddingAngle={3}>
+                  {data.map(entry => <Cell key={entry.name} fill={entry.color} />)}
+                </Pie>
+                <Tooltip formatter={value => formatCurrency(value, currency)} />
+              </RechartsPieChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="mt-4 space-y-2">
+            {data.map(entry => {
+          const percentage = total > 0 ? Math.round(entry.value / total * 100) : 0;
+          return <div key={`${title}-${entry.name}`} className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3">
+                  <div className="flex items-center gap-3">
+                    <span className="h-3 w-3 rounded-full" style={{
+                backgroundColor: entry.color
+              }} />
+                    <div>
+                      <p className="text-sm font-medium text-slate-900">{entry.name}</p>
+                      <p className="text-xs text-slate-500">{entry.orders} orders</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-semibold text-slate-900">{formatCurrency(entry.value, currency)}</p>
+                    <p className="text-xs text-slate-500">{percentage}%</p>
+                  </div>
+                </div>;
+        })}
+          </div>
+        </> : <div className="rounded-2xl border border-dashed border-gray-200 px-4 py-10 text-center text-sm text-gray-500">
+          No finance distribution data available for this range.
+        </div>}
     </div>;
 }
 

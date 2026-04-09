@@ -275,8 +275,8 @@ export function Settings() {
       }
       await refreshProfile?.();
       addNotification("Profile updated successfully", "success");
-    } catch {
-      addNotification("Failed to update profile", "error");
+    } catch (error) {
+      addNotification(error, "error", "Failed to update profile");
     } finally {
       setIsSavingSection("");
     }
@@ -318,8 +318,8 @@ export function Settings() {
       setTimeout(() => {
         window.location.href = buildAdminPath("/login");
       }, 400);
-    } catch {
-      addNotification("Failed to update password", "error");
+    } catch (error) {
+      addNotification(error, "error", "Failed to update password");
     } finally {
       setIsSavingSection("");
     }
@@ -345,8 +345,8 @@ export function Settings() {
       setLogoFile(null);
       applySettings(response?.publicSettings || mergedSettings);
       addNotification("Settings updated successfully", "success");
-    } catch {
-      addNotification("Failed to update settings", "error");
+    } catch (error) {
+      addNotification(error, "error", "Failed to update settings");
     } finally {
       setIsSavingSection("");
     }
