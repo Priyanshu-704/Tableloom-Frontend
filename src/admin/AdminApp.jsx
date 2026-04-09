@@ -44,6 +44,9 @@ const MenuManagement = lazy(() => import("./pages/MenuManagement").then(m => ({
 const InventoryManagement = lazy(() => import("./pages/InventoryManagement").then(m => ({
   default: m.InventoryManagement
 })));
+const InventoryUploadResults = lazy(() => import("./pages/InventoryUploadResults").then(m => ({
+  default: m.InventoryUploadResults
+})));
 const CategoryManager = lazy(() => import("./components/menu/CategoryManager").then(m => ({
   default: m.CategoryManager
 })));
@@ -247,6 +250,9 @@ function AdminContent() {
                   </ProtectedRouteWithPermission>} />
               <Route path="inventory" element={<ProtectedRouteWithPermission requiredPermission="inventory_view_all">
                     <InventoryManagement />
+                  </ProtectedRouteWithPermission>} />
+              <Route path="inventory/upload-results" element={<ProtectedRouteWithPermission requiredPermission="inventory_view_all">
+                    <InventoryUploadResults />
                   </ProtectedRouteWithPermission>} />
               <Route path="menu/categories" element={<ProtectedRouteWithPermission requiredPermission={["menu_view_all", "menu_create", "menu_edit", "menu_delete", "category_toggle_status"]}>
                     <CategoryManager />

@@ -9,6 +9,9 @@ import { AdminListSkeleton } from "../components/common/AdminSkeleton";
 import ResponsiveFilterSection from "../components/common/ResponsiveFilterSection";
 import { INVENTORY_ADJUSTMENT_DEFAULTS, INVENTORY_ADJUSTMENT_OPTIONS, INVENTORY_FORM_DEFAULTS, INVENTORY_PAGE_SIZE, INVENTORY_STATUS_OPTIONS, INVENTORY_UNIT_OPTIONS, formatInventoryUnitLabel, normalizeInventoryRelations, normalizeInventoryUnitValue } from "../../common/utils/inventory";
 import InventoryStatusBadge from "../components/InventoryStatusBadge.jsx";
+import { useNavigate } from "react-router-dom";
+import { buildAdminPath } from "../../common/utils/routes";
+import { saveInventoryBulkUploadResult } from "../utils/inventoryUploadResults";
 
 const renderMenuLinks = (item) => {
   const relatedItems = item?.relatedMenuItems || [];
@@ -26,6 +29,7 @@ const renderMenuLinks = (item) => {
     </div>;
 };
 export function InventoryManagement() {
+  const navigate = useNavigate();
   const {
     confirmAction,
     addNotification
@@ -122,18 +126,12 @@ export function InventoryManagement() {
     setBulkFile(null);
   };
   const handleDownloadTemplate = () => {
-    const csvContent = ["ingredientName,sku,unit,currentStock,minimumStock,reorderQuantity,notes", "Tomato,TOM-001,kg,18,5,10,Fresh red tomatoes", "Paper Cup,CUP-012,pieces,240,60,120,12 oz disposable cups", "Olive Oil,OIL-011,liter,8,2,4,Cold pressed olive oil"].join("\n");
-    const blob = new Blob([csvContent], {
-      type: "text/csv;charset=utf-8;"
-    });
-    const url = window.URL.createObjectURL(blob);
     const link = document.createElement("a");
-    link.href = url;
-    link.download = "inventory-bulk-upload-template.csv";
+    link.href = `${import.meta.env.BASE_URL || "/"}inventory-bulk-upload-100-items.csv`;
+    link.download = "inventory-bulk-upload-100-items.csv";
     document.body.appendChild(link);
     link.click();
     link.remove();
-    window.URL.revokeObjectURL(url);
   };
   const handleSave = async () => {
     try {
@@ -195,9 +193,19 @@ export function InventoryManagement() {
       setBulkUploading(true);
       const response = await inventoryService.bulkUploadInventory(bulkFile);
       const uploadStats = response?.data || {};
+      const uploadResultPayload = {
+        ...uploadStats,
+        sourceFileName: bulkFile.name || uploadStats.fileName || "inventory-upload.csv"
+      };
+      saveInventoryBulkUploadResult(uploadResultPayload);
       closeBulkUploadModal();
       await loadInventory();
       addNotification(`Bulk upload completed. Created ${uploadStats.created || 0}, updated ${uploadStats.updated || 0}, failed ${uploadStats.failed || 0}.`, uploadStats.failed ? "warning" : "success");
+      navigate(buildAdminPath("/inventory/upload-results"), {
+        state: {
+          uploadResult: uploadResultPayload
+        }
+      });
     } catch (error) {
       logger.error("Failed to bulk upload inventory:", error);
       addNotification(error.response?.data?.message || "Failed to bulk upload inventory.", "error");
@@ -613,12 +621,13 @@ export function InventoryManagement() {
             <p className="mt-3 font-semibold text-slate-900">Required columns</p>
             <p className="mt-1">ingredientName, unit, currentStock, minimumStock, reorderQuantity</p>
             <p className="mt-3 text-slate-500">Optional columns: sku, notes. Existing rows update automatically when SKU or ingredient name already exists.</p>
+            <p className="mt-3 text-slate-500">After upload, you will be redirected to a results page that lists successful rows, failed rows, and the failure reason for each rejected record.</p>
           </div>
 
           <div className="flex flex-col gap-3 sm:flex-row">
             <button type="button" onClick={handleDownloadTemplate} className="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50">
               <Download className="h-4 w-4" />
-              Download Sample CSV
+              Download 100-Item Sample CSV
             </button>
           </div>
 
