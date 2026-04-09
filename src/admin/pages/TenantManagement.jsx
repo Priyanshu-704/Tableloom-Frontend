@@ -62,6 +62,9 @@ const requestCategoryLabel = {
 const formatRequestStatus = (status = "open") =>
   String(status || "open").replace(/_/g, " ");
 
+const isSupportRequestLocked = (status = "open") =>
+  ["resolved", "closed"].includes(String(status || "open").toLowerCase());
+
 export function TenantManagement() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -131,7 +134,10 @@ export function TenantManagement() {
   );
 
   const openSupportRequests = useMemo(
-    () => supportRequests.filter((request) => request.status !== "resolved").length,
+    () =>
+      supportRequests.filter(
+        (request) => !isSupportRequestLocked(request.status)
+      ).length,
     [supportRequests]
   );
 
@@ -254,6 +260,14 @@ export function TenantManagement() {
   };
 
   const handleSupportStatusChange = async (request, nextStatus) => {
+    if (isSupportRequestLocked(request.status)) {
+      addNotification(
+        "Resolved support requests can no longer be updated",
+        "error"
+      );
+      return;
+    }
+
     setUpdatingSupportId(request._id);
 
     try {
@@ -284,6 +298,14 @@ export function TenantManagement() {
   };
 
   const handleSupportResponseSave = async (request) => {
+    if (isSupportRequestLocked(request.status)) {
+      addNotification(
+        "Resolved support requests can no longer be updated",
+        "error"
+      );
+      return;
+    }
+
     setUpdatingSupportId(request._id);
 
     try {
@@ -704,6 +726,7 @@ export function TenantManagement() {
                 const responseChanged =
                   String(responseDraft).trim() !==
                   String(request.responseMessage || "").trim();
+                const isRequestLocked = isSupportRequestLocked(request.status);
 
                 return (
                   <article
@@ -771,61 +794,75 @@ export function TenantManagement() {
                       </div>
 
                       <div className="w-full xl:w-[22rem]">
-                        <label className="block text-sm font-semibold text-slate-800">
-                          Super Admin Response
-                          <textarea
-                            className="mt-2 min-h-[148px] w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
-                            maxLength={2500}
-                            placeholder="Write a response back to the tenant admin."
-                            value={responseDraft}
-                            onChange={(event) =>
-                              handleSupportDraftChange(
-                                request._id,
-                                event.target.value
-                              )
-                            }
-                          />
-                        </label>
+                        {isRequestLocked ? (
+                          <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+                            This request is resolved and locked. Response and
+                            status changes are no longer available.
+                          </div>
+                        ) : (
+                          <>
+                            <label className="block text-sm font-semibold text-slate-800">
+                              Super Admin Response
+                              <textarea
+                                className="mt-2 min-h-[148px] w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+                                maxLength={2500}
+                                placeholder="Write a response back to the tenant admin."
+                                value={responseDraft}
+                                onChange={(event) =>
+                                  handleSupportDraftChange(
+                                    request._id,
+                                    event.target.value
+                                  )
+                                }
+                              />
+                            </label>
 
-                        <div className="mt-3 flex flex-wrap gap-2">
-                          {["open", "in_progress", "resolved"].map((status) => (
+                            <div className="mt-3 flex flex-wrap gap-2">
+                              {["open", "in_progress", "resolved"].map(
+                                (status) => (
+                                  <button
+                                    key={status}
+                                    type="button"
+                                    disabled={
+                                      updatingSupportId === request._id
+                                    }
+                                    onClick={() =>
+                                      handleSupportStatusChange(request, status)
+                                    }
+                                    className={`rounded-2xl border px-3 py-2 text-sm font-medium transition ${
+                                      request.status === status
+                                        ? "border-slate-900 bg-slate-900 text-white"
+                                        : "border-slate-200 text-slate-700 hover:bg-slate-50"
+                                    }`}
+                                  >
+                                    {status === "in_progress"
+                                      ? "In Progress"
+                                      : status === "resolved"
+                                        ? "Resolve"
+                                        : "Open"}
+                                  </button>
+                                )
+                              )}
+                            </div>
+
                             <button
-                              key={status}
                               type="button"
-                              disabled={updatingSupportId === request._id}
-                              onClick={() =>
-                                handleSupportStatusChange(request, status)
+                              disabled={
+                                updatingSupportId === request._id ||
+                                !responseChanged
                               }
-                              className={`rounded-2xl border px-3 py-2 text-sm font-medium transition ${
-                                request.status === status
-                                  ? "border-slate-900 bg-slate-900 text-white"
-                                  : "border-slate-200 text-slate-700 hover:bg-slate-50"
-                              }`}
+                              onClick={() => handleSupportResponseSave(request)}
+                              className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-60"
                             >
-                              {status === "in_progress"
-                                ? "In Progress"
-                                : status === "resolved"
-                                  ? "Resolve"
-                                  : "Open"}
+                              {updatingSupportId === request._id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Send className="h-4 w-4" />
+                              )}
+                              Save Response
                             </button>
-                          ))}
-                        </div>
-
-                        <button
-                          type="button"
-                          disabled={
-                            updatingSupportId === request._id || !responseChanged
-                          }
-                          onClick={() => handleSupportResponseSave(request)}
-                          className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-60"
-                        >
-                          {updatingSupportId === request._id ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <Send className="h-4 w-4" />
-                          )}
-                          Save Response
-                        </button>
+                          </>
+                        )}
                       </div>
                     </div>
                   </article>
