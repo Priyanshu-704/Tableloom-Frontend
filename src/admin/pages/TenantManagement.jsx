@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Building2, CheckCircle2, ExternalLink, Loader2, MessageSquareText, PlusCircle, Power, Send, ShieldAlert } from "lucide-react";
+import { Building2, CheckCircle2, ExternalLink, Loader2, MessageSquareText, PlusCircle, Power, Send, ShieldAlert, XCircle } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supportService, tenantService } from "../../common/services";
 import { buildTenantPath } from "../../common/utils/routes";
@@ -59,6 +59,7 @@ export function TenantManagement() {
   const [submitting, setSubmitting] = useState(false);
   const [isCreateTenantModalOpen, setIsCreateTenantModalOpen] = useState(false);
   const [verifyingTenantId, setVerifyingTenantId] = useState("");
+  const [rejectingTenantId, setRejectingTenantId] = useState("");
   const [updatingTenantId, setUpdatingTenantId] = useState("");
   const [updatingSupportId, setUpdatingSupportId] = useState("");
   const activeTab = searchParams.get("tab") === "requests" ? "requests" : "tenants";
@@ -170,6 +171,36 @@ export function TenantManagement() {
       addNotification(message, "error");
     } finally {
       setVerifyingTenantId("");
+    }
+  };
+  const handleRejectTenant = async tenant => {
+    if (isMonitoringMode) {
+      addNotification("Tenant management is read-only in monitoring mode.", "error");
+      return;
+    }
+    const confirmed = await confirmAction({
+      title: "Reject Tenant",
+      message: `Are you sure you want to reject ${tenant?.name}? A rejection email will be sent to the requested admin.`,
+      confirmLabel: "Reject Tenant",
+      tone: "danger"
+    });
+    if (!confirmed) {
+      return;
+    }
+    setRejectingTenantId(tenant._id);
+    resetFeedback();
+    try {
+      const response = await tenantService.rejectTenant(tenant._id);
+      const message = response?.message || "Tenant rejected successfully";
+      setSuccess(message);
+      addNotification(message, "success");
+      await loadTenants();
+    } catch (rejectError) {
+      const message = rejectError?.message || "Failed to reject tenant";
+      setError(message);
+      addNotification(message, "error");
+    } finally {
+      setRejectingTenantId("");
     }
   };
   const getTenantAdminPath = tenant => buildTenantPath("/admin/dashboard", {
@@ -341,37 +372,50 @@ export function TenantManagement() {
               </span>
             </div>
 
-            <div className="mt-4 max-h-[24rem] space-y-3 overflow-y-auto overscroll-contain pr-1">
+            <div className="mt-4 max-h-[32rem] overflow-y-auto overscroll-contain pr-1">
               {pendingTenants.length === 0 ? <div className="rounded-2xl border border-dashed border-slate-200 px-4 py-6 text-sm text-slate-500">
                   No pending tenant registrations.
-                </div> : pendingTenants.map(tenant => <div key={tenant._id} className="flex flex-col gap-4 rounded-2xl border border-slate-200 px-4 py-4">
-                    <div>
-                      <div className="font-semibold text-slate-900">
-                        {tenant.name}
-                      </div>
-                      <div className="text-sm text-slate-500">
-                        {tenant.requestedAdmin?.name || tenant.adminUser?.name || "Pending admin"}
-                      </div>
-                      <div className="text-sm text-slate-500">
-                        {tenant.requestedAdmin?.email || tenant.contact?.email}
-                      </div>
-                      {tenant.requestedAdmin?.phone || tenant.contact?.phone ? <div className="text-sm text-slate-500">
-                          {tenant.requestedAdmin?.phone || tenant.contact?.phone}
-                        </div> : null}
-                      <div className="mt-2 inline-flex rounded-xl bg-slate-100 px-3 py-1.5 font-mono text-xs text-slate-700">
-                        {getTenantWorkspacePath(tenant)}
-                      </div>
-                    </div>
-                    <div className="grid gap-2 sm:grid-cols-2">
-                      {isTenantVerified(tenant) ? <button className="rounded-2xl border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50" onClick={() => openTenantAdmin(tenant)} type="button">
-                          Open Admin Panel
-                        </button> : null}
-                      {!isMonitoringMode ? <button className="inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-60" disabled={verifyingTenantId === tenant._id} onClick={() => handleVerifyTenant(tenant._id)} type="button">
-                        {verifyingTenantId === tenant._id ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-                        Verify
-                      </button> : null}
-                    </div>
-                  </div>)}
+                </div> : <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                    {pendingTenants.map(tenant => <div key={tenant._id} className="flex h-full flex-col gap-4 rounded-2xl border border-slate-200 px-4 py-4">
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <div className="font-semibold text-slate-900">
+                              {tenant.name}
+                            </div>
+                            <div className="text-sm text-slate-500">
+                              {tenant.requestedAdmin?.name || tenant.adminUser?.name || "Pending admin"}
+                            </div>
+                          </div>
+                          <span className="rounded-full bg-amber-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-amber-700">
+                            Pending
+                          </span>
+                        </div>
+                        <div className="grid gap-2 text-sm text-slate-500">
+                          <div>{tenant.requestedAdmin?.email || tenant.contact?.email}</div>
+                          {tenant.requestedAdmin?.phone || tenant.contact?.phone ? <div>
+                              {tenant.requestedAdmin?.phone || tenant.contact?.phone}
+                            </div> : null}
+                        </div>
+                        <div className="rounded-2xl bg-slate-50 px-3 py-3 text-sm text-slate-600">
+                          <div>
+                            Plan: <span className="font-medium capitalize text-slate-900">{tenant.subscription?.plan || "starter"}</span>
+                          </div>
+                          <div className="mt-1">
+                            Route: <span className="font-mono text-xs text-slate-700">{getTenantWorkspacePath(tenant)}</span>
+                          </div>
+                        </div>
+                        <div className="mt-auto grid gap-2 sm:grid-cols-2">
+                          {!isMonitoringMode ? <button className="inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-60" disabled={verifyingTenantId === tenant._id || rejectingTenantId === tenant._id} onClick={() => handleVerifyTenant(tenant._id)} type="button">
+                              {verifyingTenantId === tenant._id ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+                              Verify
+                            </button> : null}
+                          {!isMonitoringMode ? <button className="inline-flex items-center justify-center gap-2 rounded-2xl border border-rose-200 px-4 py-2.5 text-sm font-semibold text-rose-700 hover:bg-rose-50 disabled:opacity-60" disabled={rejectingTenantId === tenant._id || verifyingTenantId === tenant._id} onClick={() => handleRejectTenant(tenant)} type="button">
+                              {rejectingTenantId === tenant._id ? <Loader2 className="h-4 w-4 animate-spin" /> : <XCircle className="h-4 w-4" />}
+                              Reject
+                            </button> : null}
+                        </div>
+                      </div>)}
+                  </div>}
             </div>
           </section>
 

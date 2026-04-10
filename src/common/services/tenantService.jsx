@@ -44,6 +44,16 @@ export const tenantService = {
       handleApiError(error, "Failed to verify tenant");
     }
   },
+  rejectTenant: async (tenantId, payload = {}) => {
+    try {
+      const response = await axiosInstance.patch(`/tenants/${tenantId}/reject`, payload);
+      return toServiceResponse(response, {
+        data: null
+      });
+    } catch (error) {
+      handleApiError(error, "Failed to reject tenant");
+    }
+  },
   updateTenantStatus: async (tenantId, status) => {
     try {
       const response = await axiosInstance.patch(`/tenants/${tenantId}/status`, {

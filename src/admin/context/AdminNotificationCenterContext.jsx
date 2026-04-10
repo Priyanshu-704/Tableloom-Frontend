@@ -1,11 +1,13 @@
 import { logger } from "../../common/utils/logger.js";
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { io } from "socket.io-client";
 import { useAuth } from "../../common/context/AuthContext";
 import { useSettings } from "../../common/context/SettingsContext";
 import { getPushToken, subscribeToForegroundPush } from "../../common/firebase/pushNotifications.js";
 import { notificationAdminService } from "../../common/services";
 import pushNotificationService from "../../common/services/pushNotificationService";
+import { isSuperAdminMonitoringPath } from "../../common/utils/routes";
 import { useAdmin } from "./AdminContext";
 const AdminNotificationCenterContext = createContext(null);
 const defaultFilters = {
@@ -55,6 +57,7 @@ const getSocketUrl = () => {
 export function AdminNotificationCenterProvider({
   children
 }) {
+  const location = useLocation();
   const {
     user,
     isAuthenticated,
@@ -66,7 +69,8 @@ export function AdminNotificationCenterProvider({
   const {
     settings
   } = useSettings();
-  const canViewNotifications = hasPermission("notification_view");
+  const isMonitoringMode = isSuperAdminMonitoringPath(location.pathname, user?.role);
+  const canViewNotifications = hasPermission("notification_view") && !isMonitoringMode;
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [stats, setStats] = useState(null);
@@ -121,6 +125,7 @@ export function AdminNotificationCenterProvider({
   }, [markLiveEventHandled]);
   const loadStats = useCallback(async () => {
     if (!isAuthenticated || !canViewNotifications) {
+      setStats(null);
       return;
     }
     try {
@@ -186,6 +191,14 @@ export function AdminNotificationCenterProvider({
   useEffect(() => {
     loadStats();
   }, [loadStats]);
+  useEffect(() => {
+    if (!canViewNotifications) {
+      setNotifications([]);
+      setIsDrawerOpen(false);
+      lastFetchKeyRef.current = "";
+      return;
+    }
+  }, [canViewNotifications]);
   useEffect(() => {
     if (!isDrawerOpen) {
       return;
@@ -303,6 +316,12 @@ export function AdminNotificationCenterProvider({
         }).catch(() => {});
         return;
       }
+      if (!canViewNotifications) {
+        return;
+      }
+      if (String(user?.role || "").toLowerCase() === "super_admin") {
+        return;
+      }
       const tokenResult = await getPushToken({
         requestPermission: true
       }).catch(error => {
@@ -351,7 +370,7 @@ export function AdminNotificationCenterProvider({
       isCancelled = true;
       unsubscribe();
     };
-  }, [addNotification, appendLiveNotification, isAuthenticated, settings?.notifications?.pushNotifications, user?._id, user?.role]);
+  }, [addNotification, appendLiveNotification, canViewNotifications, isAuthenticated, settings?.notifications?.pushNotifications, user?._id, user?.role]);
   const runAction = useCallback(async (actionKey, task, successMessage) => {
     try {
       setActiveAction(actionKey);
