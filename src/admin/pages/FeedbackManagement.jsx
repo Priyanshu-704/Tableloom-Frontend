@@ -6,6 +6,8 @@ import { useAdmin } from "../context/AdminContext";
 import AdminPagination from "../components/common/AdminPagination";
 import { AdminListSkeleton } from "../components/common/AdminSkeleton";
 import ResponsiveFilterSection from "../components/common/ResponsiveFilterSection";
+import { MonitoringBanner } from "../components/common/MonitoringBanner";
+import { useMonitoringMode } from "../hooks/useMonitoringMode";
 const STATUS_OPTIONS = [{
   value: "all",
   label: "All Statuses"
@@ -42,6 +44,7 @@ const sentimentTone = {
 };
 export function FeedbackManagement() {
   const PAGE_SIZE = 10;
+  const isMonitoringMode = useMonitoringMode();
   const {
     addNotification
   } = useAdmin();
@@ -97,6 +100,10 @@ export function FeedbackManagement() {
     setCurrentPage(1);
   }, [filters.search, filters.sentiment, filters.status]);
   const updateEntryStatus = async (entry, status) => {
+    if (isMonitoringMode) {
+      addNotification("Feedback actions are disabled in monitoring mode.", "error");
+      return;
+    }
     try {
       setActiveId(entry._id);
       await feedbackService.updateStatus(entry._id, {
@@ -114,6 +121,10 @@ export function FeedbackManagement() {
     }
   };
   const sendReply = async entry => {
+    if (isMonitoringMode) {
+      addNotification("Feedback actions are disabled in monitoring mode.", "error");
+      return;
+    }
     const message = replyDrafts[entry._id]?.trim();
     if (!message) {
       return;
@@ -135,6 +146,7 @@ export function FeedbackManagement() {
     }
   };
   return <div className="space-y-6 p-4 sm:p-6">
+      {isMonitoringMode ? <MonitoringBanner message="Feedback remains visible for monitoring, but status updates and customer replies are disabled for Super Admin." /> : null}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Feedback Management</h1>
@@ -240,7 +252,7 @@ export function FeedbackManagement() {
                 </div>
 
                 <div className="grid w-full gap-3 lg:min-w-[260px] lg:max-w-sm">
-                  <select value={entry.status || "new"} onChange={event => updateEntryStatus(entry, event.target.value)} disabled={activeId === entry._id} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+                  <select value={entry.status || "new"} onChange={event => updateEntryStatus(entry, event.target.value)} disabled={isMonitoringMode || activeId === entry._id} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
                     {STATUS_OPTIONS.filter(option => option.value !== "all").map(option => <option key={option.value} value={option.value}>
                         {option.label}
                       </option>)}
@@ -249,8 +261,8 @@ export function FeedbackManagement() {
                   <textarea rows={3} value={replyDrafts[entry._id] || ""} onChange={event => setReplyDrafts(current => ({
                 ...current,
                 [entry._id]: event.target.value
-              }))} placeholder="Write a response for this customer" className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" />
-                  <button type="button" onClick={() => sendReply(entry)} disabled={activeId === entry._id} className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-700 disabled:opacity-60">
+              }))} disabled={isMonitoringMode} placeholder="Write a response for this customer" className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" />
+                  <button type="button" onClick={() => sendReply(entry)} disabled={isMonitoringMode || activeId === entry._id} className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-700 disabled:opacity-60">
                     <SmilePlus className="h-4 w-4" />
                     {activeId === entry._id ? "Saving..." : "Send Response"}
                   </button>

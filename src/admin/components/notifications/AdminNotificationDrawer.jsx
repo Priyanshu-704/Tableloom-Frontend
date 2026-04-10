@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Separator } from "../../../common/components/ui/separator";
 import { Sheet, SheetContent } from "../../../common/components/ui/sheet";
 import { getNotificationNavigationLabel, getNotificationNavigationTarget } from "../../utils/notificationRouting";
+import { useMonitoringMode } from "../../hooks/useMonitoringMode";
 const STATUS_OPTIONS = [{
   value: "all",
   label: "All statuses"
@@ -86,7 +87,8 @@ const formatDateTime = value => {
 };
 function NotificationGroup({
   title,
-  items
+  items,
+  isReadOnly = false
 }) {
   const navigate = useNavigate();
   const {
@@ -143,19 +145,19 @@ function NotificationGroup({
                 </div>
               </div>
 
-              <Button type="button" onClick={() => dismiss(item._id)} disabled={activeAction === item._id} variant="ghost" size="icon" className="h-8 w-8 cursor-pointer rounded-full text-gray-400 hover:text-gray-600" aria-label="Clear notification">
-                <X className="h-4 w-4" />
-              </Button>
+              {!isReadOnly ? <Button type="button" onClick={() => dismiss(item._id)} disabled={activeAction === item._id} variant="ghost" size="icon" className="h-8 w-8 cursor-pointer rounded-full text-gray-400 hover:text-gray-600" aria-label="Clear notification">
+                  <X className="h-4 w-4" />
+                </Button> : null}
             </div>
 
             <div className="mt-4 flex flex-wrap gap-2">
               {navigationTarget ? <Button type="button" onClick={() => navigate(navigationTarget)} variant="outline" size="sm" className="cursor-pointer text-xs">
                   {navigationLabel}
                 </Button> : null}
-              {!item.isRead ? <Button type="button" onClick={() => markAsRead(item._id)} disabled={activeAction === item._id} variant="outline" size="sm" className="cursor-pointer text-xs">
+              {!isReadOnly && !item.isRead ? <Button type="button" onClick={() => markAsRead(item._id)} disabled={activeAction === item._id} variant="outline" size="sm" className="cursor-pointer text-xs">
                   Mark read
                 </Button> : null}
-              {canAcknowledge ? <Button type="button" onClick={() => acknowledge(item._id)} disabled={activeAction === item._id} size="sm" className="cursor-pointer text-xs">
+              {!isReadOnly && canAcknowledge ? <Button type="button" onClick={() => acknowledge(item._id)} disabled={activeAction === item._id} size="sm" className="cursor-pointer text-xs">
                   Acknowledge
                 </Button> : null}
             </div>
@@ -167,6 +169,7 @@ export function AdminNotificationDrawer() {
   const {
     hasPermission
   } = useAuth();
+  const isMonitoringMode = useMonitoringMode();
   const {
     activeAction,
     canViewNotifications,
@@ -235,15 +238,15 @@ export function AdminNotificationDrawer() {
             </div>
 
             <div className="mt-4 flex flex-wrap gap-2">
-              <Button type="button" onClick={markAllAsRead} disabled={loading || activeAction === "mark-all"} variant="outline" size="sm" className="cursor-pointer">
-                <CheckCheck className="h-4 w-4" />
-                Mark all read
-              </Button>
-              <Button type="button" onClick={clearAll} disabled={loading || activeAction === "clear-all"} variant="outline" size="sm" className="cursor-pointer">
-                <Trash2 className="h-4 w-4" />
-                Clear all
-              </Button>
-              {hasPermission("notification_announce") ? <Button type="button" onClick={cleanupExpired} disabled={activeAction === "cleanup"} variant="outline" size="sm" className="cursor-pointer">
+              {!isMonitoringMode ? <Button type="button" onClick={markAllAsRead} disabled={loading || activeAction === "mark-all"} variant="outline" size="sm" className="cursor-pointer">
+                  <CheckCheck className="h-4 w-4" />
+                  Mark all read
+                </Button> : null}
+              {!isMonitoringMode ? <Button type="button" onClick={clearAll} disabled={loading || activeAction === "clear-all"} variant="outline" size="sm" className="cursor-pointer">
+                  <Trash2 className="h-4 w-4" />
+                  Clear all
+                </Button> : null}
+              {!isMonitoringMode && hasPermission("notification_announce") ? <Button type="button" onClick={cleanupExpired} disabled={activeAction === "cleanup"} variant="outline" size="sm" className="cursor-pointer">
                   <Trash2 className="h-4 w-4" />
                   Cleanup
                 </Button> : null}
@@ -337,9 +340,9 @@ export function AdminNotificationDrawer() {
                       New waiter calls and alerts will appear here automatically.
                     </p>
                   </div> : <div className="space-y-5">
-                    <NotificationGroup title="Important" items={importantNotifications} />
+                    <NotificationGroup title="Important" items={importantNotifications} isReadOnly={isMonitoringMode} />
                     <Separator className="bg-transparent" />
-                    <NotificationGroup title="Everything Else" items={otherNotifications} />
+                    <NotificationGroup title="Everything Else" items={otherNotifications} isReadOnly={isMonitoringMode} />
                   </div>}
               </div>
             </div>

@@ -3,8 +3,11 @@ import React, { useState } from "react";
 import { Upload, Download, FileText, CheckCircle, XCircle } from "lucide-react";
 import { menuService } from "../../../common/services";
 import { useAdmin } from "../../context/AdminContext";
+import { MonitoringBanner } from "../common/MonitoringBanner";
+import { useMonitoringMode } from "../../hooks/useMonitoringMode";
 
 export function ImportExport() {
+  const isMonitoringMode = useMonitoringMode();
   const { addNotification } = useAdmin();
   const [importFile, setImportFile] = useState(null);
   const [importResults, setImportResults] = useState(null);
@@ -30,6 +33,10 @@ export function ImportExport() {
   };
 
   const handleExport = async () => {
+    if (isMonitoringMode) {
+      addNotification("Import and export actions are disabled in monitoring mode.", "error");
+      return;
+    }
     setLoading(true);
     try {
       await menuService.exportMenuItems();
@@ -46,6 +53,10 @@ export function ImportExport() {
   };
 
   const handleImport = async () => {
+    if (isMonitoringMode) {
+      addNotification("Import and export actions are disabled in monitoring mode.", "error");
+      return;
+    }
     if (!importFile) {
       addNotification("Please select a file to import", "error");
       return;
@@ -74,6 +85,10 @@ export function ImportExport() {
   };
 
   const downloadTemplate = async () => {
+    if (isMonitoringMode) {
+      addNotification("Import and export actions are disabled in monitoring mode.", "error");
+      return;
+    }
     try {
       await menuService.downloadImportTemplate();
       addNotification("Import template downloaded successfully.", "success");
@@ -88,6 +103,7 @@ export function ImportExport() {
 
   return (
     <div className="p-6">
+      {isMonitoringMode ? <div className="mb-6"><MonitoringBanner message="Import/export results remain visible for monitoring, but CSV import, export, and template download actions are disabled for Super Admin." /></div> : null}
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Import/Export Menu</h1>
         <p className="text-gray-600">
@@ -106,7 +122,7 @@ export function ImportExport() {
             Export your current menu items to a CSV file for backup or analysis.
           </p>
 
-          <button
+          {!isMonitoringMode ? <button
             onClick={handleExport}
             disabled={loading}
             className="flex w-full items-center justify-center rounded-lg bg-green-600 px-4 py-2 text-white transition-colors hover:bg-green-700 disabled:opacity-50"
@@ -117,7 +133,7 @@ export function ImportExport() {
               <Download className="mr-2 h-4 w-4" />
             )}
             Export Menu as CSV
-          </button>
+          </button> : null}
         </div>
 
         <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
@@ -136,20 +152,21 @@ export function ImportExport() {
                 type="file"
                 accept=".csv"
                 onChange={(e) => setImportFile(e.target.files[0])}
+                disabled={isMonitoringMode}
                 className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-primary-500"
               />
             </div>
 
             <div className="flex space-x-3">
-              <button
+              {!isMonitoringMode ? <button
                 onClick={downloadTemplate}
                 className="flex flex-1 items-center justify-center rounded-lg bg-gray-600 px-4 py-2 text-white transition-colors hover:bg-gray-700"
               >
                 <FileText className="mr-2 h-4 w-4" />
                 Download Template
-              </button>
+              </button> : null}
 
-              <button
+              {!isMonitoringMode ? <button
                 onClick={handleImport}
                 disabled={loading || !importFile}
                 className="flex flex-1 items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700 disabled:opacity-50"
@@ -160,7 +177,7 @@ export function ImportExport() {
                   <Upload className="mr-2 h-4 w-4" />
                 )}
                 Import File
-              </button>
+              </button> : null}
             </div>
           </div>
         </div>

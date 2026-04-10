@@ -3,6 +3,8 @@ import { CheckCircle, Download, IndianRupee, Eye, Loader2, Package2, RefreshCw, 
 import { menuService } from "../../../common/services";
 import { useAdmin } from "../../context/AdminContext";
 import { AdminPageSkeleton } from "../common/AdminSkeleton";
+import { MonitoringBanner } from "../common/MonitoringBanner";
+import { useMonitoringMode } from "../../hooks/useMonitoringMode";
 const BULK_ACTIONS = [{
   id: "updatePrices",
   name: "Update Prices",
@@ -38,6 +40,7 @@ const actionDescriptions = {
 };
 export function BulkOperations() {
   const PAGE_SIZE = 20;
+  const isMonitoringMode = useMonitoringMode();
   const {
     addNotification
   } = useAdmin();
@@ -146,6 +149,10 @@ export function BulkOperations() {
     }
   };
   const executeBulkAction = async () => {
+    if (isMonitoringMode) {
+      addNotification("Bulk operations are disabled in monitoring mode.", "error");
+      return;
+    }
     if (!selectedItems.size && selectedAction !== "import") {
       addNotification("Please select at least one item", "error");
       return;
@@ -238,6 +245,10 @@ export function BulkOperations() {
     }
   };
   const handleImport = async file => {
+    if (isMonitoringMode) {
+      addNotification("Bulk operations are disabled in monitoring mode.", "error");
+      return;
+    }
     if (!file) {
       return;
     }
@@ -314,8 +325,8 @@ export function BulkOperations() {
           </select>;
       case "import":
         return <div className="space-y-3">
-            <input type="file" accept=".csv" onChange={event => handleImport(event.target.files?.[0])} className="w-full rounded-lg border border-gray-300 px-3 py-2" />
-            <button type="button" onClick={() => menuService.downloadImportTemplate()} className="text-sm font-medium text-primary-600 hover:text-primary-700">
+            <input type="file" accept=".csv" disabled={isMonitoringMode} onChange={event => handleImport(event.target.files?.[0])} className="w-full rounded-lg border border-gray-300 px-3 py-2 disabled:cursor-not-allowed disabled:bg-slate-100" />
+            <button type="button" disabled={isMonitoringMode} onClick={() => menuService.downloadImportTemplate()} className="text-sm font-medium text-primary-600 hover:text-primary-700 disabled:cursor-not-allowed disabled:opacity-60">
               Download import template
             </button>
           </div>;
@@ -327,6 +338,7 @@ export function BulkOperations() {
     return <AdminPageSkeleton stats={4} filters={0} cards={5} cardHeight="h-56" />;
   }
   return <div className="space-y-6 p-6">
+      {isMonitoringMode ? <MonitoringBanner message="Bulk menu operations remain visible for monitoring, but all bulk updates, imports, exports, and selection actions are disabled for Super Admin." /> : null}
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-slate-900">
@@ -413,7 +425,7 @@ export function BulkOperations() {
           {BULK_ACTIONS.map(action => {
           const Icon = action.icon;
           const active = selectedAction === action.id;
-          return <button key={action.id} type="button" onClick={() => setSelectedAction(action.id)} className={`rounded-2xl border p-4 text-left transition ${active ? "border-primary-500 bg-primary-50 shadow-sm" : "border-slate-200 bg-slate-50/60 hover:border-slate-300 hover:bg-white"}`}>
+          return <button key={action.id} type="button" onClick={() => setSelectedAction(action.id)} disabled={isMonitoringMode} className={`rounded-2xl border p-4 text-left transition disabled:cursor-not-allowed disabled:opacity-60 ${active ? "border-primary-500 bg-primary-50 shadow-sm" : "border-slate-200 bg-slate-50/60 hover:border-slate-300 hover:bg-white"}`}>
                 <div className="flex items-start gap-3">
                   <div className={`rounded-2xl p-3 ${active ? "bg-primary-600 text-white" : "bg-white text-slate-600 shadow-sm"}`}>
                     <Icon className="h-5 w-5" />
@@ -443,14 +455,14 @@ export function BulkOperations() {
                     {selectedItems.size} selected from {menuItems.length} loaded menu items.
                   </p>
                 </div>
-                <button type="button" onClick={selectAllItems} className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50">
+                <button type="button" onClick={selectAllItems} disabled={isMonitoringMode} className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60">
                   {selectedItems.size === menuItems.length ? "Deselect All" : "Select All"}
                 </button>
               </div>
 
               <div className="max-h-[32rem] overflow-y-auto rounded-2xl border border-slate-200" onScroll={handleItemsScroll}>
                 {menuItems.map(item => <label key={item?._id} className="flex cursor-pointer items-start gap-3 border-b border-slate-100 px-4 py-3 last:border-b-0 hover:bg-slate-50">
-                    <input type="checkbox" checked={selectedItems.has(item?._id)} onChange={() => toggleItemSelection(item?._id)} className="mt-1 rounded border-slate-300 text-primary-600" />
+                    <input type="checkbox" checked={selectedItems.has(item?._id)} onChange={() => toggleItemSelection(item?._id)} disabled={isMonitoringMode} className="mt-1 rounded border-slate-300 text-primary-600" />
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
                         <p className="truncate text-sm font-semibold text-slate-900">
@@ -563,7 +575,7 @@ export function BulkOperations() {
                   </details> : null}
               </div> : null}
 
-            {selectedAction && selectedAction !== "import" ? <button type="button" onClick={executeBulkAction} disabled={loading || !selectedItemList.length} className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-primary-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-60">
+            {selectedAction && selectedAction !== "import" ? <button type="button" onClick={executeBulkAction} disabled={isMonitoringMode || loading || !selectedItemList.length} className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-primary-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-60">
                 {loading ? <RefreshCw className="h-4 w-4 animate-spin" /> : null}
                 <span>
                   Execute{" "}

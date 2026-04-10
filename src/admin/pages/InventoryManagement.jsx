@@ -12,6 +12,8 @@ import InventoryStatusBadge from "../components/InventoryStatusBadge.jsx";
 import { useNavigate } from "react-router-dom";
 import { buildAdminPath } from "../../common/utils/routes";
 import { saveInventoryBulkUploadResult } from "../utils/inventoryUploadResults";
+import { MonitoringBanner } from "../components/common/MonitoringBanner";
+import { useMonitoringMode } from "../hooks/useMonitoringMode";
 
 const renderMenuLinks = (item) => {
   const relatedItems = item?.relatedMenuItems || [];
@@ -29,6 +31,7 @@ const renderMenuLinks = (item) => {
     </div>;
 };
 export function InventoryManagement() {
+  const isMonitoringMode = useMonitoringMode();
   const navigate = useNavigate();
   const {
     confirmAction,
@@ -97,11 +100,19 @@ export function InventoryManagement() {
     setCurrentPage(1);
   }, [filters.search, filters.status, filters.category]);
   const openCreateForm = () => {
+    if (isMonitoringMode) {
+      addNotification("Inventory management is read-only in monitoring mode.", "error");
+      return;
+    }
     setEditingItem(null);
     setFormState(INVENTORY_FORM_DEFAULTS);
     setIsFormOpen(true);
   };
   const openEditForm = item => {
+    if (isMonitoringMode) {
+      addNotification("Inventory management is read-only in monitoring mode.", "error");
+      return;
+    }
     setEditingItem(item);
     setFormState({
       ingredientName: item.ingredientName || "",
@@ -117,6 +128,10 @@ export function InventoryManagement() {
     setIsFormOpen(true);
   };
   const openAdjustmentForm = item => {
+    if (isMonitoringMode) {
+      addNotification("Inventory management is read-only in monitoring mode.", "error");
+      return;
+    }
     setActiveItem(item);
     setAdjustmentState(INVENTORY_ADJUSTMENT_DEFAULTS);
     setIsAdjustOpen(true);
@@ -134,6 +149,10 @@ export function InventoryManagement() {
     link.remove();
   };
   const handleSave = async () => {
+    if (isMonitoringMode) {
+      addNotification("Inventory management is read-only in monitoring mode.", "error");
+      return;
+    }
     try {
       setSaving(true);
       const payload = {
@@ -164,6 +183,10 @@ export function InventoryManagement() {
     }
   };
   const handleAdjustment = async () => {
+    if (isMonitoringMode) {
+      addNotification("Inventory management is read-only in monitoring mode.", "error");
+      return;
+    }
     if (!activeItem) {
       return;
     }
@@ -185,6 +208,10 @@ export function InventoryManagement() {
     }
   };
   const handleBulkUpload = async () => {
+    if (isMonitoringMode) {
+      addNotification("Inventory management is read-only in monitoring mode.", "error");
+      return;
+    }
     if (!bulkFile) {
       addNotification("Choose a CSV file to upload inventory data.", "error");
       return;
@@ -214,6 +241,10 @@ export function InventoryManagement() {
     }
   };
   const handleDelete = async item => {
+    if (isMonitoringMode) {
+      addNotification("Inventory management is read-only in monitoring mode.", "error");
+      return;
+    }
     const confirmed = await confirmAction({
       title: "Delete Ingredient Inventory",
       message: `Delete inventory tracking for ${item.ingredientName || "this ingredient"}?`,
@@ -275,6 +306,7 @@ export function InventoryManagement() {
   };
   const selectedRelationIds = useMemo(() => new Set(formState.relatedMenuItems.map(relation => relation.menuItem)), [formState.relatedMenuItems]);
   return <div className="space-y-6 p-4 sm:p-6">
+      {isMonitoringMode ? <MonitoringBanner message="Inventory remains visible for monitoring, but stock adjustments, ingredient edits, bulk upload, and delete actions are disabled for Super Admin." /> : null}
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Inventory Management</h1>
@@ -291,14 +323,14 @@ export function InventoryManagement() {
             <Download className="h-4 w-4" />
             CSV Template
           </button>
-          <button type="button" onClick={() => setIsBulkUploadOpen(true)} className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-primary-200 bg-primary-50 px-4 py-2 text-primary-700 transition-colors hover:bg-primary-100 sm:w-auto">
+          {!isMonitoringMode ? <button type="button" onClick={() => setIsBulkUploadOpen(true)} className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-primary-200 bg-primary-50 px-4 py-2 text-primary-700 transition-colors hover:bg-primary-100 sm:w-auto">
             <Upload className="h-4 w-4" />
             Bulk Upload
-          </button>
-          <button type="button" onClick={openCreateForm} className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-white transition-colors hover:bg-primary-700 sm:w-auto">
+          </button> : null}
+          {!isMonitoringMode ? <button type="button" onClick={openCreateForm} className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-white transition-colors hover:bg-primary-700 sm:w-auto">
             <Plus className="h-4 w-4" />
             Add Ingredient
-          </button>
+          </button> : null}
         </div>
       </div>
 
@@ -397,7 +429,7 @@ export function InventoryManagement() {
                   </div>
                 </div>
 
-                <div className="mt-4 grid grid-cols-3 gap-2">
+                {!isMonitoringMode ? <div className="mt-4 grid grid-cols-3 gap-2">
                   <button type="button" onClick={() => openAdjustmentForm(item)} className="rounded-xl border border-gray-300 px-3 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-50">
                     Adjust
                   </button>
@@ -407,7 +439,7 @@ export function InventoryManagement() {
                   <button type="button" onClick={() => handleDelete(item)} className="rounded-xl border border-rose-200 px-3 py-2 text-sm text-rose-600 transition-colors hover:bg-rose-50">
                     Delete
                   </button>
-                </div>
+                </div> : null}
               </div>)}
           </div>
 
@@ -477,7 +509,7 @@ export function InventoryManagement() {
                         {renderMenuLinks(item)}
                       </td>
                       <td className="px-4 py-4 align-top">
-                        <div className="flex justify-end gap-2">
+                        {!isMonitoringMode ? <div className="flex justify-end gap-2">
                           <button type="button" onClick={() => openAdjustmentForm(item)} className="rounded-lg border border-gray-300 p-2 text-gray-600 transition-colors hover:bg-gray-50" title="Adjust stock">
                             <ArrowUpCircle className="h-4 w-4" />
                           </button>
@@ -487,7 +519,7 @@ export function InventoryManagement() {
                           <button type="button" onClick={() => handleDelete(item)} className="rounded-lg border border-rose-200 p-2 text-rose-600 transition-colors hover:bg-rose-50" title="Delete inventory">
                             <Trash2 className="h-4 w-4" />
                           </button>
-                        </div>
+                        </div> : null}
                       </td>
                     </tr>)}
                 </tbody>
@@ -498,7 +530,7 @@ export function InventoryManagement() {
           <AdminPagination page={pagination.page} totalPages={pagination.pages} totalItems={pagination.total} pageSize={INVENTORY_PAGE_SIZE} onPageChange={setCurrentPage} />
         </>}
 
-      <AdminModal isOpen={isFormOpen} title={editingItem ? "Edit Ingredient Inventory" : "Add Ingredient Inventory"} subtitle="Link each ingredient to the menu items that depend on it." onClose={() => {
+      {!isMonitoringMode ? <AdminModal isOpen={isFormOpen} title={editingItem ? "Edit Ingredient Inventory" : "Add Ingredient Inventory"} subtitle="Link each ingredient to the menu items that depend on it." onClose={() => {
       setIsFormOpen(false);
       setEditingItem(null);
     }} footer={<div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
@@ -604,9 +636,9 @@ export function InventoryManagement() {
             </span>
           </label>
         </div>
-      </AdminModal>
+      </AdminModal> : null}
 
-      <AdminModal isOpen={isBulkUploadOpen} title="Bulk Upload Inventory" subtitle="Upload a CSV file to create new ingredients or update existing items by SKU or ingredient name." onClose={closeBulkUploadModal} maxWidth="max-w-2xl" footer={<div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+      {!isMonitoringMode ? <AdminModal isOpen={isBulkUploadOpen} title="Bulk Upload Inventory" subtitle="Upload a CSV file to create new ingredients or update existing items by SKU or ingredient name." onClose={closeBulkUploadModal} maxWidth="max-w-2xl" footer={<div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
             <button type="button" onClick={closeBulkUploadModal} className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 sm:w-auto">
               Cancel
             </button>
@@ -640,9 +672,9 @@ export function InventoryManagement() {
               Ready to upload: {bulkFile.name}
             </div> : null}
         </div>
-      </AdminModal>
+      </AdminModal> : null}
 
-      <AdminModal isOpen={isAdjustOpen} title="Adjust Stock" subtitle={activeItem?.ingredientName ? `Update stock for ${activeItem.ingredientName}` : "Update stock quantity"} onClose={() => {
+      {!isMonitoringMode ? <AdminModal isOpen={isAdjustOpen} title="Adjust Stock" subtitle={activeItem?.ingredientName ? `Update stock for ${activeItem.ingredientName}` : "Update stock quantity"} onClose={() => {
       setIsAdjustOpen(false);
       setActiveItem(null);
     }} maxWidth="max-w-2xl" footer={<div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
@@ -680,6 +712,6 @@ export function InventoryManagement() {
           }))} className="w-full rounded-lg border border-gray-300 px-3 py-2" placeholder="Reason for the stock movement" />
           </label>
         </div>
-      </AdminModal>
+      </AdminModal> : null}
     </div>;
 }

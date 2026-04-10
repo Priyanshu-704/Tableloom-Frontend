@@ -9,6 +9,8 @@ import { AdminCardGridSkeleton } from "../components/common/AdminSkeleton";
 import { QrManagementOverlay } from "../components/tables/QrManagementOverlay";
 import { AdminModal } from "../components/common/AdminModal";
 import { withTenantQueryParams } from "../../common/utils/qrImage";
+import { MonitoringBanner } from "../components/common/MonitoringBanner";
+import { useMonitoringMode } from "../hooks/useMonitoringMode";
 
 const mapTableToQrRow = (table) => ({
   id: table._id || table.id,
@@ -34,6 +36,7 @@ const getTableRows = (response) => {
 };
 
 export function TableQrManagement() {
+  const isMonitoringMode = useMonitoringMode();
   const { addNotification } = useAdmin();
   const [tables, setTables] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -75,6 +78,7 @@ export function TableQrManagement() {
   }, [search, tables]);
   return (
     <div className="space-y-5 p-4 sm:p-6">
+      {isMonitoringMode ? <MonitoringBanner message="QR codes and table links remain visible for monitoring, but regenerate, manage, and batch QR operations are disabled for Super Admin." /> : null}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">QR Update</h1>
@@ -82,7 +86,7 @@ export function TableQrManagement() {
             Regenerate, print, refresh, and batch-manage table QR codes.
           </p>
         </div>
-        <Button
+        {!isMonitoringMode ? <Button
           type="button"
           variant="outline"
           onClick={() => setShowBatch(true)}
@@ -90,7 +94,7 @@ export function TableQrManagement() {
         >
           <Layers className="h-4 w-4" />
           Batch QR Operations
-        </Button>
+        </Button> : null}
       </div>
 
       <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
@@ -142,7 +146,7 @@ export function TableQrManagement() {
                 </div>
               </div>
 
-              <div className="mt-4 flex justify-end">
+              {!isMonitoringMode ? <div className="mt-4 flex justify-end">
                 <Button
                   type="button"
                   onClick={() => setSelectedTable(table)}
@@ -151,13 +155,13 @@ export function TableQrManagement() {
                   <QrCode className="h-4 w-4" />
                   Manage QR
                 </Button>
-              </div>
+              </div> : null}
             </div>
           ))}
         </div>
       )}
 
-      {selectedTable ? (
+      {!isMonitoringMode && selectedTable ? (
         <QrManagementOverlay
           table={selectedTable}
           onClose={() => setSelectedTable(null)}
@@ -174,7 +178,7 @@ export function TableQrManagement() {
         />
       ) : null}
 
-      <AdminModal
+      {!isMonitoringMode ? <AdminModal
         isOpen={showBatch}
         title="Batch QR Operations"
         subtitle="Perform operations on multiple QR codes."
@@ -189,7 +193,7 @@ export function TableQrManagement() {
             setShowBatch(false);
           }}
         />
-      </AdminModal>
+      </AdminModal> : null}
     </div>
   );
 }

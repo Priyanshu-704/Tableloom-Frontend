@@ -33,6 +33,8 @@ import { useAdmin } from "../context/AdminContext";
 import { AdminModal } from "../components/common/AdminModal";
 import { AdminPageSkeleton } from "../components/common/AdminSkeleton";
 import { useSettings } from "../../common/context/SettingsContext";
+import { MonitoringBanner } from "../components/common/MonitoringBanner";
+import { useMonitoringMode } from "../hooks/useMonitoringMode";
 
 const formatCurrency = (value, currency = "INR") =>
   new Intl.NumberFormat("en-IN", {
@@ -186,6 +188,7 @@ const getTimeRangeDateRange = (timeRange, baseDate = new Date()) => {
 };
 
 export function Analytics() {
+  const isMonitoringMode = useMonitoringMode();
   const { settings } = useSettings();
   const currency = settings?.taxSettings?.currency || "INR";
   const { addNotification } = useAdmin();
@@ -443,6 +446,10 @@ export function Analytics() {
   };
 
   const handleGenerateReport = async () => {
+    if (isMonitoringMode) {
+      addNotification("Report generation is disabled in monitoring mode.", "error");
+      return;
+    }
     if (!reportForm.startDate || !reportForm.endDate) {
       addNotification(
         "Select both start date and end date to export the report",
@@ -523,6 +530,7 @@ export function Analytics() {
 
   return (
     <div className="space-y-6 p-4 sm:p-6">
+      {isMonitoringMode ? <MonitoringBanner message="Analytics stay visible for monitoring, but report generation and exports are disabled for Super Admin." /> : null}
       <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
@@ -545,7 +553,7 @@ export function Analytics() {
               <option value="30days">Last 30 Days</option>
             </select>
           </div>
-          <div>
+          {!isMonitoringMode ? <div>
             <button
               type="button"
               onClick={() => setShowReportDialog(true)}
@@ -554,7 +562,7 @@ export function Analytics() {
               <Download className="h-4 w-4" />
               Generate Report
             </button>
-          </div>
+          </div> : null}
         </div>
       </div>
 
@@ -822,7 +830,7 @@ export function Analytics() {
         </div>
       </div>
 
-      <AdminModal
+      {!isMonitoringMode ? <AdminModal
         isOpen={showReportDialog}
         title={
           reportForm.reportType === "finance"
@@ -978,7 +986,7 @@ export function Analytics() {
               : "Analytics report will include restaurant name, generation date, summary cards, charts, and operational tables for the selected range."}
           </div>
         </div>
-      </AdminModal>
+      </AdminModal> : null}
     </div>
   );
 }

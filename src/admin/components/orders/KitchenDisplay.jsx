@@ -4,6 +4,8 @@ import { ChefHat, RefreshCw, Flame, Clock3, AlertTriangle } from "lucide-react";
 import { useAdmin } from "../../context/AdminContext";
 import { kitchenService, kitchenStationService } from "../../../common/services";
 import { useAuth } from "../../../common/context/AuthContext";
+import { useMonitoringMode } from "../../hooks/useMonitoringMode";
+import { MonitoringBanner } from "../common/MonitoringBanner";
 const ORDER_STATUS_OPTIONS = [{
   value: "pending",
   label: "Pending"
@@ -97,7 +99,8 @@ const getOrderDelayMeta = order => {
   };
 };
 export function KitchenDisplay({
-  onRefreshOrders
+  onRefreshOrders,
+  isReadOnly = false
 }) {
   const {
     addNotification
@@ -105,6 +108,7 @@ export function KitchenDisplay({
   const {
     hasPermission
   } = useAuth();
+  const isMonitoringMode = useMonitoringMode() || isReadOnly;
   const [stations, setStations] = useState([]);
   const [selectedStation, setSelectedStation] = useState("");
   const [stationStats, setStationStats] = useState(null);
@@ -209,6 +213,10 @@ export function KitchenDisplay({
     });
   }, [orders]);
   const completeItemAction = async (kitchenOrderId, itemId, itemStatus) => {
+    if (isMonitoringMode) {
+      addNotificationRef.current("Kitchen actions are disabled in monitoring mode.", "error");
+      return;
+    }
     try {
       let successMessage = "";
       if (itemStatus === "accepted") {
@@ -247,6 +255,10 @@ export function KitchenDisplay({
     return "No Action";
   };
   const runDelayMonitorCheck = async () => {
+    if (isMonitoringMode) {
+      addNotificationRef.current("Delay monitor execution is disabled in monitoring mode.", "error");
+      return;
+    }
     try {
       setRunningMonitorCheck(true);
       const response = await kitchenService.runDelayMonitorCheck();
@@ -284,7 +296,7 @@ export function KitchenDisplay({
               Refresh
             </button>
 
-            {hasPermission("view_statistics") ? <button type="button" onClick={runDelayMonitorCheck} disabled={runningMonitorCheck} className="inline-flex items-center gap-2 rounded-lg border border-orange-500/40 bg-orange-500/10 px-4 py-2 text-orange-100 transition-colors hover:bg-orange-500/20 disabled:cursor-not-allowed disabled:opacity-60">
+            {!isMonitoringMode && hasPermission("view_statistics") ? <button type="button" onClick={runDelayMonitorCheck} disabled={runningMonitorCheck} className="inline-flex items-center gap-2 rounded-lg border border-orange-500/40 bg-orange-500/10 px-4 py-2 text-orange-100 transition-colors hover:bg-orange-500/20 disabled:cursor-not-allowed disabled:opacity-60">
                 <Flame className={`h-4 w-4 ${runningMonitorCheck ? "animate-pulse" : ""}`} />
                 Run Delay Check
               </button> : null}
@@ -293,6 +305,7 @@ export function KitchenDisplay({
       </div>
 
       <div className="mx-auto max-w-7xl space-y-6 px-6 py-6">
+        {isMonitoringMode ? <MonitoringBanner message="Kitchen queues remain visible for monitoring, but item progression and delay-check execution are disabled for Super Admin." /> : null}
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
           <div className="rounded-xl border p-5 shadow-sm" style={{
           borderColor: stationTheme.border,
@@ -505,9 +518,9 @@ export function KitchenDisplay({
                             </p> : null}
                           {item.notes ? <p className="mt-2 text-xs text-sky-300">{item.notes}</p> : null}
                         </div>
-                        <button type="button" onClick={() => completeItemAction(order._id, item._id, item.status)} disabled={item.status === "pending"} className={`w-full rounded-lg px-3 py-2 text-sm font-medium text-white transition-colors lg:w-auto ${item.status === "pending" ? "cursor-not-allowed bg-slate-700 text-slate-300" : "bg-orange-600 hover:bg-orange-700"}`}>
-                          {getItemActionLabel(item.status)}
-                        </button>
+                        {!isMonitoringMode ? <button type="button" onClick={() => completeItemAction(order._id, item._id, item.status)} disabled={item.status === "pending"} className={`w-full rounded-lg px-3 py-2 text-sm font-medium text-white transition-colors lg:w-auto ${item.status === "pending" ? "cursor-not-allowed bg-slate-700 text-slate-300" : "bg-orange-600 hover:bg-orange-700"}`}>
+                            {getItemActionLabel(item.status)}
+                          </button> : null}
                       </div>
 
                       <div className="mt-3 grid grid-cols-2 gap-2 text-xs lg:grid-cols-4">

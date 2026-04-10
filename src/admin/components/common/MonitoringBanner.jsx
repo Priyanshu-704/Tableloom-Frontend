@@ -2,7 +2,7 @@ import React from "react";
 import { Eye } from "lucide-react";
 
 export function MonitoringBanner({
-  message = "Read-only monitoring mode is active. Changes are disabled for super admin inside tenant workspaces."
+  message = "You are in monitoring mode. Editing is disabled for Super Admin."
 }) {
   return (
     <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-900">

@@ -9,6 +9,8 @@ import { AdminListSkeleton } from "../components/common/AdminSkeleton";
 import ResponsiveFilterSection from "../components/common/ResponsiveFilterSection";
 import { orderService } from "../../common/services";
 import { useSettings } from "../../common/context/SettingsContext";
+import { MonitoringBanner } from "../components/common/MonitoringBanner";
+import { useMonitoringMode } from "../hooks/useMonitoringMode";
 const ORDER_STATUS = [{
   value: "all",
   label: "All Orders"
@@ -80,6 +82,7 @@ const normalizeOrder = order => ({
 });
 export function Orders() {
   const PAGE_SIZE = 10;
+  const isMonitoringMode = useMonitoringMode();
   const {
     settings
   } = useSettings();
@@ -166,6 +169,10 @@ export function Orders() {
     });
   }, [orders, statistics]);
   const updateStatus = async (orderId, status) => {
+    if (isMonitoringMode) {
+      addNotification("Order actions are disabled in monitoring mode.", "error");
+      return;
+    }
     try {
       setUpdatingId(orderId);
       await orderService.updateOrderStatus(orderId, status);
@@ -179,9 +186,10 @@ export function Orders() {
     }
   };
   if (kitchenView) {
-    return <KitchenDisplay onRefreshOrders={loadOrders} />;
+    return <KitchenDisplay onRefreshOrders={loadOrders} isReadOnly={isMonitoringMode} />;
   }
   return <div className="space-y-6 p-4 sm:p-6">
+      {isMonitoringMode ? <MonitoringBanner message="Orders are visible for monitoring, but status changes and kitchen execution actions are disabled for Super Admin." /> : null}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Orders Management</h1>
@@ -296,7 +304,7 @@ export function Orders() {
           </p>
         </div> : <>
           <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-            {orders.map(order => <OrderCard key={order._id} order={order} onStatusUpdate={updateStatus} isUpdating={updatingId === order._id} />)}
+            {orders.map(order => <OrderCard key={order._id} order={order} onStatusUpdate={updateStatus} isUpdating={updatingId === order._id} isReadOnly={isMonitoringMode} />)}
           </div>
           <AdminPagination page={pagination.page} totalPages={pagination.pages} totalItems={pagination.total} pageSize={PAGE_SIZE} itemLabel="orders" onPageChange={setCurrentPage} />
         </>}

@@ -20,6 +20,8 @@ import {
 } from "../../common/utils/tenantWorkspace";
 import { useAdmin } from "../context/AdminContext";
 import { AdminModal } from "../components/common/AdminModal";
+import { MonitoringBanner } from "../components/common/MonitoringBanner";
+import { useMonitoringMode } from "../hooks/useMonitoringMode";
 
 const initialForm = {
   restaurantName: "",
@@ -66,6 +68,7 @@ const isSupportRequestLocked = (status = "open") =>
   ["resolved", "closed"].includes(String(status || "open").toLowerCase());
 
 export function TenantManagement() {
+  const isMonitoringMode = useMonitoringMode();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { addNotification, confirmAction } = useAdmin();
@@ -160,6 +163,10 @@ export function TenantManagement() {
 
   const handleCreateTenant = async (event) => {
     event.preventDefault();
+    if (isMonitoringMode) {
+      addNotification("Tenant management is read-only in monitoring mode.", "error");
+      return;
+    }
     setSubmitting(true);
     resetFeedback();
 
@@ -182,6 +189,10 @@ export function TenantManagement() {
   };
 
   const handleVerifyTenant = async (tenantId) => {
+    if (isMonitoringMode) {
+      addNotification("Tenant management is read-only in monitoring mode.", "error");
+      return;
+    }
     setVerifyingTenantId(tenantId);
     resetFeedback();
 
@@ -214,6 +225,10 @@ export function TenantManagement() {
     Boolean(tenant?.adminUser);
 
   const handleTenantStatusChange = async (tenant) => {
+    if (isMonitoringMode) {
+      addNotification("Tenant management is read-only in monitoring mode.", "error");
+      return;
+    }
     const nextStatus = tenant?.status === "active" ? "suspended" : "active";
     const actionLabel = nextStatus === "active" ? "Activate" : "Deactivate";
     const confirmed = await confirmAction({
@@ -260,6 +275,10 @@ export function TenantManagement() {
   };
 
   const handleSupportStatusChange = async (request, nextStatus) => {
+    if (isMonitoringMode) {
+      addNotification("Support request actions are disabled in monitoring mode.", "error");
+      return;
+    }
     if (isSupportRequestLocked(request.status)) {
       addNotification(
         "Resolved support requests can no longer be updated",
@@ -298,6 +317,10 @@ export function TenantManagement() {
   };
 
   const handleSupportResponseSave = async (request) => {
+    if (isMonitoringMode) {
+      addNotification("Support request actions are disabled in monitoring mode.", "error");
+      return;
+    }
     if (isSupportRequestLocked(request.status)) {
       addNotification(
         "Resolved support requests can no longer be updated",
@@ -360,6 +383,7 @@ export function TenantManagement() {
 
   return (
     <div className="space-y-5 p-4 sm:p-6">
+      {isMonitoringMode ? <MonitoringBanner message="Tenant workspaces and support requests remain visible for monitoring, but tenant creation, verification, status changes, and request responses are disabled for Super Admin." /> : null}
       <div className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
         <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
           <div>
@@ -375,7 +399,7 @@ export function TenantManagement() {
             </p>
           </div>
 
-          {activeTab === "tenants" ? (
+          {activeTab === "tenants" && !isMonitoringMode ? (
             <button
               className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
               onClick={() => {
@@ -486,7 +510,7 @@ export function TenantManagement() {
                       >
                         Open Admin Panel
                       </button>
-                      <button
+                      {!isMonitoringMode ? <button
                         className="inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-60"
                         disabled={verifyingTenantId === tenant._id}
                         onClick={() => handleVerifyTenant(tenant._id)}
@@ -498,7 +522,7 @@ export function TenantManagement() {
                           <CheckCircle2 className="h-4 w-4" />
                         )}
                         Verify
-                      </button>
+                      </button> : null}
                     </div>
                   </div>
                 ))
@@ -566,7 +590,7 @@ export function TenantManagement() {
                           <ExternalLink className="h-4 w-4" />
                           Monitor
                         </button>
-                        {isTenantVerified(tenant) ? (
+                        {!isMonitoringMode && isTenantVerified(tenant) ? (
                           <button
                             type="button"
                             onClick={() => handleTenantStatusChange(tenant)}
@@ -657,7 +681,7 @@ export function TenantManagement() {
                                 <ExternalLink className="h-4 w-4" />
                                 Monitor
                               </button>
-                              {isTenantVerified(tenant) ? (
+                              {!isMonitoringMode && isTenantVerified(tenant) ? (
                                 <button
                                   className={`inline-flex items-center gap-2 rounded-2xl px-3 py-2 text-sm font-medium ${
                                     tenant.status === "active"
@@ -794,10 +818,11 @@ export function TenantManagement() {
                       </div>
 
                       <div className="w-full xl:w-[22rem]">
-                        {isRequestLocked ? (
+                        {isRequestLocked || isMonitoringMode ? (
                           <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-                            This request is resolved and locked. Response and
-                            status changes are no longer available.
+                            {isMonitoringMode
+                              ? "Monitoring mode is active. Response and status changes are disabled for Super Admin."
+                              : "This request is resolved and locked. Response and status changes are no longer available."}
                           </div>
                         ) : (
                           <>
@@ -873,7 +898,7 @@ export function TenantManagement() {
         </section>
       )}
 
-      <AdminModal
+      {!isMonitoringMode ? <AdminModal
         isOpen={isCreateTenantModalOpen}
         onClose={() => {
           if (submitting) {
@@ -1016,7 +1041,7 @@ export function TenantManagement() {
             </select>
           </label>
         </form>
-      </AdminModal>
+      </AdminModal> : null}
     </div>
   );
 }

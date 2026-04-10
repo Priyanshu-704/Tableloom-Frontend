@@ -7,6 +7,8 @@ import { AdminModal } from "../components/common/AdminModal";
 import AdminPagination from "../components/common/AdminPagination";
 import { AdminListSkeleton } from "../components/common/AdminSkeleton";
 import ResponsiveFilterSection from "../components/common/ResponsiveFilterSection";
+import { MonitoringBanner } from "../components/common/MonitoringBanner";
+import { useMonitoringMode } from "../hooks/useMonitoringMode";
 const STATUS_OPTIONS = [{
   value: "all",
   label: "All Statuses"
@@ -102,6 +104,7 @@ const formatMinutes = seconds => {
 };
 export function WaiterCalls() {
   const PAGE_SIZE = 10;
+  const isMonitoringMode = useMonitoringMode();
   const {
     addNotification
   } = useAdmin();
@@ -196,6 +199,10 @@ export function WaiterCalls() {
     loadAvailableStaff();
   }, [addNotification, assignModal.isOpen]);
   const runCallAction = async (callId, task, successMessage) => {
+    if (isMonitoringMode) {
+      addNotification("Waiter call actions are disabled in monitoring mode.", "error");
+      return;
+    }
     try {
       setActiveId(callId);
       await task();
@@ -209,6 +216,10 @@ export function WaiterCalls() {
     }
   };
   const submitAssignCall = async () => {
+    if (isMonitoringMode) {
+      addNotification("Waiter call actions are disabled in monitoring mode.", "error");
+      return;
+    }
     if (!assignModal.callId || !assignModal.staffId) {
       addNotification("Please select a staff member", "error");
       return;
@@ -221,6 +232,10 @@ export function WaiterCalls() {
     });
   };
   const submitCompleteCall = async () => {
+    if (isMonitoringMode) {
+      addNotification("Waiter call actions are disabled in monitoring mode.", "error");
+      return;
+    }
     if (!completeModal.callId) {
       return;
     }
@@ -233,6 +248,7 @@ export function WaiterCalls() {
   };
   const dashboardStats = dashboard?.statistics || {};
   return <div className="space-y-6 p-4 sm:p-6">
+      {isMonitoringMode ? <MonitoringBanner message="Waiter calls remain visible for monitoring, but assign, acknowledge, start, and complete actions are disabled for Super Admin." /> : null}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Waiter Calls</h1>
@@ -377,7 +393,7 @@ export function WaiterCalls() {
                   </div>
 
                   <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
-                    {canAssign && <button type="button" disabled={activeId === call.callId} onClick={() => setAssignModal({
+                    {!isMonitoringMode && canAssign && <button type="button" disabled={activeId === call.callId} onClick={() => setAssignModal({
                   isOpen: true,
                   callId: call.callId,
                   staffId: call.assignedTo?._id || ""
@@ -386,15 +402,15 @@ export function WaiterCalls() {
                         Assign
                       </button>}
 
-                    {canAcknowledge && <button type="button" disabled={activeId === call.callId} onClick={() => runCallAction(call.callId, () => waiterCallService.acknowledgeCall(call.callId, 5), "Call acknowledged successfully")} className="w-full rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-700 disabled:opacity-60">
+                    {!isMonitoringMode && canAcknowledge && <button type="button" disabled={activeId === call.callId} onClick={() => runCallAction(call.callId, () => waiterCallService.acknowledgeCall(call.callId, 5), "Call acknowledged successfully")} className="w-full rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-700 disabled:opacity-60">
                         Acknowledge
                       </button>}
 
-                    {canStart && <button type="button" disabled={activeId === call.callId} onClick={() => runCallAction(call.callId, () => waiterCallService.updateCallStatus(call.callId, "in_progress", "Started from admin waiter call dashboard"), "Call moved to in progress")} className="w-full rounded-lg border border-violet-200 px-4 py-2 text-sm text-violet-700 transition-colors hover:bg-violet-50 disabled:opacity-60">
+                    {!isMonitoringMode && canStart && <button type="button" disabled={activeId === call.callId} onClick={() => runCallAction(call.callId, () => waiterCallService.updateCallStatus(call.callId, "in_progress", "Started from admin waiter call dashboard"), "Call moved to in progress")} className="w-full rounded-lg border border-violet-200 px-4 py-2 text-sm text-violet-700 transition-colors hover:bg-violet-50 disabled:opacity-60">
                         Start
                       </button>}
 
-                    {canComplete && <button type="button" disabled={activeId === call.callId} onClick={() => setCompleteModal({
+                    {!isMonitoringMode && canComplete && <button type="button" disabled={activeId === call.callId} onClick={() => setCompleteModal({
                   isOpen: true,
                   callId: call.callId,
                   resolutionNotes: ""
@@ -410,7 +426,7 @@ export function WaiterCalls() {
           <AdminPagination page={pagination.page} totalPages={pagination.pages} totalItems={pagination.total} pageSize={PAGE_SIZE} itemLabel="waiter calls" onPageChange={setCurrentPage} />
         </>}
 
-      <AdminModal isOpen={assignModal.isOpen} title="Assign Waiter Call" subtitle="Choose a staff member to handle this request." onClose={() => setAssignModal({
+      {!isMonitoringMode ? <AdminModal isOpen={assignModal.isOpen} title="Assign Waiter Call" subtitle="Choose a staff member to handle this request." onClose={() => setAssignModal({
       isOpen: false,
       callId: "",
       staffId: ""
@@ -440,9 +456,9 @@ export function WaiterCalls() {
               </option>)}
           </select>
         </div>
-      </AdminModal>
+      </AdminModal> : null}
 
-      <AdminModal isOpen={completeModal.isOpen} title="Complete Waiter Call" subtitle="Add optional notes before closing the request." onClose={() => setCompleteModal({
+      {!isMonitoringMode ? <AdminModal isOpen={completeModal.isOpen} title="Complete Waiter Call" subtitle="Add optional notes before closing the request." onClose={() => setCompleteModal({
       isOpen: false,
       callId: "",
       resolutionNotes: ""
@@ -467,6 +483,6 @@ export function WaiterCalls() {
           resolutionNotes: event.target.value
         }))} className="w-full rounded-lg border border-gray-300 px-3 py-2" placeholder="Optional notes about how this guest request was resolved." />
         </div>
-      </AdminModal>
+      </AdminModal> : null}
     </div>;
 }

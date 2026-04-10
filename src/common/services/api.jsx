@@ -4,7 +4,6 @@ import {
   buildAdminPath,
   buildPlatformAdminPath,
   extractTenantFromPath,
-  isSuperAdminMonitoringPath,
   stripAppBasePath,
 } from "../utils/routes.js";
 import {
@@ -36,7 +35,7 @@ const getStoredUser = () => {
 
 const isReadOnlyMonitoringRequest = config => {
   const user = getStoredUser();
-  if (!isSuperAdminMonitoringPath(window.location.pathname, user?.role)) {
+  if (String(user?.role || "").toLowerCase() !== "super_admin") {
     return false;
   }
 
@@ -79,7 +78,7 @@ const onRefreshed = token => {
 };
 api.interceptors.request.use(config => {
   if (isReadOnlyMonitoringRequest(config)) {
-    showNotification("Super admin monitoring mode is read-only in tenant workspaces.", "warning");
+    showNotification("Super admin monitoring mode is read-only. Write actions are blocked.", "warning");
     return Promise.reject(new Error("Monitoring mode is read-only"));
   }
 

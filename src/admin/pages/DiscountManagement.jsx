@@ -4,6 +4,8 @@ import { ChevronDown, Percent, Plus, RefreshCw } from "lucide-react";
 import { menuService } from "../../common/services";
 import { useAdmin } from "../context/AdminContext";
 import { AdminModal } from "../components/common/AdminModal";
+import { MonitoringBanner } from "../components/common/MonitoringBanner";
+import { useMonitoringMode } from "../hooks/useMonitoringMode";
 const initialForm = {
   code: "",
   description: "",
@@ -16,6 +18,7 @@ const initialForm = {
   isActive: true
 };
 export function DiscountManagement() {
+  const isMonitoringMode = useMonitoringMode();
   const {
     addNotification
   } = useAdmin();
@@ -45,12 +48,20 @@ export function DiscountManagement() {
     setShowCouponModal(false);
   };
   const openCreateModal = () => {
+    if (isMonitoringMode) {
+      addNotification("Discount management is read-only in monitoring mode.", "error");
+      return;
+    }
     setEditingId("");
     setForm(initialForm);
     setShowCouponModal(true);
   };
   const handleSubmit = async event => {
     event.preventDefault();
+    if (isMonitoringMode) {
+      addNotification("Discount management is read-only in monitoring mode.", "error");
+      return;
+    }
     const payload = {
       ...form,
       code: form.code.trim().toUpperCase(),
@@ -73,6 +84,10 @@ export function DiscountManagement() {
     }
   };
   const handleToggleCouponStatus = async coupon => {
+    if (isMonitoringMode) {
+      addNotification("Discount management is read-only in monitoring mode.", "error");
+      return;
+    }
     try {
       await menuService.toggleCouponStatus(coupon._id);
       await loadCoupons();
@@ -83,6 +98,10 @@ export function DiscountManagement() {
     }
   };
   const startEdit = coupon => {
+    if (isMonitoringMode) {
+      addNotification("Discount management is read-only in monitoring mode.", "error");
+      return;
+    }
     setEditingId(coupon._id);
     setForm({
       code: coupon.code || "",
@@ -107,6 +126,7 @@ export function DiscountManagement() {
       </button>
     </div>;
   return <div className="space-y-6 p-4 sm:p-6">
+      {isMonitoringMode ? <MonitoringBanner message="Discounts remain visible for monitoring, but coupon creation, edits, and status changes are disabled for Super Admin." /> : null}
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Discount Management</h1>
@@ -119,10 +139,10 @@ export function DiscountManagement() {
             <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
             Refresh
           </button>
-          <button type="button" onClick={openCreateModal} className="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 font-semibold text-white hover:bg-primary-700">
+          {!isMonitoringMode ? <button type="button" onClick={openCreateModal} className="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 font-semibold text-white hover:bg-primary-700">
             <Plus className="h-4 w-4" />
             Create Coupon
-          </button>
+          </button> : null}
         </div>
       </div>
 
@@ -167,14 +187,14 @@ export function DiscountManagement() {
                       </div>
                     </details>
                   </div>
-                  <div className="flex gap-2">
+                  {!isMonitoringMode ? <div className="flex gap-2">
                     <button type="button" onClick={() => startEdit(coupon)} className="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700">
                       Edit
                     </button>
                     <button type="button" onClick={() => handleToggleCouponStatus(coupon)} className="rounded-lg border border-primary-200 px-3 py-2 text-sm text-primary-700">
                       {coupon.isActive ? "Deactivate" : "Activate"}
                     </button>
-                  </div>
+                  </div> : null}
                 </div>
               </div>)}
 
@@ -184,7 +204,7 @@ export function DiscountManagement() {
           </div>
       </div>
 
-      <AdminModal isOpen={showCouponModal} title={editingId ? "Edit Coupon" : "Create Coupon"} subtitle="Set coupon code rules, discount type, active period, and checkout limits." onClose={resetForm} maxWidth="max-w-3xl" footer={couponModalFooter}>
+      {!isMonitoringMode ? <AdminModal isOpen={showCouponModal} title={editingId ? "Edit Coupon" : "Create Coupon"} subtitle="Set coupon code rules, discount type, active period, and checkout limits." onClose={resetForm} maxWidth="max-w-3xl" footer={couponModalFooter}>
         <form id="coupon-form" onSubmit={handleSubmit} className="space-y-4 p-4 sm:p-5">
           <div className="grid gap-4 md:grid-cols-2">
             <input value={form.code} onChange={event => setForm(current => ({
@@ -232,6 +252,6 @@ export function DiscountManagement() {
           description: event.target.value
         }))} placeholder="Coupon description" className="w-full rounded-lg border border-gray-300 px-3 py-2" />
         </form>
-      </AdminModal>
+      </AdminModal> : null}
     </div>;
 }

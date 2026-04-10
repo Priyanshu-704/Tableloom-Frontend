@@ -111,7 +111,8 @@ const formatRelativeTime = value => {
 export function OrderCard({
   order,
   onStatusUpdate,
-  isUpdating = false
+  isUpdating = false,
+  isReadOnly = false
 }) {
   const [showActions, setShowActions] = React.useState(false);
   const statusConfig = STATUS_CONFIG[order.status] || STATUS_CONFIG.pending;
@@ -123,7 +124,7 @@ export function OrderCard({
     return diffMins > 0 ? `${diffMins} min` : "Due now";
   };
   const changeStatus = nextStatus => {
-    if (!nextStatus || isUpdating) {
+    if (!nextStatus || isUpdating || isReadOnly) {
       return;
     }
     onStatusUpdate(order._id || order.id, nextStatus);
@@ -149,7 +150,7 @@ export function OrderCard({
             </div>
           </div>
 
-          <div className="relative">
+          {!isReadOnly ? <div className="relative">
             <button type="button" onClick={() => setShowActions(value => !value)} className="rounded p-1 transition-colors hover:bg-white/70">
               <MoreVertical className="h-4 w-4 text-gray-700" />
             </button>
@@ -165,7 +166,7 @@ export function OrderCard({
                     </button>}
                 </div>
               </>}
-          </div>
+          </div> : null}
         </div>
       </div>
 
@@ -215,7 +216,7 @@ export function OrderCard({
             {getEstimatedTime() ? <span className="text-xs text-gray-500">ETA {getEstimatedTime()}</span> : null}
           </div>
 
-          {statusConfig.nextAction ? <button type="button" disabled={isUpdating} onClick={() => changeStatus(statusConfig.nextStatus)} className={`w-full rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto ${statusConfig.tones.action}`}>
+          {!isReadOnly && statusConfig.nextAction ? <button type="button" disabled={isUpdating} onClick={() => changeStatus(statusConfig.nextStatus)} className={`w-full rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto ${statusConfig.tones.action}`}>
               {isUpdating ? "Updating..." : statusConfig.nextAction}
             </button> : null}
         </div>

@@ -5,12 +5,15 @@ import { menuService } from "../../common/services";
 import { useAdmin } from "../context/AdminContext";
 import { AdminModal } from "../components/common/AdminModal";
 import { AdminPageSkeleton } from "../components/common/AdminSkeleton";
+import { MonitoringBanner } from "../components/common/MonitoringBanner";
+import { useMonitoringMode } from "../hooks/useMonitoringMode";
 const initialFormData = {
   name: "",
   code: "",
   isActive: true
 };
 export function SizeManagement() {
+  const isMonitoringMode = useMonitoringMode();
   const {
     confirmAction,
     addNotification
@@ -58,12 +61,20 @@ export function SizeManagement() {
     return Object.keys(newErrors).length === 0;
   };
   const handleOpenCreate = () => {
+    if (isMonitoringMode) {
+      addNotification("Size management is read-only in monitoring mode.", "error");
+      return;
+    }
     setEditingSize(null);
     setFormData(initialFormData);
     setErrors({});
     setShowModal(true);
   };
   const handleOpenEdit = size => {
+    if (isMonitoringMode) {
+      addNotification("Size management is read-only in monitoring mode.", "error");
+      return;
+    }
     setEditingSize(size);
     setFormData({
       name: size.name,
@@ -75,6 +86,10 @@ export function SizeManagement() {
   };
   const handleSubmit = async event => {
     event.preventDefault();
+    if (isMonitoringMode) {
+      addNotification("Size management is read-only in monitoring mode.", "error");
+      return;
+    }
     if (!validateForm()) {
       return;
     }
@@ -96,6 +111,10 @@ export function SizeManagement() {
     }
   };
   const handleToggleStatus = async sizeId => {
+    if (isMonitoringMode) {
+      addNotification("Size management is read-only in monitoring mode.", "error");
+      return;
+    }
     const size = sizes.find(item => item._id === sizeId);
     const confirmed = await confirmAction({
       title: `${size?.isActive ? "Deactivate" : "Activate"} Size`,
@@ -126,6 +145,7 @@ export function SizeManagement() {
     return <AdminPageSkeleton stats={3} filters={2} cards={4} cardHeight="h-40" />;
   }
   return <div className="space-y-6 p-4 sm:p-6">
+      {isMonitoringMode ? <MonitoringBanner message="Sizes remain visible for monitoring, but create, edit, and activate/deactivate actions are disabled for Super Admin." /> : null}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Size Management</h1>
@@ -133,10 +153,10 @@ export function SizeManagement() {
             Manage menu sizes and their reusable codes.
           </p>
         </div>
-        <button onClick={handleOpenCreate} className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-white hover:bg-primary-700 sm:w-auto">
+        {!isMonitoringMode ? <button onClick={handleOpenCreate} className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-white hover:bg-primary-700 sm:w-auto">
           <Plus className="h-4 w-4" />
           Add Size
-        </button>
+        </button> : null}
       </div>
 
       <div className="grid grid-cols-1 gap-4 rounded-lg border border-gray-200 bg-white p-4 md:grid-cols-2">
@@ -167,14 +187,14 @@ export function SizeManagement() {
                   </div>
                 </div>
                 <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
-                  <button onClick={() => handleOpenEdit(size)} className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-blue-200 px-4 py-2 text-sm text-blue-700 hover:bg-blue-50" title="Edit size">
+                  {!isMonitoringMode ? <button onClick={() => handleOpenEdit(size)} className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-blue-200 px-4 py-2 text-sm text-blue-700 hover:bg-blue-50" title="Edit size">
                     <Edit className="h-4 w-4" />
                     Edit
-                  </button>
-                  <button onClick={() => handleToggleStatus(size._id)} className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-orange-200 px-4 py-2 text-sm text-orange-700 hover:bg-orange-50" title="Toggle status">
+                  </button> : null}
+                  {!isMonitoringMode ? <button onClick={() => handleToggleStatus(size._id)} className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-orange-200 px-4 py-2 text-sm text-orange-700 hover:bg-orange-50" title="Toggle status">
                     {size.isActive ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     {size.isActive ? "Deactivate" : "Activate"}
-                  </button>
+                  </button> : null}
                 </div>
               </div>)}
           </div>
@@ -213,12 +233,12 @@ export function SizeManagement() {
                     </td>
                     <td className="p-4">
                       <div className="flex items-center justify-end gap-2">
-                        <button onClick={() => handleOpenEdit(size)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg" title="Edit size">
+                        {!isMonitoringMode ? <button onClick={() => handleOpenEdit(size)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg" title="Edit size">
                           <Edit className="h-4 w-4" />
-                        </button>
-                        <button onClick={() => handleToggleStatus(size._id)} className="p-2 text-orange-600 hover:bg-orange-50 rounded-lg" title="Toggle status">
+                        </button> : null}
+                        {!isMonitoringMode ? <button onClick={() => handleToggleStatus(size._id)} className="p-2 text-orange-600 hover:bg-orange-50 rounded-lg" title="Toggle status">
                           {size.isActive ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                        </button>
+                        </button> : null}
                       </div>
                     </td>
                   </tr>)}
@@ -235,12 +255,12 @@ export function SizeManagement() {
           <p className="text-gray-600 mb-4">
             Try clearing the filters or create a new size.
           </p>
-          <button onClick={handleOpenCreate} className="w-full rounded-lg bg-primary-600 px-4 py-2 text-white hover:bg-primary-700 sm:w-auto">
+          {!isMonitoringMode ? <button onClick={handleOpenCreate} className="w-full rounded-lg bg-primary-600 px-4 py-2 text-white hover:bg-primary-700 sm:w-auto">
             Create Size
-          </button>
+          </button> : null}
         </div>}
 
-      {showModal && <AdminModal isOpen={showModal} title={editingSize ? "Edit Size" : "Create Size"} subtitle="Manage reusable menu sizes and codes." onClose={resetForm} maxWidth="max-w-lg" footer={<div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+      {!isMonitoringMode && showModal && <AdminModal isOpen={showModal} title={editingSize ? "Edit Size" : "Create Size"} subtitle="Manage reusable menu sizes and codes." onClose={resetForm} maxWidth="max-w-lg" footer={<div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
               <button type="button" onClick={resetForm} className="w-full rounded-lg border border-gray-300 px-4 py-2 hover:bg-gray-50 sm:w-auto">
                 Cancel
               </button>
