@@ -7,6 +7,13 @@ import { useSettings } from "../../../common/context/SettingsContext";
 import { buildAdminPath, buildPlatformAdminPath, isSuperAdminMonitoringPath } from "../../../common/utils/routes";
 const normalizePermission = permission => String(permission || "").trim().replace(/[\s-]+/g, "_").toUpperCase();
 const hasFullAdminAccess = role => ["super_admin", "admin"].includes(String(role || "").toLowerCase());
+const isTenantManagementTabActive = (location, tab) => {
+  if (location.pathname !== buildPlatformAdminPath("/tenant-management")) {
+    return false;
+  }
+  const activeTab = new URLSearchParams(location.search).get("tab");
+  return tab === "requests" ? activeTab === "requests" : activeTab !== "requests";
+};
 const navigationSections = [{
   id: "platform",
   title: "Platform",
@@ -16,13 +23,15 @@ const navigationSections = [{
     description: "Tenants, verification, oversight",
     icon: Building2,
     path: buildPlatformAdminPath("/tenant-management"),
+    isActive: location => isTenantManagementTabActive(location, "tenants"),
     roles: ["super_admin"]
   }, {
     id: "admin-requests",
     label: "Admin Requests",
     description: "Approve and respond to requests",
     icon: Shield,
-    path: buildPlatformAdminPath("/admin-requests"),
+    path: buildPlatformAdminPath("/tenant-management?tab=requests"),
+    isActive: location => isTenantManagementTabActive(location, "requests"),
     roles: ["super_admin"]
   }]
 }, {
@@ -272,6 +281,9 @@ export function Sidebar({
     onCloseMobileSidebar?.();
   };
   const isActive = item => {
+    if (typeof item.isActive === "function") {
+      return item.isActive(location);
+    }
     const [pathname] = String(item.path || "").split("?");
     return location.pathname === pathname;
   };
