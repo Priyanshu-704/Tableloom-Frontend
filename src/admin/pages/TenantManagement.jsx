@@ -363,9 +363,9 @@ export function TenantManagement() {
                       </div>
                     </div>
                     <div className="grid gap-2 sm:grid-cols-2">
-                      <button className="rounded-2xl border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50" onClick={() => openTenantAdmin(tenant)} type="button">
-                        Open Admin Panel
-                      </button>
+                      {isTenantVerified(tenant) ? <button className="rounded-2xl border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50" onClick={() => openTenantAdmin(tenant)} type="button">
+                          Open Admin Panel
+                        </button> : null}
                       {!isMonitoringMode ? <button className="inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-60" disabled={verifyingTenantId === tenant._id} onClick={() => handleVerifyTenant(tenant._id)} type="button">
                         {verifyingTenantId === tenant._id ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
                         Verify
@@ -417,10 +417,10 @@ export function TenantManagement() {
                         </div>
                       </div>
                       <div className="mt-3 flex flex-wrap gap-2">
-                        <button type="button" onClick={() => openTenantAdmin(tenant)} className="inline-flex items-center gap-2 rounded-2xl border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
-                          <ExternalLink className="h-4 w-4" />
-                          Monitor
-                        </button>
+                        {isTenantVerified(tenant) ? <button type="button" onClick={() => openTenantAdmin(tenant)} className="inline-flex items-center gap-2 rounded-2xl border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
+                            <ExternalLink className="h-4 w-4" />
+                            Monitor
+                          </button> : null}
                         {!isMonitoringMode && isTenantVerified(tenant) ? <button type="button" onClick={() => handleTenantStatusChange(tenant)} disabled={updatingTenantId === tenant._id} className={`inline-flex items-center gap-2 rounded-2xl px-3 py-2 text-sm font-medium ${tenant.status === "active" ? "border border-rose-200 text-rose-700 hover:bg-rose-50" : "border border-emerald-200 text-emerald-700 hover:bg-emerald-50"}`}>
                             {updatingTenantId === tenant._id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Power className="h-4 w-4" />}
                             {tenant.status === "active" ? "Deactivate Tenant" : "Activate Tenant"}
@@ -449,7 +449,11 @@ export function TenantManagement() {
                         Loading tenants...
                       </td>
                     </tr> : null}
-                  {!loading ? tenants.map(tenant => <tr key={tenant._id} className="cursor-pointer hover:bg-slate-50" onClick={() => openTenantAdmin(tenant)}>
+                  {!loading ? tenants.map(tenant => <tr key={tenant._id} className={isTenantVerified(tenant) ? "cursor-pointer hover:bg-slate-50" : ""} onClick={() => {
+                  if (isTenantVerified(tenant)) {
+                    openTenantAdmin(tenant);
+                  }
+                }}>
                           <td className="py-4 pr-4">
                             <div className="font-medium text-slate-900">
                               {tenant.name}
@@ -469,13 +473,13 @@ export function TenantManagement() {
                           </td>
                           <td className="py-4 pr-4">
                             <div className="flex flex-wrap gap-2">
-                              <button className="inline-flex items-center gap-2 rounded-2xl border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50" onClick={event => {
+                              {isTenantVerified(tenant) ? <button className="inline-flex items-center gap-2 rounded-2xl border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50" onClick={event => {
                       event.stopPropagation();
                       openTenantAdmin(tenant);
                     }} type="button">
                                 <ExternalLink className="h-4 w-4" />
                                 Monitor
-                              </button>
+                              </button> : null}
                               {!isMonitoringMode && isTenantVerified(tenant) ? <button className={`inline-flex items-center gap-2 rounded-2xl px-3 py-2 text-sm font-medium ${tenant.status === "active" ? "border border-rose-200 text-rose-700 hover:bg-rose-50" : "border border-emerald-200 text-emerald-700 hover:bg-emerald-50"}`} onClick={event => {
                       event.stopPropagation();
                       handleTenantStatusChange(tenant);
