@@ -1,20 +1,8 @@
 import { logger } from "../utils/logger.js";
 import axios from "axios";
-import {
-  buildAdminPath,
-  buildPlatformAdminPath,
-  extractTenantFromPath,
-  stripAppBasePath,
-} from "../utils/routes.js";
-import {
-  clearStoredTenantId,
-  getStoredTenantId,
-  syncStoredTenantId,
-} from "../utils/tenantStorage.js";
-import {
-  getOfflineApiResponse,
-  saveOfflineApiResponse,
-} from "../utils/offlineCache.js";
+import { buildAdminPath, buildPlatformAdminPath, extractTenantFromPath, isSuperAdminMonitoringPath, isTenantOperationalApiPath, stripAppBasePath } from "../utils/routes.js";
+import { clearStoredTenantId, getStoredTenantId, syncStoredTenantId } from "../utils/tenantStorage.js";
+import { getOfflineApiResponse, saveOfflineApiResponse } from "../utils/offlineCache.js";
 const API_URL = import.meta.env.VITE_APP_API_URL;
 const api = axios.create({
   baseURL: API_URL,
@@ -32,41 +20,37 @@ const getStoredUser = () => {
     return null;
   }
 };
-
 const isReadOnlyMonitoringRequest = config => {
   const user = getStoredUser();
   if (String(user?.role || "").toLowerCase() !== "super_admin") {
     return false;
   }
-
+  if (!isSuperAdminMonitoringPath(window.location.pathname, user?.role)) {
+    return false;
+  }
   const method = String(config?.method || "get").toUpperCase();
   if (["GET", "HEAD", "OPTIONS"].includes(method)) {
     return false;
   }
-
   const url = String(config?.url || "");
-  return !url.includes("/users/logout");
+  return isTenantOperationalApiPath(url) && !url.includes("/users/logout");
 };
-
 export const getTenantHeaders = () => {
   const tenant = extractTenantFromPath(window.location.pathname);
   if (tenant) {
     return {
       "x-tenant-slug": tenant.tenantSlug,
-      "x-tenant-key": tenant.tenantKey,
+      "x-tenant-key": tenant.tenantKey
     };
   }
-
   const currentPath = stripAppBasePath(window.location.pathname || "/");
   if (currentPath.startsWith("/admin")) {
     return {};
   }
-
   const storedTenantId = getStoredTenantId();
   if (!storedTenantId) return {};
-
   return {
-    "x-tenant-id": storedTenantId,
+    "x-tenant-id": storedTenantId
   };
 };
 let isRefreshing = false;
@@ -81,7 +65,6 @@ api.interceptors.request.use(config => {
     showNotification("Super admin monitoring mode is read-only. Write actions are blocked.", "warning");
     return Promise.reject(new Error("Monitoring mode is read-only"));
   }
-
   const token = sessionStorage.getItem("token");
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
@@ -145,7 +128,6 @@ api.interceptors.response.use(response => {
   } else {
     const method = String(originalRequest?.method || "GET").toUpperCase();
     const cachedResponse = method === "GET" ? getOfflineApiResponse(originalRequest) : null;
-
     if (cachedResponse) {
       showNotification("Showing cached data because the network is unavailable.", "warning");
       return Promise.resolve({
@@ -160,7 +142,6 @@ api.interceptors.response.use(response => {
         request: null
       });
     }
-
     handleNetworkError();
   }
   return Promise.reject(error);

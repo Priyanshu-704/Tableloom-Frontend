@@ -63,12 +63,12 @@ export function ForcePasswordUpdate() {
     }
   };
   return <AdminAuthShell settings={settings} eyebrow="First Login Required" title="Update your temporary password" description={`${user?.name || "Staff member"}, replace the temporary password before entering ${settings?.restaurant?.name || "the admin panel"}.`} mobileAuthMode="formOnly" sideTitle="Temporary passwords should lead into a confident first-use experience." sideDescription="This first-login step now matches the rest of the auth flow so new staff do not hit an abrupt or confusing screen." highlights={[{
-      title: "Safer onboarding",
-      description: "Temporary credentials are replaced before staff continue into the dashboard."
-    }, {
-      title: "Clear next step",
-      description: "Once the password is saved, the user is sent straight into the admin area."
-    }]}>
+    title: "Safer onboarding",
+    description: "Temporary credentials are replaced before staff continue into the dashboard."
+  }, {
+    title: "Clear next step",
+    description: "Once the password is saved, the user is sent straight into the admin area."
+  }]}>
         <div className="mb-6 rounded-2xl bg-sky-50 px-4 py-3 text-sm text-sky-700">
           Use a strong password that includes uppercase, lowercase, numbers, and special characters.
         </div>

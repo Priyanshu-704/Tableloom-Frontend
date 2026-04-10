@@ -7,7 +7,6 @@ import { AdminModal } from "../components/common/AdminModal";
 import AdminPagination from "../components/common/AdminPagination";
 import { AdminListSkeleton } from "../components/common/AdminSkeleton";
 import ResponsiveFilterSection from "../components/common/ResponsiveFilterSection";
-import { MonitoringBanner } from "../components/common/MonitoringBanner";
 import { useMonitoringMode } from "../hooks/useMonitoringMode";
 const STATUS_OPTIONS = [{
   value: "all",
@@ -248,7 +247,7 @@ export function WaiterCalls() {
   };
   const dashboardStats = dashboard?.statistics || {};
   return <div className="space-y-6 p-4 sm:p-6">
-      {isMonitoringMode ? <MonitoringBanner message="Waiter calls remain visible for monitoring, but assign, acknowledge, start, and complete actions are disabled for Super Admin." /> : null}
+      
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Waiter Calls</h1>
@@ -295,30 +294,30 @@ export function WaiterCalls() {
           <div className="relative lg:col-span-2">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
           <input type="text" value={filters.search} onChange={event => setFilters(current => ({
-          ...current,
-          search: event.target.value
-        }))} placeholder="Search call, table, guest, message, or location" className="w-full rounded-lg border border-gray-300 py-2 pl-10 pr-4" />
+            ...current,
+            search: event.target.value
+          }))} placeholder="Search call, table, guest, message, or location" className="w-full rounded-lg border border-gray-300 py-2 pl-10 pr-4" />
           </div>
           <select value={filters.status} onChange={event => setFilters(current => ({
-        ...current,
-        status: event.target.value
-      }))} className="w-full rounded-lg border border-gray-300 px-3 py-2">
+          ...current,
+          status: event.target.value
+        }))} className="w-full rounded-lg border border-gray-300 px-3 py-2">
             {STATUS_OPTIONS.map(option => <option key={option.value} value={option.value}>
               {option.label}
             </option>)}
           </select>
           <select value={filters.callType} onChange={event => setFilters(current => ({
-        ...current,
-        callType: event.target.value
-      }))} className="w-full rounded-lg border border-gray-300 px-3 py-2">
+          ...current,
+          callType: event.target.value
+        }))} className="w-full rounded-lg border border-gray-300 px-3 py-2">
             {CALL_TYPE_OPTIONS.map(option => <option key={option.value} value={option.value}>
               {option.label}
             </option>)}
           </select>
           <select value={filters.priority} onChange={event => setFilters(current => ({
-        ...current,
-        priority: event.target.value
-      }))} className="w-full rounded-lg border border-gray-300 px-3 py-2">
+          ...current,
+          priority: event.target.value
+        }))} className="w-full rounded-lg border border-gray-300 px-3 py-2">
             {PRIORITY_OPTIONS.map(option => <option key={option.value} value={option.value}>
               {option.label}
             </option>)}

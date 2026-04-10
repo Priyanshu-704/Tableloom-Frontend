@@ -1,11 +1,7 @@
 import React from "react";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../../common/context/AuthContext";
-import {
-  buildAdminPath,
-  resolveAdminHomePath,
-  stripAdminRoutePrefix
-} from "../../common/utils/routes";
+import { buildAdminPath, resolveAdminHomePath, stripAdminRoutePrefix } from "../../common/utils/routes";
 import { SkeletonBlock } from "./common/AdminSkeleton";
 export default function ProtectedRoute({
   requiredPermission

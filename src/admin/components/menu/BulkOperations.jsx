@@ -3,7 +3,6 @@ import { CheckCircle, Download, IndianRupee, Eye, Loader2, Package2, RefreshCw, 
 import { menuService } from "../../../common/services";
 import { useAdmin } from "../../context/AdminContext";
 import { AdminPageSkeleton } from "../common/AdminSkeleton";
-import { MonitoringBanner } from "../common/MonitoringBanner";
 import { useMonitoringMode } from "../../hooks/useMonitoringMode";
 const BULK_ACTIONS = [{
   id: "updatePrices",
@@ -338,7 +337,7 @@ export function BulkOperations() {
     return <AdminPageSkeleton stats={4} filters={0} cards={5} cardHeight="h-56" />;
   }
   return <div className="space-y-6 p-6">
-      {isMonitoringMode ? <MonitoringBanner message="Bulk menu operations remain visible for monitoring, but all bulk updates, imports, exports, and selection actions are disabled for Super Admin." /> : null}
+      
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-slate-900">
@@ -515,7 +514,7 @@ export function BulkOperations() {
                 <p className="text-sm font-medium text-slate-800">
                   {lastResult.message}
                 </p>
-                {(lastResult.successful !== undefined || lastResult.created !== undefined) ? <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                {lastResult.successful !== undefined || lastResult.created !== undefined ? <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
                     {lastResult.created !== undefined ? <div className="flex items-center gap-2 text-emerald-600">
                         <CheckCircle className="h-4 w-4" />
                         <span className="text-sm">Created: {lastResult.created || 0}</span>

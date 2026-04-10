@@ -10,7 +10,6 @@ import AdminPagination from "../components/common/AdminPagination";
 import { AdminListSkeleton } from "../components/common/AdminSkeleton";
 import ResponsiveFilterSection from "../components/common/ResponsiveFilterSection";
 import { useMonitoringMode } from "../hooks/useMonitoringMode";
-import { MonitoringBanner } from "../components/common/MonitoringBanner";
 import { getNotificationNavigationLabel, getNotificationNavigationTarget } from "../utils/notificationRouting";
 const STATUS_OPTIONS = [{
   value: "all",
@@ -265,7 +264,7 @@ export function Notifications() {
         </div>
       </div>
 
-      {isMonitoringMode && <MonitoringBanner message="Notifications remain visible for oversight, but mark, dismiss, acknowledge, cleanup, and announcement actions are disabled in monitoring mode." />}
+      
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
         <div className="rounded-lg border border-gray-200 bg-white p-5">
@@ -299,46 +298,46 @@ export function Notifications() {
           <div className="relative lg:col-span-2">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
           <input type="text" value={filters.search} onChange={event => setFilters(current => ({
-          ...current,
-          search: event.target.value
-        }))} placeholder="Search title, message, sender, or type" className="w-full rounded-lg border border-gray-300 py-2 pl-10 pr-4" />
+            ...current,
+            search: event.target.value
+          }))} placeholder="Search title, message, sender, or type" className="w-full rounded-lg border border-gray-300 py-2 pl-10 pr-4" />
           </div>
           <select value={filters.status} onChange={event => setFilters(current => ({
-        ...current,
-        status: event.target.value
-      }))} className="w-full rounded-lg border border-gray-300 px-3 py-2">
+          ...current,
+          status: event.target.value
+        }))} className="w-full rounded-lg border border-gray-300 px-3 py-2">
             {STATUS_OPTIONS.map(option => <option key={option.value} value={option.value}>
               {option.label}
             </option>)}
           </select>
           <select value={filters.type} onChange={event => setFilters(current => ({
-        ...current,
-        type: event.target.value
-      }))} className="w-full rounded-lg border border-gray-300 px-3 py-2">
+          ...current,
+          type: event.target.value
+        }))} className="w-full rounded-lg border border-gray-300 px-3 py-2">
             {TYPE_OPTIONS.map(option => <option key={option.value} value={option.value}>
               {option.label}
             </option>)}
           </select>
           <select value={filters.priority} onChange={event => setFilters(current => ({
-        ...current,
-        priority: event.target.value
-      }))} className="w-full rounded-lg border border-gray-300 px-3 py-2">
+          ...current,
+          priority: event.target.value
+        }))} className="w-full rounded-lg border border-gray-300 px-3 py-2">
             {PRIORITY_OPTIONS.map(option => <option key={option.value} value={option.value}>
               {option.label}
             </option>)}
           </select>
           <label className="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700">
             <input type="checkbox" checked={filters.unreadOnly} onChange={event => setFilters(current => ({
-          ...current,
-          unreadOnly: event.target.checked
-        }))} className="rounded border-gray-300" />
+            ...current,
+            unreadOnly: event.target.checked
+          }))} className="rounded border-gray-300" />
             Unread only
           </label>
           <label className="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700">
             <input type="checkbox" checked={filters.actionRequired} onChange={event => setFilters(current => ({
-          ...current,
-          actionRequired: event.target.checked
-        }))} className="rounded border-gray-300" />
+            ...current,
+            actionRequired: event.target.checked
+          }))} className="rounded border-gray-300" />
             Action required
           </label>
         </div>

@@ -57,7 +57,7 @@ export function StaffCard({
     };
   }, [showMenu]);
   return <div className={`rounded-lg border bg-white shadow ${!staff.isActive ? "opacity-60" : ""}`}>
-      {}
+      
       <div className="p-4 border-b">
         <div className="flex items-start justify-between gap-3">
           <div className="flex min-w-0 items-center space-x-3">
@@ -114,7 +114,7 @@ export function StaffCard({
         </div>
       </div>
 
-      {}
+      
       <div className="p-4 space-y-2">
         <div className="flex items-center space-x-2 text-sm text-gray-600">
           <Mail className="h-4 w-4" />
@@ -127,7 +127,7 @@ export function StaffCard({
           </div>}
       </div>
 
-      {}
+      
       <div className="flex flex-col gap-2 rounded-b-lg bg-gray-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center space-x-2">
           {staff.isActive ? <div className="flex items-center space-x-1 text-green-600">

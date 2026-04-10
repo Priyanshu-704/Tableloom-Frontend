@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo } from "react";
-import { LayoutDashboard, BarChart3, ClipboardList, ChefHat, CookingPot, Users, List, Tags, Ruler, TrendingUp, Percent, RefreshCw, Boxes, Download, Table, QrCode, MessageSquareText, ConciergeBell, Bell, DatabaseBackup, Settings, Utensils, Receipt, Building2, LifeBuoy } from "lucide-react";
+import { LayoutDashboard, BarChart3, ClipboardList, ChefHat, CookingPot, Users, List, Tags, Ruler, TrendingUp, Percent, RefreshCw, Boxes, Download, Table, QrCode, MessageSquareText, ConciergeBell, Bell, DatabaseBackup, Settings, Utensils, Receipt, Building2, LifeBuoy, Shield } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAdmin } from "../../context/AdminContext";
 import { useAuth } from "../../../common/context/AuthContext";
@@ -16,6 +16,13 @@ const navigationSections = [{
     description: "Tenants, verification, oversight",
     icon: Building2,
     path: buildPlatformAdminPath("/tenant-management"),
+    roles: ["super_admin"]
+  }, {
+    id: "admin-requests",
+    label: "Admin Requests",
+    description: "Approve and respond to requests",
+    icon: Shield,
+    path: buildPlatformAdminPath("/admin-requests"),
     roles: ["super_admin"]
   }]
 }, {
@@ -271,7 +278,6 @@ export function Sidebar({
   useEffect(() => {
     onCloseMobileSidebar?.();
   }, [location.pathname]);
-
   const renderNavigation = ({
     compact = false
   } = {}) => <div className={`pb-10 ${compact ? "space-y-4" : "space-y-6"}`}>
@@ -301,9 +307,9 @@ export function Sidebar({
 
           <div className={`space-y-2 rounded-3xl border border-slate-200 bg-white shadow-sm ${compact ? "p-2" : "p-2.5"}`}>
             {section.items.map(item => {
-          const Icon = item.icon;
-          const active = isActive(item);
-          return <button key={item.id} type="button" onClick={() => handleNavigation(item)} className={`flex w-full rounded-2xl text-left transition-all ${compact ? "justify-center px-2 py-2.5" : "items-center gap-3 px-3 py-3"} ${active ? "bg-primary-600 text-white shadow-sm" : "text-slate-700 hover:bg-slate-50"}`} title={compact ? item.label : undefined} aria-label={item.label}>
+            const Icon = item.icon;
+            const active = isActive(item);
+            return <button key={item.id} type="button" onClick={() => handleNavigation(item)} className={`flex w-full rounded-2xl text-left transition-all ${compact ? "justify-center px-2 py-2.5" : "items-center gap-3 px-3 py-3"} ${active ? "bg-primary-600 text-white shadow-sm" : "text-slate-700 hover:bg-slate-50"}`} title={compact ? item.label : undefined} aria-label={item.label}>
                   <div className={`flex flex-shrink-0 items-center justify-center rounded-2xl ${compact ? "h-12 w-12" : "h-11 w-11"} ${active ? "bg-white/15 text-white" : "bg-slate-100 text-slate-600"}`}>
                     <Icon className="h-5 w-5" />
                   </div>
@@ -317,12 +323,11 @@ export function Sidebar({
                     </p>
                   </div>
                 </button>;
-        })}
+          })}
           </div>
         </div>)}
       </nav>
     </div>;
-
   if (!visibleSections.length) {
     return <aside className={`fixed left-0 top-16 bottom-0 z-40 hidden border-r border-slate-200 bg-slate-50/95 transition-[width] duration-300 lg:block ${isDesktopCollapsed ? "w-24" : "w-72"}`}>
         <div className="flex h-full flex-col">

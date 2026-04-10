@@ -22,14 +22,14 @@ export function CategoryFilter({
   }];
   return <div className="bg-white border-b border-gray-200 sticky top-16 z-40">
       <div className="max-w-7xl mx-auto px-4">
-        {}
+        
         <div className="flex space-x-2 py-4 overflow-x-auto">
           {categories.map(category => <button key={category} onClick={() => onCategoryChange(category)} className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${selectedCategory === category ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
               {category === 'all' ? 'All Items' : category}
             </button>)}
         </div>
 
-        {}
+        
         <div className="flex items-center justify-between py-3 border-t border-gray-200">
           <div className="flex items-center space-x-2">
             <Filter className="h-4 w-4 text-gray-500" />

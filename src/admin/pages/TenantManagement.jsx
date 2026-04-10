@@ -1,28 +1,12 @@
 import React, { useEffect, useMemo, useState } from "react";
-import {
-  Building2,
-  CheckCircle2,
-  ExternalLink,
-  Loader2,
-  MessageSquareText,
-  PlusCircle,
-  Power,
-  Send,
-  ShieldAlert,
-} from "lucide-react";
+import { Building2, CheckCircle2, ExternalLink, Loader2, MessageSquareText, PlusCircle, Power, Send, ShieldAlert } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supportService, tenantService } from "../../common/services";
 import { buildTenantPath } from "../../common/utils/routes";
-import {
-  buildTenantWorkspacePath,
-  normalizeTenantKeyInput,
-  normalizeTenantSlugInput,
-} from "../../common/utils/tenantWorkspace";
+import { buildTenantWorkspacePath, normalizeTenantKeyInput, normalizeTenantSlugInput } from "../../common/utils/tenantWorkspace";
 import { useAdmin } from "../context/AdminContext";
 import { AdminModal } from "../components/common/AdminModal";
-import { MonitoringBanner } from "../components/common/MonitoringBanner";
 import { useMonitoringMode } from "../hooks/useMonitoringMode";
-
 const initialForm = {
   restaurantName: "",
   slug: "",
@@ -30,48 +14,40 @@ const initialForm = {
   adminName: "",
   adminEmail: "",
   phone: "",
-  subscriptionPlan: "starter",
+  subscriptionPlan: "starter"
 };
-
-const superAdminTabs = [
-  {
-    id: "tenants",
-    label: "Tenant Workspaces",
-    description: "Create and verify restaurant tenants",
-  },
-  {
-    id: "requests",
-    label: "Access Requests",
-    description: "Review and respond to tenant admin requests",
-  },
-];
-
+const superAdminTabs = [{
+  id: "tenants",
+  label: "Tenant Workspaces",
+  description: "Create and verify restaurant tenants"
+}, {
+  id: "requests",
+  label: "Admin Requests",
+  description: "Review and respond to tenant admin requests"
+}];
 const requestStatusTone = {
   open: "bg-amber-100 text-amber-700",
   in_progress: "bg-sky-100 text-sky-700",
-  resolved: "bg-emerald-100 text-emerald-700",
+  resolved: "bg-emerald-100 text-emerald-700"
 };
-
 const requestCategoryLabel = {
   access: "Access",
   tenant: "Tenant",
   billing: "Billing",
   technical: "Technical",
   account: "Account",
-  other: "Other",
+  other: "Other"
 };
-
-const formatRequestStatus = (status = "open") =>
-  String(status || "open").replace(/_/g, " ");
-
-const isSupportRequestLocked = (status = "open") =>
-  ["resolved", "closed"].includes(String(status || "open").toLowerCase());
-
+const formatRequestStatus = (status = "open") => String(status || "open").replace(/_/g, " ");
+const isSupportRequestLocked = (status = "open") => ["resolved", "closed"].includes(String(status || "open").toLowerCase());
 export function TenantManagement() {
   const isMonitoringMode = useMonitoringMode();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { addNotification, confirmAction } = useAdmin();
+  const {
+    addNotification,
+    confirmAction
+  } = useAdmin();
   const [tenants, setTenants] = useState([]);
   const [supportRequests, setSupportRequests] = useState([]);
   const [responseDrafts, setResponseDrafts] = useState({});
@@ -86,7 +62,6 @@ export function TenantManagement() {
   const [updatingTenantId, setUpdatingTenantId] = useState("");
   const [updatingSupportId, setUpdatingSupportId] = useState("");
   const activeTab = searchParams.get("tab") === "requests" ? "requests" : "tenants";
-
   const loadTenants = async () => {
     setLoading(true);
     try {
@@ -100,7 +75,6 @@ export function TenantManagement() {
       setLoading(false);
     }
   };
-
   const loadSupportRequests = async () => {
     try {
       const response = await supportService.getSupportRequests();
@@ -111,57 +85,46 @@ export function TenantManagement() {
       addNotification(message, "error");
     }
   };
-
   useEffect(() => {
     Promise.all([loadTenants(), loadSupportRequests()]);
   }, []);
-
   useEffect(() => {
-    setResponseDrafts((current) =>
-      supportRequests.reduce((next, request) => {
-        next[request._id] =
-          current[request._id] ?? request.responseMessage ?? "";
-        return next;
-      }, {})
-    );
+    setResponseDrafts(current => supportRequests.reduce((next, request) => {
+      next[request._id] = current[request._id] ?? request.responseMessage ?? "";
+      return next;
+    }, {}));
   }, [supportRequests]);
-
-  const pendingTenants = useMemo(
-    () =>
-      tenants.filter(
-        (tenant) =>
-          tenant?.onboarding?.verificationStatus === "pending" ||
-          tenant?.status === "pending"
-      ),
-    [tenants]
-  );
-
-  const openSupportRequests = useMemo(
-    () =>
-      supportRequests.filter(
-        (request) => !isSupportRequestLocked(request.status)
-      ).length,
-    [supportRequests]
-  );
-
+  const pendingTenants = useMemo(() => tenants.filter(tenant => tenant?.onboarding?.verificationStatus === "pending" || tenant?.status === "pending"), [tenants]);
+  const openSupportRequests = useMemo(() => supportRequests.filter(request => !isSupportRequestLocked(request.status)).length, [supportRequests]);
   const handleChange = (field, value) => {
-    setForm((current) => ({
+    setForm(current => ({
       ...current,
-      [field]:
-        field === "slug"
-          ? normalizeTenantSlugInput(value)
-          : field === "key"
-            ? normalizeTenantKeyInput(value)
-            : value,
+      [field]: field === "slug" ? normalizeTenantSlugInput(value) : field === "key" ? normalizeTenantKeyInput(value) : value
     }));
   };
-
   const resetFeedback = () => {
     setError("");
     setSuccess("");
   };
-
-  const handleCreateTenant = async (event) => {
+  const resetTenantForm = () => {
+    setForm(initialForm);
+  };
+  const openCreateTenantModal = () => {
+    resetFeedback();
+    setCredentials(null);
+    resetTenantForm();
+    setIsCreateTenantModalOpen(true);
+  };
+  const closeTenantModal = ({
+    force = false
+  } = {}) => {
+    if (submitting && !force) {
+      return;
+    }
+    setIsCreateTenantModalOpen(false);
+    resetTenantForm();
+  };
+  const handleSubmitTenant = async event => {
     event.preventDefault();
     if (isMonitoringMode) {
       addNotification("Tenant management is read-only in monitoring mode.", "error");
@@ -169,15 +132,15 @@ export function TenantManagement() {
     }
     setSubmitting(true);
     resetFeedback();
-
     try {
       const response = await tenantService.createTenant(form);
       setCredentials(response?.data?.credentials || null);
       const message = response?.message || "Tenant created successfully";
       setSuccess(message);
       addNotification(message, "success");
-      setForm(initialForm);
-      setIsCreateTenantModalOpen(false);
+      closeTenantModal({
+        force: true
+      });
       await loadTenants();
     } catch (createError) {
       const message = createError?.message || "Failed to create tenant";
@@ -187,15 +150,13 @@ export function TenantManagement() {
       setSubmitting(false);
     }
   };
-
-  const handleVerifyTenant = async (tenantId) => {
+  const handleVerifyTenant = async tenantId => {
     if (isMonitoringMode) {
       addNotification("Tenant management is read-only in monitoring mode.", "error");
       return;
     }
     setVerifyingTenantId(tenantId);
     resetFeedback();
-
     try {
       const response = await tenantService.verifyTenant(tenantId);
       setCredentials(response?.data?.credentials || null);
@@ -211,20 +172,13 @@ export function TenantManagement() {
       setVerifyingTenantId("");
     }
   };
-
-  const getTenantAdminPath = (tenant) =>
-    buildTenantPath("/admin/dashboard", {
-      tenantSlug: tenant?.slug,
-      tenantKey: tenant?.key,
-    });
-
-  const getTenantWorkspacePath = (tenant) => buildTenantWorkspacePath(tenant);
-
-  const isTenantVerified = (tenant) =>
-    tenant?.onboarding?.verificationStatus === "verified" ||
-    Boolean(tenant?.adminUser);
-
-  const handleTenantStatusChange = async (tenant) => {
+  const getTenantAdminPath = tenant => buildTenantPath("/admin/dashboard", {
+    tenantSlug: tenant?.slug,
+    tenantKey: tenant?.key
+  });
+  const getTenantWorkspacePath = tenant => buildTenantWorkspacePath(tenant);
+  const isTenantVerified = tenant => tenant?.onboarding?.verificationStatus === "verified" || Boolean(tenant?.adminUser);
+  const handleTenantStatusChange = async tenant => {
     if (isMonitoringMode) {
       addNotification("Tenant management is read-only in monitoring mode.", "error");
       return;
@@ -235,26 +189,16 @@ export function TenantManagement() {
       title: `${actionLabel} Tenant`,
       message: `Are you sure you want to ${actionLabel.toLowerCase()} ${tenant?.name}?`,
       confirmLabel: actionLabel,
-      tone: nextStatus === "active" ? "warning" : "danger",
+      tone: nextStatus === "active" ? "warning" : "danger"
     });
-
     if (!confirmed) {
       return;
     }
-
     setUpdatingTenantId(tenant._id);
     resetFeedback();
-
     try {
-      const response = await tenantService.updateTenantStatus(
-        tenant._id,
-        nextStatus
-      );
-      const message =
-        response?.message ||
-        `Tenant ${
-          nextStatus === "active" ? "activated" : "deactivated"
-        } successfully`;
+      const response = await tenantService.updateTenantStatus(tenant._id, nextStatus);
+      const message = response?.message || `Tenant ${nextStatus === "active" ? "activated" : "deactivated"} successfully`;
       setSuccess(message);
       addNotification(message, "success");
       await loadTenants();
@@ -266,124 +210,78 @@ export function TenantManagement() {
       setUpdatingTenantId("");
     }
   };
-
   const handleSupportDraftChange = (requestId, value) => {
-    setResponseDrafts((current) => ({
+    setResponseDrafts(current => ({
       ...current,
-      [requestId]: value,
+      [requestId]: value
     }));
   };
-
   const handleSupportStatusChange = async (request, nextStatus) => {
     if (isMonitoringMode) {
       addNotification("Support request actions are disabled in monitoring mode.", "error");
       return;
     }
     if (isSupportRequestLocked(request.status)) {
-      addNotification(
-        "Resolved support requests can no longer be updated",
-        "error"
-      );
+      addNotification("Resolved support requests can no longer be updated", "error");
       return;
     }
-
     setUpdatingSupportId(request._id);
-
     try {
-      const response = await supportService.updateSupportRequestStatus(
-        request._id,
-        {
-          status: nextStatus,
-          responseMessage: String(
-            responseDrafts[request._id] ?? request.responseMessage ?? ""
-          ).trim(),
-        }
-      );
-
-      addNotification(
-        response?.message ||
-          `Support request marked as ${formatRequestStatus(nextStatus)}`,
-        "success"
-      );
+      const response = await supportService.updateSupportRequestStatus(request._id, {
+        status: nextStatus,
+        responseMessage: String(responseDrafts[request._id] ?? request.responseMessage ?? "").trim()
+      });
+      addNotification(response?.message || `Support request marked as ${formatRequestStatus(nextStatus)}`, "success");
       await loadSupportRequests();
     } catch (requestError) {
-      addNotification(
-        requestError?.message || "Failed to update support request",
-        "error"
-      );
+      addNotification(requestError?.message || "Failed to update support request", "error");
     } finally {
       setUpdatingSupportId("");
     }
   };
-
-  const handleSupportResponseSave = async (request) => {
+  const handleSupportResponseSave = async request => {
     if (isMonitoringMode) {
       addNotification("Support request actions are disabled in monitoring mode.", "error");
       return;
     }
     if (isSupportRequestLocked(request.status)) {
-      addNotification(
-        "Resolved support requests can no longer be updated",
-        "error"
-      );
+      addNotification("Resolved support requests can no longer be updated", "error");
       return;
     }
-
     setUpdatingSupportId(request._id);
-
     try {
-      const response = await supportService.updateSupportRequestStatus(
-        request._id,
-        {
-          status: request.status,
-          responseMessage: String(
-            responseDrafts[request._id] ?? request.responseMessage ?? ""
-          ).trim(),
-        }
-      );
-
-      addNotification(
-        response?.message || "Super admin response saved successfully",
-        "success"
-      );
+      const response = await supportService.updateSupportRequestStatus(request._id, {
+        status: request.status,
+        responseMessage: String(responseDrafts[request._id] ?? request.responseMessage ?? "").trim()
+      });
+      addNotification(response?.message || "Super admin response saved successfully", "success");
       await loadSupportRequests();
     } catch (requestError) {
-      addNotification(
-        requestError?.message || "Failed to save support response",
-        "error"
-      );
+      addNotification(requestError?.message || "Failed to save support response", "error");
     } finally {
       setUpdatingSupportId("");
     }
   };
-
-  const openTenantAdmin = (tenant) => {
+  const openTenantAdmin = tenant => {
     const tenantAdminPath = getTenantAdminPath(tenant);
     const openedWindow = window.open(tenantAdminPath, "_blank");
-
     if (!openedWindow) {
       navigate(tenantAdminPath);
     }
   };
-
-  const switchTab = (tabId) => {
+  const switchTab = tabId => {
     const nextParams = new URLSearchParams(searchParams);
     if (tabId === "requests") {
       nextParams.set("tab", "requests");
     } else {
       nextParams.delete("tab");
     }
-    setSearchParams(nextParams, { replace: true });
+    setSearchParams(nextParams, {
+      replace: true
+    });
   };
-
-  const createRoutePreview =
-    form.slug && form.key
-      ? getTenantWorkspacePath(form)
-      : "/your-slug/yourkey";
-
-  return (
-    <div className="space-y-5 p-4 sm:p-6">
-      {isMonitoringMode ? <MonitoringBanner message="Tenant workspaces and support requests remain visible for monitoring, but tenant creation, verification, status changes, and request responses are disabled for Super Admin." /> : null}
+  const createRoutePreview = form.slug && form.key ? getTenantWorkspacePath(form) : "/your-slug/yourkey";
+  return <div className="space-y-5 p-4 sm:p-6">
       <div className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
         <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
           <div>
@@ -399,62 +297,35 @@ export function TenantManagement() {
             </p>
           </div>
 
-          {activeTab === "tenants" && !isMonitoringMode ? (
-            <button
-              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
-              onClick={() => {
-                resetFeedback();
-                setIsCreateTenantModalOpen(true);
-              }}
-              type="button"
-            >
+          {activeTab === "tenants" && !isMonitoringMode ? <button className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800" onClick={openCreateTenantModal} type="button">
               <PlusCircle className="h-4 w-4" />
               Register Tenant
-            </button>
-          ) : null}
+            </button> : null}
         </div>
 
         <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
-          {superAdminTabs.map((tab) => (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => switchTab(tab.id)}
-              className={`rounded-2xl border px-4 py-4 text-left transition-colors ${
-                activeTab === tab.id
-                  ? "border-sky-500 bg-sky-50 text-sky-700"
-                  : "border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100"
-              }`}
-            >
+          {superAdminTabs.map(tab => <button key={tab.id} type="button" onClick={() => switchTab(tab.id)} className={`rounded-2xl border px-4 py-4 text-left transition-colors ${activeTab === tab.id ? "border-sky-500 bg-sky-50 text-sky-700" : "border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100"}`}>
               <div className="text-sm font-semibold">{tab.label}</div>
               <div className="mt-1 text-xs leading-5 opacity-80">
                 {tab.description}
               </div>
-            </button>
-          ))}
+            </button>)}
         </div>
       </div>
 
-      {error ? (
-        <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+      {error ? <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
           {error}
-        </div>
-      ) : null}
-      {success ? (
-        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+        </div> : null}
+      {success ? <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
           {success}
-        </div>
-      ) : null}
-      {credentials ? (
-        <div className="rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-800">
+        </div> : null}
+      {credentials ? <div className="rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-800">
           Admin email: <strong>{credentials.email}</strong>
           <br />
           Temporary password: <strong>{credentials.temporaryPassword}</strong>
-        </div>
-      ) : null}
+        </div> : null}
 
-      {activeTab === "tenants" ? (
-        <div className="space-y-6">
+      {activeTab === "tenants" ? <div className="space-y-6">
           <section className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
@@ -471,62 +342,36 @@ export function TenantManagement() {
             </div>
 
             <div className="mt-4 max-h-[24rem] space-y-3 overflow-y-auto overscroll-contain pr-1">
-              {pendingTenants.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-slate-200 px-4 py-6 text-sm text-slate-500">
+              {pendingTenants.length === 0 ? <div className="rounded-2xl border border-dashed border-slate-200 px-4 py-6 text-sm text-slate-500">
                   No pending tenant registrations.
-                </div>
-              ) : (
-                pendingTenants.map((tenant) => (
-                  <div
-                    key={tenant._id}
-                    className="flex flex-col gap-4 rounded-2xl border border-slate-200 px-4 py-4"
-                  >
+                </div> : pendingTenants.map(tenant => <div key={tenant._id} className="flex flex-col gap-4 rounded-2xl border border-slate-200 px-4 py-4">
                     <div>
                       <div className="font-semibold text-slate-900">
                         {tenant.name}
                       </div>
                       <div className="text-sm text-slate-500">
-                        {tenant.requestedAdmin?.name ||
-                          tenant.adminUser?.name ||
-                          "Pending admin"}
+                        {tenant.requestedAdmin?.name || tenant.adminUser?.name || "Pending admin"}
                       </div>
                       <div className="text-sm text-slate-500">
                         {tenant.requestedAdmin?.email || tenant.contact?.email}
                       </div>
-                      {tenant.requestedAdmin?.phone || tenant.contact?.phone ? (
-                        <div className="text-sm text-slate-500">
+                      {tenant.requestedAdmin?.phone || tenant.contact?.phone ? <div className="text-sm text-slate-500">
                           {tenant.requestedAdmin?.phone || tenant.contact?.phone}
-                        </div>
-                      ) : null}
+                        </div> : null}
                       <div className="mt-2 inline-flex rounded-xl bg-slate-100 px-3 py-1.5 font-mono text-xs text-slate-700">
                         {getTenantWorkspacePath(tenant)}
                       </div>
                     </div>
                     <div className="grid gap-2 sm:grid-cols-2">
-                      <button
-                        className="rounded-2xl border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
-                        onClick={() => openTenantAdmin(tenant)}
-                        type="button"
-                      >
+                      <button className="rounded-2xl border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50" onClick={() => openTenantAdmin(tenant)} type="button">
                         Open Admin Panel
                       </button>
-                      {!isMonitoringMode ? <button
-                        className="inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-60"
-                        disabled={verifyingTenantId === tenant._id}
-                        onClick={() => handleVerifyTenant(tenant._id)}
-                        type="button"
-                      >
-                        {verifyingTenantId === tenant._id ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <CheckCircle2 className="h-4 w-4" />
-                        )}
+                      {!isMonitoringMode ? <button className="inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-60" disabled={verifyingTenantId === tenant._id} onClick={() => handleVerifyTenant(tenant._id)} type="button">
+                        {verifyingTenantId === tenant._id ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
                         Verify
                       </button> : null}
                     </div>
-                  </div>
-                ))
-              )}
+                  </div>)}
             </div>
           </section>
 
@@ -539,26 +384,17 @@ export function TenantManagement() {
             </div>
 
             <div className="mt-4 max-h-[32rem] space-y-3 overflow-y-auto overscroll-contain pr-1 lg:hidden">
-              {loading ? (
-                <div className="rounded-2xl border border-slate-200 px-4 py-6 text-sm text-slate-500">
+              {loading ? <div className="rounded-2xl border border-slate-200 px-4 py-6 text-sm text-slate-500">
                   Loading tenants...
-                </div>
-              ) : null}
-              {!loading
-                ? tenants.map((tenant) => (
-                    <div
-                      key={tenant._id}
-                      className="rounded-2xl border border-slate-200 px-4 py-4 text-left transition hover:border-slate-300 hover:bg-slate-50"
-                    >
+                </div> : null}
+              {!loading ? tenants.map(tenant => <div key={tenant._id} className="rounded-2xl border border-slate-200 px-4 py-4 text-left transition hover:border-slate-300 hover:bg-slate-50">
                       <div className="flex items-start justify-between gap-3">
                         <div>
                           <div className="font-semibold text-slate-900">
                             {tenant.name}
                           </div>
                           <div className="mt-1 text-sm text-slate-500">
-                            {tenant.contact?.email ||
-                              tenant.requestedAdmin?.email ||
-                              "No email"}
+                            {tenant.contact?.email || tenant.requestedAdmin?.email || "No email"}
                           </div>
                         </div>
                         <ExternalLink className="mt-1 h-4 w-4 text-slate-400" />
@@ -576,50 +412,24 @@ export function TenantManagement() {
                         <div className="rounded-xl bg-slate-50 px-3 py-2">
                           Status:{" "}
                           <span className="font-medium capitalize text-slate-900">
-                            {tenant.onboarding?.verificationStatus ||
-                              tenant.status}
+                            {tenant.onboarding?.verificationStatus || tenant.status}
                           </span>
                         </div>
                       </div>
                       <div className="mt-3 flex flex-wrap gap-2">
-                        <button
-                          type="button"
-                          onClick={() => openTenantAdmin(tenant)}
-                          className="inline-flex items-center gap-2 rounded-2xl border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-                        >
+                        <button type="button" onClick={() => openTenantAdmin(tenant)} className="inline-flex items-center gap-2 rounded-2xl border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
                           <ExternalLink className="h-4 w-4" />
                           Monitor
                         </button>
-                        {!isMonitoringMode && isTenantVerified(tenant) ? (
-                          <button
-                            type="button"
-                            onClick={() => handleTenantStatusChange(tenant)}
-                            disabled={updatingTenantId === tenant._id}
-                            className={`inline-flex items-center gap-2 rounded-2xl px-3 py-2 text-sm font-medium ${
-                              tenant.status === "active"
-                                ? "border border-rose-200 text-rose-700 hover:bg-rose-50"
-                                : "border border-emerald-200 text-emerald-700 hover:bg-emerald-50"
-                            }`}
-                          >
-                            {updatingTenantId === tenant._id ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <Power className="h-4 w-4" />
-                            )}
-                            {tenant.status === "active"
-                              ? "Deactivate Tenant"
-                              : "Activate Tenant"}
-                          </button>
-                        ) : null}
+                        {!isMonitoringMode && isTenantVerified(tenant) ? <button type="button" onClick={() => handleTenantStatusChange(tenant)} disabled={updatingTenantId === tenant._id} className={`inline-flex items-center gap-2 rounded-2xl px-3 py-2 text-sm font-medium ${tenant.status === "active" ? "border border-rose-200 text-rose-700 hover:bg-rose-50" : "border border-emerald-200 text-emerald-700 hover:bg-emerald-50"}`}>
+                            {updatingTenantId === tenant._id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Power className="h-4 w-4" />}
+                            {tenant.status === "active" ? "Deactivate Tenant" : "Activate Tenant"}
+                          </button> : null}
                       </div>
-                    </div>
-                  ))
-                : null}
-              {!loading && tenants.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-slate-200 px-4 py-6 text-sm text-slate-500">
+                    </div>) : null}
+              {!loading && tenants.length === 0 ? <div className="rounded-2xl border border-dashed border-slate-200 px-4 py-6 text-sm text-slate-500">
                   No tenants found.
-                </div>
-              ) : null}
+                </div> : null}
             </div>
 
             <div className="mt-4 hidden max-h-[32rem] overflow-auto lg:block">
@@ -634,28 +444,18 @@ export function TenantManagement() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {loading ? (
-                    <tr>
+                  {loading ? <tr>
                       <td className="py-6 text-slate-500" colSpan="5">
                         Loading tenants...
                       </td>
-                    </tr>
-                  ) : null}
-                  {!loading
-                    ? tenants.map((tenant) => (
-                        <tr
-                          key={tenant._id}
-                          className="cursor-pointer hover:bg-slate-50"
-                          onClick={() => openTenantAdmin(tenant)}
-                        >
+                    </tr> : null}
+                  {!loading ? tenants.map(tenant => <tr key={tenant._id} className="cursor-pointer hover:bg-slate-50" onClick={() => openTenantAdmin(tenant)}>
                           <td className="py-4 pr-4">
                             <div className="font-medium text-slate-900">
                               {tenant.name}
                             </div>
                             <div className="text-slate-500">
-                              {tenant.contact?.email ||
-                                tenant.requestedAdmin?.email ||
-                                "No email"}
+                              {tenant.contact?.email || tenant.requestedAdmin?.email || "No email"}
                             </div>
                           </td>
                           <td className="py-4 pr-4">
@@ -665,69 +465,41 @@ export function TenantManagement() {
                             {tenant.subscription?.plan || "starter"}
                           </td>
                           <td className="py-4 pr-4 capitalize">
-                            {tenant.onboarding?.verificationStatus ||
-                              tenant.status}
+                            {tenant.onboarding?.verificationStatus || tenant.status}
                           </td>
                           <td className="py-4 pr-4">
                             <div className="flex flex-wrap gap-2">
-                              <button
-                                className="inline-flex items-center gap-2 rounded-2xl border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-                                onClick={(event) => {
-                                  event.stopPropagation();
-                                  openTenantAdmin(tenant);
-                                }}
-                                type="button"
-                              >
+                              <button className="inline-flex items-center gap-2 rounded-2xl border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50" onClick={event => {
+                      event.stopPropagation();
+                      openTenantAdmin(tenant);
+                    }} type="button">
                                 <ExternalLink className="h-4 w-4" />
                                 Monitor
                               </button>
-                              {!isMonitoringMode && isTenantVerified(tenant) ? (
-                                <button
-                                  className={`inline-flex items-center gap-2 rounded-2xl px-3 py-2 text-sm font-medium ${
-                                    tenant.status === "active"
-                                      ? "border border-rose-200 text-rose-700 hover:bg-rose-50"
-                                      : "border border-emerald-200 text-emerald-700 hover:bg-emerald-50"
-                                  }`}
-                                  onClick={(event) => {
-                                    event.stopPropagation();
-                                    handleTenantStatusChange(tenant);
-                                  }}
-                                  disabled={updatingTenantId === tenant._id}
-                                  type="button"
-                                >
-                                  {updatingTenantId === tenant._id ? (
-                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                  ) : (
-                                    <Power className="h-4 w-4" />
-                                  )}
-                                  {tenant.status === "active"
-                                    ? "Deactivate"
-                                    : "Activate"}
-                                </button>
-                              ) : null}
+                              {!isMonitoringMode && isTenantVerified(tenant) ? <button className={`inline-flex items-center gap-2 rounded-2xl px-3 py-2 text-sm font-medium ${tenant.status === "active" ? "border border-rose-200 text-rose-700 hover:bg-rose-50" : "border border-emerald-200 text-emerald-700 hover:bg-emerald-50"}`} onClick={event => {
+                      event.stopPropagation();
+                      handleTenantStatusChange(tenant);
+                    }} disabled={updatingTenantId === tenant._id} type="button">
+                                  {updatingTenantId === tenant._id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Power className="h-4 w-4" />}
+                                  {tenant.status === "active" ? "Deactivate" : "Activate"}
+                                </button> : null}
                             </div>
                           </td>
-                        </tr>
-                      ))
-                    : null}
-                  {!loading && tenants.length === 0 ? (
-                    <tr>
+                        </tr>) : null}
+                  {!loading && tenants.length === 0 ? <tr>
                       <td className="py-6 text-slate-500" colSpan="5">
                         No tenants found.
                       </td>
-                    </tr>
-                  ) : null}
+                    </tr> : null}
                 </tbody>
               </table>
             </div>
           </section>
-        </div>
-      ) : (
-        <section className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+        </div> : <section className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h2 className="text-xl font-semibold text-slate-900">
-                Super Admin Access Requests
+                Admin Requests
               </h2>
               <p className="mt-1 text-sm text-slate-500">
                 Tenant admin messages, status tracking, and platform responses.
@@ -739,36 +511,20 @@ export function TenantManagement() {
           </div>
 
           <div className="mt-4 max-h-[44rem] space-y-4 overflow-y-auto overscroll-contain pr-1">
-            {supportRequests.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-slate-200 px-4 py-6 text-sm text-slate-500">
+            {supportRequests.length === 0 ? <div className="rounded-2xl border border-dashed border-slate-200 px-4 py-6 text-sm text-slate-500">
                 No support requests yet.
-              </div>
-            ) : (
-              supportRequests.map((request) => {
-                const responseDraft =
-                  responseDrafts[request._id] ?? request.responseMessage ?? "";
-                const responseChanged =
-                  String(responseDraft).trim() !==
-                  String(request.responseMessage || "").trim();
-                const isRequestLocked = isSupportRequestLocked(request.status);
-
-                return (
-                  <article
-                    key={request._id}
-                    className="rounded-2xl border border-slate-200 p-4"
-                  >
+              </div> : supportRequests.map(request => {
+          const responseDraft = responseDrafts[request._id] ?? request.responseMessage ?? "";
+          const responseChanged = String(responseDraft).trim() !== String(request.responseMessage || "").trim();
+          const isRequestLocked = isSupportRequestLocked(request.status);
+          return <article key={request._id} className="rounded-2xl border border-slate-200 p-4">
                     <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-2">
                           <h3 className="text-base font-semibold text-slate-900">
                             {request.subject}
                           </h3>
-                          <span
-                            className={`rounded-full px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.14em] ${
-                              requestStatusTone[request.status] ||
-                              requestStatusTone.open
-                            }`}
-                          >
+                          <span className={`rounded-full px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.14em] ${requestStatusTone[request.status] || requestStatusTone.open}`}>
                             {formatRequestStatus(request.status)}
                           </span>
                           <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">
@@ -788,15 +544,12 @@ export function TenantManagement() {
                           <ShieldAlert className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" />
                           <span>
                             Workspace route:{" "}
-                            {request.tenant?.slug
-                              ? `/${request.tenant.slug}/${request.tenant.key}`
-                              : "Unavailable"}
+                            {request.tenant?.slug ? `/${request.tenant.slug}/${request.tenant.key}` : "Unavailable"}
                             .
                           </span>
                         </div>
 
-                        {request.responseMessage ? (
-                          <div className="mt-4 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3">
+                        {request.responseMessage ? <div className="mt-4 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3">
                             <div className="text-xs font-semibold uppercase tracking-[0.18em] text-sky-700">
                               Latest Response
                             </div>
@@ -804,142 +557,51 @@ export function TenantManagement() {
                               {request.responseMessage}
                             </p>
                             <p className="mt-2 text-xs text-slate-500">
-                              {request.respondedBy?.name
-                                ? `By ${request.respondedBy.name}`
-                                : "By super admin"}
-                              {request.respondedAt
-                                ? ` on ${new Date(
-                                    request.respondedAt
-                                  ).toLocaleString()}`
-                                : ""}
+                              {request.respondedBy?.name ? `By ${request.respondedBy.name}` : "By super admin"}
+                              {request.respondedAt ? ` on ${new Date(request.respondedAt).toLocaleString()}` : ""}
                             </p>
-                          </div>
-                        ) : null}
+                          </div> : null}
                       </div>
 
                       <div className="w-full xl:w-[22rem]">
-                        {isRequestLocked || isMonitoringMode ? (
-                          <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-                            {isMonitoringMode
-                              ? "Monitoring mode is active. Response and status changes are disabled for Super Admin."
-                              : "This request is resolved and locked. Response and status changes are no longer available."}
-                          </div>
-                        ) : (
-                          <>
+                        {isRequestLocked || isMonitoringMode ? <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+                            {isMonitoringMode ? "Monitoring mode is active. Response and status changes are disabled for Super Admin." : "This request is resolved and locked. Response and status changes are no longer available."}
+                          </div> : <>
                             <label className="block text-sm font-semibold text-slate-800">
                               Super Admin Response
-                              <textarea
-                                className="mt-2 min-h-[148px] w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
-                                maxLength={2500}
-                                placeholder="Write a response back to the tenant admin."
-                                value={responseDraft}
-                                onChange={(event) =>
-                                  handleSupportDraftChange(
-                                    request._id,
-                                    event.target.value
-                                  )
-                                }
-                              />
+                              <textarea className="mt-2 min-h-[148px] w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100" maxLength={2500} placeholder="Write a response back to the tenant admin." value={responseDraft} onChange={event => handleSupportDraftChange(request._id, event.target.value)} />
                             </label>
 
                             <div className="mt-3 flex flex-wrap gap-2">
-                              {["open", "in_progress", "resolved"].map(
-                                (status) => (
-                                  <button
-                                    key={status}
-                                    type="button"
-                                    disabled={
-                                      updatingSupportId === request._id
-                                    }
-                                    onClick={() =>
-                                      handleSupportStatusChange(request, status)
-                                    }
-                                    className={`rounded-2xl border px-3 py-2 text-sm font-medium transition ${
-                                      request.status === status
-                                        ? "border-slate-900 bg-slate-900 text-white"
-                                        : "border-slate-200 text-slate-700 hover:bg-slate-50"
-                                    }`}
-                                  >
-                                    {status === "in_progress"
-                                      ? "In Progress"
-                                      : status === "resolved"
-                                        ? "Resolve"
-                                        : "Open"}
-                                  </button>
-                                )
-                              )}
+                              {["open", "in_progress", "resolved"].map(status => <button key={status} type="button" disabled={updatingSupportId === request._id} onClick={() => handleSupportStatusChange(request, status)} className={`rounded-2xl border px-3 py-2 text-sm font-medium transition ${request.status === status ? "border-slate-900 bg-slate-900 text-white" : "border-slate-200 text-slate-700 hover:bg-slate-50"}`}>
+                                    {status === "in_progress" ? "In Progress" : status === "resolved" ? "Resolve" : "Open"}
+                                  </button>)}
                             </div>
 
-                            <button
-                              type="button"
-                              disabled={
-                                updatingSupportId === request._id ||
-                                !responseChanged
-                              }
-                              onClick={() => handleSupportResponseSave(request)}
-                              className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-60"
-                            >
-                              {updatingSupportId === request._id ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : (
-                                <Send className="h-4 w-4" />
-                              )}
+                            <button type="button" disabled={updatingSupportId === request._id || !responseChanged} onClick={() => handleSupportResponseSave(request)} className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-60">
+                              {updatingSupportId === request._id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                               Save Response
                             </button>
-                          </>
-                        )}
+                          </>}
                       </div>
                     </div>
-                  </article>
-                );
-              })
-            )}
+                  </article>;
+        })}
           </div>
-        </section>
-      )}
+        </section>}
 
-      {!isMonitoringMode ? <AdminModal
-        isOpen={isCreateTenantModalOpen}
-        onClose={() => {
-          if (submitting) {
-            return;
-          }
-          setIsCreateTenantModalOpen(false);
-        }}
-        title="Register Tenant Workspace"
-        subtitle="Create a new restaurant workspace from the Super Admin panel."
-        maxWidth="max-w-3xl"
-        footer={
-          <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
-            <button
-              type="button"
-              onClick={() => setIsCreateTenantModalOpen(false)}
-              disabled={submitting}
-              className="rounded-2xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50"
-            >
+      {!isMonitoringMode ? <AdminModal isOpen={isCreateTenantModalOpen} onClose={closeTenantModal} title="Register Tenant Workspace" subtitle="Create a new restaurant workspace from the Super Admin panel." maxWidth="max-w-3xl" footer={<div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
+            <button type="button" onClick={() => closeTenantModal({
+        force: true
+      })} disabled={submitting} className="rounded-2xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50">
               Cancel
             </button>
-            <button
-              type="submit"
-              form="create-tenant-form"
-              disabled={submitting}
-              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-60"
-            >
-              {submitting ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <PlusCircle className="h-4 w-4" />
-              )}
+            <button type="submit" form="create-tenant-form" disabled={submitting} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-60">
+              {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <PlusCircle className="h-4 w-4" />}
               {submitting ? "Creating..." : "Create Tenant"}
             </button>
-          </div>
-        }
-      >
-        <form
-          id="create-tenant-form"
-          className="space-y-5 p-4 sm:p-5"
-          onSubmit={handleCreateTenant}
-        >
+          </div>}>
+        <form id="create-tenant-form" className="space-y-5 p-4 sm:p-5" onSubmit={handleSubmitTenant}>
           <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50/90 p-4">
             <p className="text-sm font-semibold text-slate-900">
               Workspace Route Preview
@@ -955,36 +617,19 @@ export function TenantManagement() {
           <div className="grid gap-4 sm:grid-cols-2">
             <label className="block text-sm font-semibold text-slate-800">
               Restaurant Name
-              <input
-                className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
-                placeholder="Example: Tableloom Restaurant"
-                value={form.restaurantName}
-                onChange={(event) =>
-                  handleChange("restaurantName", event.target.value)
-                }
-              />
+              <input className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100" placeholder="Example: Tableloom Restaurant" value={form.restaurantName} onChange={event => handleChange("restaurantName", event.target.value)} />
             </label>
 
             <label className="block text-sm font-semibold text-slate-800">
               Contact Phone Number
-              <input
-                className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
-                placeholder="Example: +91 98765 43210"
-                value={form.phone}
-                onChange={(event) => handleChange("phone", event.target.value)}
-              />
+              <input className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100" placeholder="Example: +91 98765 43210" value={form.phone} onChange={event => handleChange("phone", event.target.value)} />
             </label>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <label className="block text-sm font-semibold text-slate-800">
               Workspace Slug
-              <input
-                className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
-                placeholder="Example: tableloom-restaurant"
-                value={form.slug}
-                onChange={(event) => handleChange("slug", event.target.value)}
-              />
+              <input className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100" placeholder="Example: tableloom-restaurant" value={form.slug} onChange={event => handleChange("slug", event.target.value)} />
               <p className="mt-2 text-xs leading-5 text-slate-500">
                 Lowercase letters, numbers, and hyphens are allowed.
               </p>
@@ -992,49 +637,25 @@ export function TenantManagement() {
 
             <label className="block text-sm font-semibold text-slate-800">
               Workspace Key
-              <input
-                className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
-                placeholder="Example: main01"
-                value={form.key}
-                onChange={(event) => handleChange("key", event.target.value)}
-              />
+              <input className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100" placeholder="Example: main01" value={form.key} onChange={event => handleChange("key", event.target.value)} />
             </label>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <label className="block text-sm font-semibold text-slate-800">
               Admin Name
-              <input
-                className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
-                placeholder="Example: Ayesha Khan"
-                value={form.adminName}
-                onChange={(event) => handleChange("adminName", event.target.value)}
-              />
+              <input className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100" placeholder="Example: Ayesha Khan" value={form.adminName} onChange={event => handleChange("adminName", event.target.value)} />
             </label>
 
             <label className="block text-sm font-semibold text-slate-800">
               Admin Email
-              <input
-                className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
-                placeholder="Example: admin@yourrestaurant.com"
-                type="email"
-                value={form.adminEmail}
-                onChange={(event) =>
-                  handleChange("adminEmail", event.target.value)
-                }
-              />
+              <input className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100" placeholder="Example: admin@yourrestaurant.com" type="email" value={form.adminEmail} onChange={event => handleChange("adminEmail", event.target.value)} />
             </label>
           </div>
 
           <label className="block text-sm font-semibold text-slate-800">
             Subscription Plan
-            <select
-              className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
-              value={form.subscriptionPlan}
-              onChange={(event) =>
-                handleChange("subscriptionPlan", event.target.value)
-              }
-            >
+            <select className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100" value={form.subscriptionPlan} onChange={event => handleChange("subscriptionPlan", event.target.value)}>
               <option value="starter">Starter</option>
               <option value="growth">Growth</option>
               <option value="enterprise">Enterprise</option>
@@ -1042,6 +663,5 @@ export function TenantManagement() {
           </label>
         </form>
       </AdminModal> : null}
-    </div>
-  );
+    </div>;
 }

@@ -1,7 +1,6 @@
 import { axiosInstance } from "./api";
 import handleApiError from "../utils/handleApiError";
 import { createRequestCache } from "../utils/requestCache";
-
 const kitchenStationRequestCache = createRequestCache(5000);
 export const kitchenStationService = {
   getKitchenStations: async () => {

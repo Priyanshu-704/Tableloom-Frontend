@@ -4,12 +4,10 @@ import { useNavigate, useParams } from "react-router-dom";
 import { tenantService } from "../../common/services";
 import { buildPlatformAdminPath } from "../../common/utils/routes";
 import { useAdmin } from "../context/AdminContext";
-
 const renderRows = (items = [], columns = []) => {
   if (!items.length) {
     return <div className="rounded-2xl border border-dashed border-slate-200 px-4 py-5 text-sm text-slate-500">No data available.</div>;
   }
-
   return <>
       <div className="space-y-3 md:hidden">
         {items.map(item => <div key={item._id || item.id || JSON.stringify(item)} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
@@ -44,16 +42,18 @@ const renderRows = (items = [], columns = []) => {
       </div>
     </>;
 };
-
 export function TenantOverview() {
   const navigate = useNavigate();
-  const { tenantId } = useParams();
-  const { addNotification } = useAdmin();
+  const {
+    tenantId
+  } = useParams();
+  const {
+    addNotification
+  } = useAdmin();
   const [overview, setOverview] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [verifying, setVerifying] = useState(false);
-
   const loadOverview = async () => {
     setLoading(true);
     try {
@@ -67,11 +67,9 @@ export function TenantOverview() {
       setLoading(false);
     }
   };
-
   useEffect(() => {
     loadOverview();
   }, [tenantId]);
-
   const handleVerify = async () => {
     setVerifying(true);
     setError("");
@@ -87,20 +85,21 @@ export function TenantOverview() {
       setVerifying(false);
     }
   };
-
   if (loading) {
     return <div className="flex min-h-[60vh] items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-sky-600" />
       </div>;
   }
-
   if (!overview?.tenant) {
     return <div className="p-4 text-sm text-slate-600 sm:p-6">Tenant not found.</div>;
   }
-
-  const { tenant, summary, settings, workspace } = overview;
+  const {
+    tenant,
+    summary,
+    settings,
+    workspace
+  } = overview;
   const canVerify = tenant?.onboarding?.verificationStatus === "pending" || tenant?.status === "pending";
-
   return <div className="space-y-6 p-4 sm:p-6">
       <div className="flex flex-col gap-4 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm lg:flex-row lg:items-center lg:justify-between sm:p-6">
         <div>
@@ -122,16 +121,7 @@ export function TenantOverview() {
       {error ? <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div> : null}
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {[
-          ["Staff", summary?.staffCount],
-          ["Customers", summary?.customerCount],
-          ["Tables", summary?.tableCount],
-          ["Orders", summary?.orderCount],
-          ["Menu Items", summary?.menuItemCount],
-          ["Categories", summary?.categoryCount],
-          ["Inventory", summary?.inventoryCount],
-          ["Kitchen Stations", summary?.kitchenStationCount],
-        ].map(([label, value]) => <div key={label} className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+        {[["Staff", summary?.staffCount], ["Customers", summary?.customerCount], ["Tables", summary?.tableCount], ["Orders", summary?.orderCount], ["Menu Items", summary?.menuItemCount], ["Categories", summary?.categoryCount], ["Inventory", summary?.inventoryCount], ["Kitchen Stations", summary?.kitchenStationCount]].map(([label, value]) => <div key={label} className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
               <div className="text-sm font-medium text-slate-500">{label}</div>
               <div className="mt-3 text-3xl font-semibold text-slate-900">{value || 0}</div>
             </div>)}

@@ -130,6 +130,7 @@ export function OrderStatus({
   };
   const getEstimatedTime = () => {
     const fallbackPreparationTime = Number(order?.preparationTime || 0);
+    // eslint-disable-next-line react-hooks/purity
     const fallbackReadyAt = fallbackPreparationTime > 0 ? new Date(new Date(order?.createdAt || Date.now()).getTime() + fallbackPreparationTime * 60000) : null;
     const estimated = order.estimatedReadyTime ? new Date(order.estimatedReadyTime) : fallbackReadyAt;
     if (!estimated) return 0;
@@ -152,7 +153,7 @@ export function OrderStatus({
       reason: ""
     })} tableNumber={tableNumber} onCallWaiter={handleCallWaiter} initialReason={waiterModalState.reason} />
 
-      {}
+      
       <div className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
         <div className="max-w-2xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
@@ -175,7 +176,7 @@ export function OrderStatus({
       </div>
 
       <div className="max-w-2xl mx-auto p-4 space-y-6">
-        {}
+        
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <div className="flex justify-between items-start mb-4">
             <div>
@@ -197,7 +198,7 @@ export function OrderStatus({
             </div>
           </div>
 
-          {}
+          
           <div className="border-t border-gray-200 pt-4">
             <h3 className="font-medium text-gray-900 mb-2">Order Items:</h3>
             <div className="space-y-2">
@@ -223,7 +224,7 @@ export function OrderStatus({
             </div>}
         </div>
 
-        {}
+        
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-lg font-semibold text-gray-900">
@@ -240,15 +241,15 @@ export function OrderStatus({
             const isCompleted = index < currentStepIndex;
             const isCurrent = index === currentStepIndex;
             return <div key={step.key} className="flex items-start space-x-4 relative">
-                  {}
+                  
                   {index < STATUS_STEPS.length - 1 && <div className={`absolute left-7 w-0.5 h-12 -bottom-12 ${isCompleted ? "bg-primary-600" : "bg-gray-300"}`} />}
 
-                  {}
+                  
                   <div className={`relative z-10 flex-shrink-0 w-14 h-14 rounded-full flex items-center justify-center ${isCompleted ? "bg-primary-600 text-white" : isCurrent ? "bg-primary-100 text-primary-600 border-2 border-primary-600" : "bg-gray-100 text-gray-400"}`}>
                     <StepIcon className="h-6 w-6" />
                   </div>
 
-                  {}
+                  
                   <div className="flex-1 pt-1">
                     <h3 className={`font-medium ${isCompleted || isCurrent ? "text-gray-900" : "text-gray-500"}`}>
                       {step.label}
@@ -270,7 +271,7 @@ export function OrderStatus({
           </div>
         </div>
 
-        {}
+        
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <h3 className="font-semibold text-gray-900 mb-4">Time Tracking</h3>
           <div className="grid grid-cols-2 gap-4 text-center">
@@ -308,7 +309,7 @@ export function OrderStatus({
           </div>
         </div>
 
-        {}
+        
         {order.status === ORDER_STATUS.SERVED && <div className="bg-green-50  rounded-lg border border-green-200 p-6 text-center">
             <CheckCircle2 className="h-12 w-12 text-green-600 mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-green-900 mb-2">

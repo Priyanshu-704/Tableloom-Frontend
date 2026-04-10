@@ -3,17 +3,9 @@ import axios from "axios";
 import { axiosInstance, getTenantHeaders } from "./api";
 import handleApiError from "../utils/handleApiError";
 import pushNotificationService from "./pushNotificationService";
-import {
-  clearStoredTenantId,
-  syncStoredTenantId,
-} from "../utils/tenantStorage.js";
+import { clearStoredTenantId, syncStoredTenantId } from "../utils/tenantStorage.js";
 import { createRequestCache } from "../utils/requestCache";
-import {
-  buildAdminPath,
-  buildPlatformAdminPath,
-  buildSuperAdminPath,
-  isSuperAdminPath,
-} from "../utils/routes.js";
+import { buildAdminPath, buildPlatformAdminPath, buildSuperAdminPath, isSuperAdminPath } from "../utils/routes.js";
 import toServiceResponse from "./serviceResponse";
 const apiBaseUrl = import.meta.env.VITE_APP_API_URL;
 const authRequestCache = createRequestCache(5000);
@@ -24,7 +16,7 @@ const externalRequest = async (method, path, data, config = {}) => {
     data,
     headers: {
       ...(config.headers || {}),
-      ...getTenantHeaders(),
+      ...getTenantHeaders()
     },
     withCredentials: true,
     ...config
@@ -100,11 +92,7 @@ export const userService = {
     } finally {
       clearLocalAuth();
       pushNotificationService.clearAllStoredTokens();
-      window.location.href = getCurrentUser()?.role === "super_admin"
-        ? buildPlatformAdminPath("/login")
-        : isSuperAdminPath(window.location.pathname)
-        ? buildSuperAdminPath("/login")
-        : buildAdminPath("/login");
+      window.location.href = getCurrentUser()?.role === "super_admin" ? buildPlatformAdminPath("/login") : isSuperAdminPath(window.location.pathname) ? buildSuperAdminPath("/login") : buildAdminPath("/login");
     }
   },
   getProfile: async () => {

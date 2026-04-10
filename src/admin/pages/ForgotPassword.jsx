@@ -57,12 +57,12 @@ export function ForgotPassword() {
     setError("");
   };
   return <AdminAuthShell settings={settings} eyebrow={success ? "Email Sent" : "Password Reset"} title={success ? "Check your inbox" : "Reset your password"} description={success ? "A reset link has been generated for your account. You can head back to login after opening the email." : "Enter the email address linked to your staff account and we’ll send you a secure password reset link."} mobileAuthMode="formOnly" sideTitle="Recovery should feel reassuring, not confusing." sideDescription="These screens guide staff back into the system quickly while keeping password recovery clear and secure." highlights={[{
-      title: "Secure links",
-      description: "Reset links are short-lived so temporary emails do not stay valid for long."
-    }, {
-      title: "Fast recovery",
-      description: "Staff can return to service without needing manual admin intervention."
-    }]}>
+    title: "Secure links",
+    description: "Reset links are short-lived so temporary emails do not stay valid for long."
+  }, {
+    title: "Fast recovery",
+    description: "Staff can return to service without needing manual admin intervention."
+  }]}>
         {success ? <div className="text-center space-y-6">
               <div className="flex justify-center">
                 <div className="flex h-20 w-20 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
@@ -75,7 +75,7 @@ export function ForgotPassword() {
                   Email Sent Successfully!
                 </h3>
 
-                {}
+                
                 <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl mb-4">
                   {successMessage}
                 </div>
@@ -116,9 +116,9 @@ export function ForgotPassword() {
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
                   <input type="email" value={email} onChange={e => {
-                setEmail(e.target.value);
-                setError("");
-              }} className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-xl bg-white text-slate-900 shadow-sm outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100" placeholder="Enter your registered email" required disabled={isLoading} />
+            setEmail(e.target.value);
+            setError("");
+          }} className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-xl bg-white text-slate-900 shadow-sm outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100" placeholder="Enter your registered email" required disabled={isLoading} />
                 </div>
                 <p className="text-sm text-gray-500 mt-2">
                   We'll send a reset link to this email

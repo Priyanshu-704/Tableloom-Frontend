@@ -343,10 +343,10 @@ export function PriceHistory() {
                         </span>
                         <span className="mt-1 block font-semibold text-gray-900">
                           {isInitial ? "-" : new Intl.NumberFormat("en-IN", {
-                        style: "currency",
-                        currency,
-                        maximumFractionDigits: 2
-                      }).format(Number(change.oldPrice || 0))}
+                      style: "currency",
+                      currency,
+                      maximumFractionDigits: 2
+                    }).format(Number(change.oldPrice || 0))}
                         </span>
                       </div>
                       <div className="rounded-xl bg-gray-50 px-3 py-3">
@@ -355,10 +355,10 @@ export function PriceHistory() {
                         </span>
                         <span className="mt-1 block font-semibold text-gray-900">
                           {new Intl.NumberFormat("en-IN", {
-                        style: "currency",
-                        currency,
-                        maximumFractionDigits: 2
-                      }).format(Number(change.newPrice || 0))}
+                      style: "currency",
+                      currency,
+                      maximumFractionDigits: 2
+                    }).format(Number(change.newPrice || 0))}
                         </span>
                       </div>
                       <div className="rounded-xl bg-gray-50 px-3 py-3">
@@ -368,10 +368,10 @@ export function PriceHistory() {
                         <span className="mt-1 inline-flex items-center gap-1 font-semibold text-gray-900">
                           <IndianRupee className="h-4 w-4 text-primary-600" />
                           {isInitial ? new Intl.NumberFormat("en-IN", {
-                        style: "currency",
-                        currency,
-                        maximumFractionDigits: 2
-                      }).format(Number(change.newPrice || 0)) : formatSignedCurrency(amountDelta, currency)}
+                      style: "currency",
+                      currency,
+                      maximumFractionDigits: 2
+                    }).format(Number(change.newPrice || 0)) : formatSignedCurrency(amountDelta, currency)}
                         </span>
                       </div>
                     </div>

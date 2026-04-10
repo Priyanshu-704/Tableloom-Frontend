@@ -9,10 +9,8 @@ import { AdminCardGridSkeleton } from "../components/common/AdminSkeleton";
 import { QrManagementOverlay } from "../components/tables/QrManagementOverlay";
 import { AdminModal } from "../components/common/AdminModal";
 import { withTenantQueryParams } from "../../common/utils/qrImage";
-import { MonitoringBanner } from "../components/common/MonitoringBanner";
 import { useMonitoringMode } from "../hooks/useMonitoringMode";
-
-const mapTableToQrRow = (table) => ({
+const mapTableToQrRow = table => ({
   id: table._id || table.id,
   number: table.tableNumber || table.number,
   tableName: table.tableName || "",
@@ -22,22 +20,17 @@ const mapTableToQrRow = (table) => ({
   qrUrl: table.qrUrl,
   tokenExpiry: table.tokenExpiry,
   tokenDaysRemaining: table.tokenDaysRemaining,
-  tokenExpired: table.tokenExpired,
+  tokenExpired: table.tokenExpired
 });
-
-const getTableRows = (response) => {
-  const source = Array.isArray(response?.data)
-    ? response.data
-    : Array.isArray(response?.data?.data)
-      ? response.data.data
-      : [];
-
+const getTableRows = response => {
+  const source = Array.isArray(response?.data) ? response.data : Array.isArray(response?.data?.data) ? response.data.data : [];
   return source.map(mapTableToQrRow);
 };
-
 export function TableQrManagement() {
   const isMonitoringMode = useMonitoringMode();
-  const { addNotification } = useAdmin();
+  const {
+    addNotification
+  } = useAdmin();
   const [tables, setTables] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -62,23 +55,12 @@ export function TableQrManagement() {
     if (!keyword) {
       return tables;
     }
-    return tables.filter((table) => {
-      return (
-        String(table.number || "")
-          .toLowerCase()
-          .includes(keyword) ||
-        String(table.tableName || "")
-          .toLowerCase()
-          .includes(keyword) ||
-        String(table.location || "")
-          .toLowerCase()
-          .includes(keyword)
-      );
+    return tables.filter(table => {
+      return String(table.number || "").toLowerCase().includes(keyword) || String(table.tableName || "").toLowerCase().includes(keyword) || String(table.location || "").toLowerCase().includes(keyword);
     });
   }, [search, tables]);
-  return (
-    <div className="space-y-5 p-4 sm:p-6">
-      {isMonitoringMode ? <MonitoringBanner message="QR codes and table links remain visible for monitoring, but regenerate, manage, and batch QR operations are disabled for Super Admin." /> : null}
+  return <div className="space-y-5 p-4 sm:p-6">
+      
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">QR Update</h1>
@@ -86,12 +68,7 @@ export function TableQrManagement() {
             Regenerate, print, refresh, and batch-manage table QR codes.
           </p>
         </div>
-        {!isMonitoringMode ? <Button
-          type="button"
-          variant="outline"
-          onClick={() => setShowBatch(true)}
-          className="w-full sm:w-auto"
-        >
+        {!isMonitoringMode ? <Button type="button" variant="outline" onClick={() => setShowBatch(true)} className="w-full sm:w-auto">
           <Layers className="h-4 w-4" />
           Batch QR Operations
         </Button> : null}
@@ -100,24 +77,12 @@ export function TableQrManagement() {
       <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
         <div className="relative w-full max-w-md">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-          <Input
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search table number, name, or location"
-            className="h-11 pl-10"
-          />
+          <Input value={search} onChange={event => setSearch(event.target.value)} placeholder="Search table number, name, or location" className="h-11 pl-10" />
         </div>
       </div>
 
-      {loading ? (
-        <AdminCardGridSkeleton count={6} cardHeight="h-48" />
-      ) : (
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {filteredTables.map((table) => (
-            <div
-              key={table.id}
-              className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm"
-            >
+      {loading ? <AdminCardGridSkeleton count={6} cardHeight="h-48" /> : <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {filteredTables.map(table => <div key={table.id} className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <h2 className="text-lg font-semibold text-gray-900">
@@ -136,9 +101,7 @@ export function TableQrManagement() {
               <div className="mt-4 grid gap-2 sm:grid-cols-2">
                 <div className="rounded-xl bg-gray-50 px-4 py-3 text-sm text-gray-600">
                   Token expiry:{" "}
-                  {table.tokenExpiry
-                    ? new Date(table.tokenExpiry).toLocaleDateString()
-                    : "Not available"}
+                  {table.tokenExpiry ? new Date(table.tokenExpiry).toLocaleDateString() : "Not available"}
                 </div>
                 <div className="rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-600">
                   Route:{" "}
@@ -147,53 +110,27 @@ export function TableQrManagement() {
               </div>
 
               {!isMonitoringMode ? <div className="mt-4 flex justify-end">
-                <Button
-                  type="button"
-                  onClick={() => setSelectedTable(table)}
-                  className="w-full sm:w-auto"
-                >
+                <Button type="button" onClick={() => setSelectedTable(table)} className="w-full sm:w-auto">
                   <QrCode className="h-4 w-4" />
                   Manage QR
                 </Button>
               </div> : null}
-            </div>
-          ))}
-        </div>
-      )}
+            </div>)}
+        </div>}
 
-      {!isMonitoringMode && selectedTable ? (
-        <QrManagementOverlay
-          table={selectedTable}
-          onClose={() => setSelectedTable(null)}
-          onSuccess={(message) => {
-            addNotification(message, "success");
-            setSelectedTable(null);
-            tableService
-              .getTables()
-              .then((response) => {
-                setTables(getTableRows(response));
-              })
-              .catch(() => {});
-          }}
-        />
-      ) : null}
+      {!isMonitoringMode && selectedTable ? <QrManagementOverlay table={selectedTable} onClose={() => setSelectedTable(null)} onSuccess={message => {
+      addNotification(message, "success");
+      setSelectedTable(null);
+      tableService.getTables().then(response => {
+        setTables(getTableRows(response));
+      }).catch(() => {});
+    }} /> : null}
 
-      {!isMonitoringMode ? <AdminModal
-        isOpen={showBatch}
-        title="Batch QR Operations"
-        subtitle="Perform operations on multiple QR codes."
-        onClose={() => setShowBatch(false)}
-        maxWidth="max-w-2xl"
-      >
-        <QRBatchOperations
-          tables={tables}
-          onClose={() => setShowBatch(false)}
-          onSuccess={(message) => {
-            addNotification(message, "success");
-            setShowBatch(false);
-          }}
-        />
+      {!isMonitoringMode ? <AdminModal isOpen={showBatch} title="Batch QR Operations" subtitle="Perform operations on multiple QR codes." onClose={() => setShowBatch(false)} maxWidth="max-w-2xl">
+        <QRBatchOperations tables={tables} onClose={() => setShowBatch(false)} onSuccess={message => {
+        addNotification(message, "success");
+        setShowBatch(false);
+      }} />
       </AdminModal> : null}
-    </div>
-  );
+    </div>;
 }

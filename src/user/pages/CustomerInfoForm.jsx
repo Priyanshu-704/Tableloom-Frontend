@@ -399,7 +399,7 @@ export function CustomerInfoForm() {
                 </p>}
             </div>
 
-            {}
+            
             <div className="transform transition-all duration-200 hover:translate-x-1">
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Email <span className="text-red-500">*</span>
@@ -414,7 +414,7 @@ export function CustomerInfoForm() {
                 </p>}
             </div>
 
-            {}
+            
             <div className="transform transition-all duration-200 hover:translate-x-1">
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Mobile Number <span className="text-red-500">*</span>
@@ -429,7 +429,7 @@ export function CustomerInfoForm() {
                 </p>}
             </div>
 
-            {}
+            
             <button type="submit" disabled={isSubmitting || !isFormValid() || isQrValidating || !qrStatus.valid} className={`mt-4 w-full rounded-2xl bg-slate-900 px-5 py-3.5 text-sm font-semibold text-white shadow-lg transition-all duration-300 hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-slate-300 ${isSubmitting ? "animate-pulse" : ""}`}>
               <span className="flex items-center justify-center">
                 {isSubmitting ? <>

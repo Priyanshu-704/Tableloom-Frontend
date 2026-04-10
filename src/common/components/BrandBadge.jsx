@@ -1,17 +1,14 @@
 import React, { useMemo, useState } from "react";
-
 const sizeClasses = {
   sm: "h-9 w-9",
   md: "h-11 w-11",
   lg: "h-16 w-16"
 };
-
 const fallbackTextSizes = {
   sm: "text-xs",
   md: "text-sm",
   lg: "text-lg"
 };
-
 export function BrandBadge({
   logoSrc = "/tableloom-mark.svg",
   name = "Tableloom",
@@ -32,5 +29,4 @@ export function BrandBadge({
         </span> : null}
     </div>;
 }
-
 export default BrandBadge;

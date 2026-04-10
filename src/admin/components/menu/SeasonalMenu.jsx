@@ -9,7 +9,6 @@ import { AdminPageSkeleton } from "../common/AdminSkeleton";
 import { AdminModal } from "../common/AdminModal";
 import { buildAdminPath } from "../../../common/utils/routes";
 import { useSettings } from "../../../common/context/SettingsContext";
-import { MonitoringBanner } from "../common/MonitoringBanner";
 import { useMonitoringMode } from "../../hooks/useMonitoringMode";
 const FILTER_OPTIONS = [{
   value: "all",
@@ -230,7 +229,7 @@ export function SeasonalMenu() {
     return <AdminPageSkeleton stats={4} filters={2} cards={6} cardHeight="h-48" />;
   }
   return <div className="space-y-6 p-6">
-      {isMonitoringMode ? <MonitoringBanner message="Seasonal items remain visible for monitoring, but seasonal tagging, editing, and item creation are disabled for Super Admin." /> : null}
+      
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Seasonal Menu</h1>

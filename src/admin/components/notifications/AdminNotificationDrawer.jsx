@@ -266,13 +266,13 @@ export function AdminNotificationDrawer() {
                 </div>
                 <div className="grid grid-cols-1 gap-3">
                   <Input value={filters.search} onChange={event => setFilters(current => ({
-                    ...current,
-                    search: event.target.value
-                  }))} placeholder="Search notifications" />
+                  ...current,
+                  search: event.target.value
+                }))} placeholder="Search notifications" />
                   <Select value={filters.status} onValueChange={value => setFilters(current => ({
-                    ...current,
-                    status: value
-                  }))}>
+                  ...current,
+                  status: value
+                }))}>
                     <SelectTrigger className="cursor-pointer">
                       <SelectValue placeholder="Select status" />
                     </SelectTrigger>
@@ -283,9 +283,9 @@ export function AdminNotificationDrawer() {
                     </SelectContent>
                   </Select>
                   <Select value={filters.type} onValueChange={value => setFilters(current => ({
-                    ...current,
-                    type: value
-                  }))}>
+                  ...current,
+                  type: value
+                }))}>
                     <SelectTrigger className="cursor-pointer">
                       <SelectValue placeholder="Select type" />
                     </SelectTrigger>
@@ -296,9 +296,9 @@ export function AdminNotificationDrawer() {
                     </SelectContent>
                   </Select>
                   <Select value={filters.priority} onValueChange={value => setFilters(current => ({
-                    ...current,
-                    priority: value
-                  }))}>
+                  ...current,
+                  priority: value
+                }))}>
                     <SelectTrigger className="cursor-pointer">
                       <SelectValue placeholder="Select priority" />
                     </SelectTrigger>
@@ -310,16 +310,16 @@ export function AdminNotificationDrawer() {
                   </Select>
                   <label className="inline-flex items-center gap-2 rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700">
                     <Checkbox checked={filters.unreadOnly} onCheckedChange={checked => setFilters(current => ({
-                      ...current,
-                      unreadOnly: Boolean(checked)
-                    }))} />
+                    ...current,
+                    unreadOnly: Boolean(checked)
+                  }))} />
                     Unread only
                   </label>
                   <label className="inline-flex items-center gap-2 rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700">
                     <Checkbox checked={filters.actionRequired} onCheckedChange={checked => setFilters(current => ({
-                      ...current,
-                      actionRequired: Boolean(checked)
-                    }))} />
+                    ...current,
+                    actionRequired: Boolean(checked)
+                  }))} />
                     Action required
                   </label>
                   <Button type="button" onClick={resetFilters} variant="subtle" className="justify-start rounded-xl">

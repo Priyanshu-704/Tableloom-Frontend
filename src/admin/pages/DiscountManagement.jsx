@@ -4,7 +4,6 @@ import { ChevronDown, Percent, Plus, RefreshCw } from "lucide-react";
 import { menuService } from "../../common/services";
 import { useAdmin } from "../context/AdminContext";
 import { AdminModal } from "../components/common/AdminModal";
-import { MonitoringBanner } from "../components/common/MonitoringBanner";
 import { useMonitoringMode } from "../hooks/useMonitoringMode";
 const initialForm = {
   code: "",
@@ -126,7 +125,7 @@ export function DiscountManagement() {
       </button>
     </div>;
   return <div className="space-y-6 p-4 sm:p-6">
-      {isMonitoringMode ? <MonitoringBanner message="Discounts remain visible for monitoring, but coupon creation, edits, and status changes are disabled for Super Admin." /> : null}
+      
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Discount Management</h1>

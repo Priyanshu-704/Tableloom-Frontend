@@ -1,7 +1,6 @@
 import { axiosInstance } from "./api";
 import handleApiError from "../utils/handleApiError";
 import { createRequestCache } from "../utils/requestCache";
-
 const sessionRequestCache = createRequestCache(15000);
 const sanitizeNumber = (value, fallback = 0) => {
   const nextValue = Number(value);

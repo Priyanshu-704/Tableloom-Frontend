@@ -39,27 +39,27 @@ const transformMenuItem = item => {
     };
   }).filter(size => size.id && size.price > 0) || [];
   return {
-  id: item._id,
-  name: item.name,
-  description: item.description,
-  image: item.image,
-  thumbnail: item.thumbnail || item.image,
-  category: item.category?.name || "Uncategorized",
-  categoryId: item.category?._id || null,
-  price: sizes[0]?.price || getDiscountedPrice(item.prices?.[0]?.price || 0, discount),
-  prices: item.prices || [],
-  sizes,
-  activeDiscount: discount || null,
-  isAvailable: item.isAvailable,
-  isActive: item.isActive,
-  isVegetarian: item.isVegetarian,
-  isVegan: item.isVegan,
-  isNonVegetarian: item.isNonVegetarian,
-  isGlutenFree: item.isGlutenFree,
-  spiceLevel: item.spiceLevel || 0,
-  orderCount: item.orderCount || 0,
-  preparationTime: item.preparationTime,
-  tags: item.tags || []
+    id: item._id,
+    name: item.name,
+    description: item.description,
+    image: item.image,
+    thumbnail: item.thumbnail || item.image,
+    category: item.category?.name || "Uncategorized",
+    categoryId: item.category?._id || null,
+    price: sizes[0]?.price || getDiscountedPrice(item.prices?.[0]?.price || 0, discount),
+    prices: item.prices || [],
+    sizes,
+    activeDiscount: discount || null,
+    isAvailable: item.isAvailable,
+    isActive: item.isActive,
+    isVegetarian: item.isVegetarian,
+    isVegan: item.isVegan,
+    isNonVegetarian: item.isNonVegetarian,
+    isGlutenFree: item.isGlutenFree,
+    spiceLevel: item.spiceLevel || 0,
+    orderCount: item.orderCount || 0,
+    preparationTime: item.preparationTime,
+    tags: item.tags || []
   };
 };
 export function Menu() {
@@ -208,25 +208,21 @@ export function Menu() {
         });
       }
     });
-
     const knownCategories = Array.isArray(categories) ? categories.filter(category => {
       if (!category?.isActive) {
         return false;
       }
       return derivedCategories.has(category._id) || derivedCategories.has(category.name);
     }) : [];
-
     if (!knownCategories.length) {
       return Array.from(derivedCategories.values()).sort((a, b) => a.name.localeCompare(b.name));
     }
-
     derivedCategories.forEach((value, key) => {
       const exists = knownCategories.some(category => category._id === key || category.name === value.name);
       if (!exists) {
         knownCategories.push(value);
       }
     });
-
     return knownCategories.sort((a, b) => {
       const orderA = Number.isFinite(a.displayOrder) ? a.displayOrder : Number.MAX_SAFE_INTEGER;
       const orderB = Number.isFinite(b.displayOrder) ? b.displayOrder : Number.MAX_SAFE_INTEGER;

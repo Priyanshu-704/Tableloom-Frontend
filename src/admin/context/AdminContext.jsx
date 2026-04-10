@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/globals */
 import { logger } from "../../common/utils/logger.js";
 import React, { createContext, useCallback, useContext, useMemo, useReducer, useEffect, useRef, useState } from "react";
 import { userService } from "../../common/services";
@@ -7,7 +8,9 @@ import { getApiMessage } from "../../common/utils/handleApiError";
 import { ConfirmationDialog } from "../components/common/ConfirmationDialog";
 import { ToastContainer } from "../../user/components/common/Toast";
 const noop = () => {};
-const noopAsync = async () => ({ success: false });
+const noopAsync = async () => ({
+  success: false
+});
 const noopConfirm = async () => false;
 let hasWarnedMissingAdminProvider = false;
 const initialState = {
@@ -202,10 +205,7 @@ export function AdminProvider({
     });
   }, []);
   const addNotification = useCallback((message, type = "info", fallbackMessage = "") => {
-    const resolvedMessage = getApiMessage(
-      message,
-      fallbackMessage || (type === "success" ? "Action completed successfully" : "Something went wrong"),
-    );
+    const resolvedMessage = getApiMessage(message, fallbackMessage || (type === "success" ? "Action completed successfully" : "Something went wrong"));
     const notification = {
       id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       message: resolvedMessage,

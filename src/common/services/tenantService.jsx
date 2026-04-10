@@ -2,9 +2,7 @@ import { axiosInstance } from "./api";
 import axios from "axios";
 import handleApiError from "../utils/handleApiError";
 import toServiceResponse from "./serviceResponse";
-
 const apiBaseUrl = import.meta.env.VITE_APP_API_URL;
-
 export const tenantService = {
   getTenants: async () => {
     try {
@@ -71,5 +69,4 @@ export const tenantService = {
     }
   }
 };
-
 export default tenantService;

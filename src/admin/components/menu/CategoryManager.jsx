@@ -9,12 +9,7 @@ import { useAdmin } from "../../context/AdminContext";
 import { AdminPageSkeleton } from "../common/AdminSkeleton";
 import { buildAdminPath } from "../../../common/utils/routes";
 import { useMonitoringMode } from "../../hooks/useMonitoringMode";
-import { MonitoringBanner } from "../common/MonitoringBanner";
-import {
-  createImagePreview,
-  revokeImagePreview,
-  validateImageFile
-} from "../../../common/utils/imageUpload";
+import { createImagePreview, revokeImagePreview, validateImageFile } from "../../../common/utils/imageUpload";
 const initialFormData = {
   name: "",
   description: "",
@@ -111,7 +106,7 @@ export function CategoryManager({
     }
     setEditingCategory(null);
     setFormData({
-      ...initialFormData,
+      ...initialFormData
     });
     setImageFile(null);
     updateImagePreview("");
@@ -247,7 +242,7 @@ export function CategoryManager({
         </div>
       </div>
 
-      {isMonitoringMode && <MonitoringBanner message="Categories are visible in monitoring mode, but create, edit, delete, and activate/deactivate actions are disabled." />}
+      
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-white rounded-lg border border-gray-200 p-4">
         <select value={statusFilter} onChange={event => setStatusFilter(event.target.value)} className="rounded-lg border border-gray-300 px-3 py-2">

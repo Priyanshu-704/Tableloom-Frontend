@@ -41,19 +41,19 @@ function CustomerLayout() {
     notify(response?.message || "Failed to call waiter. Please try again.", "error");
   };
   return <div className="customer-scope min-h-screen bg-[linear-gradient(180deg,#ecfeff_0%,#f8fafc_22%,#ffffff_100%)]">
-      {}
+      
       <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
 
-      {}
+      
       <WaiterModal isOpen={showWaiterModal} onClose={() => setShowWaiterModal(false)} tableNumber={tableNumber} onCallWaiter={handleCallWaiter} />
 
-      {}
+      
       {!hideHeader && <Header />}
 
-      {}
+      
       <Outlet />
 
-      {}
+      
       {!hideFooter && <div className="fixed bottom-0 left-0 z-40 w-full border-t border-sky-100 bg-white/92 px-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-3 shadow-[0_-12px_30px_rgba(8,47,73,0.08)] backdrop-blur">
           <div className="mx-auto grid max-w-4xl grid-cols-2 gap-3 sm:gap-4">
           <button onClick={() => handleCallWaiter(tableNumber, "quick_assist")} disabled={isCalling || Boolean(activeCall)} className="flex min-h-[3.25rem] min-w-0 items-center justify-center rounded-xl bg-primary-600 px-4 py-3 text-center text-white shadow-md transition-colors hover:bg-primary-700 disabled:bg-gray-400">

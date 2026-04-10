@@ -1,15 +1,14 @@
 import { axiosInstance } from "./api";
 import handleApiError from "../utils/handleApiError";
 import toServiceResponse from "./serviceResponse";
-
 export const supportService = {
   getSupportRequests: async (params = {}) => {
     try {
       const response = await axiosInstance.get("/support", {
-        params,
+        params
       });
       return toServiceResponse(response, {
-        data: [],
+        data: []
       });
     } catch (error) {
       handleApiError(error, "Failed to fetch support requests");
@@ -19,7 +18,7 @@ export const supportService = {
     try {
       const response = await axiosInstance.post("/support", payload);
       return toServiceResponse(response, {
-        data: null,
+        data: null
       });
     } catch (error) {
       handleApiError(error, "Failed to send support request");
@@ -29,12 +28,11 @@ export const supportService = {
     try {
       const response = await axiosInstance.patch(`/support/${requestId}/status`, payload);
       return toServiceResponse(response, {
-        data: null,
+        data: null
       });
     } catch (error) {
       handleApiError(error, "Failed to update support request");
     }
-  },
+  }
 };
-
 export default supportService;

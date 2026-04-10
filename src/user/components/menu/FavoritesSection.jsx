@@ -10,7 +10,7 @@ export function FavoritesSection({
     return null;
   }
   return <div className="space-y-6 mb-8">
-      {}
+      
       {favoriteItems.length > 0 && <div>
           <div className="flex items-center space-x-2 mb-4">
             <Heart className="h-5 w-5 text-red-500" />
@@ -21,7 +21,7 @@ export function FavoritesSection({
           </div>
         </div>}
 
-      {}
+      
       {recentItems.length > 0 && <div>
           <div className="flex items-center space-x-2 mb-4">
             <Clock className="h-5 w-5 text-primary-600" />

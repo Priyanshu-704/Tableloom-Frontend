@@ -1,7 +1,7 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 import React, { useEffect, useState } from "react";
 import { Sparkles } from "lucide-react";
 import { BrandBadge } from "../../../common/components/BrandBadge";
-
 export function AdminAuthShell({
   settings,
   eyebrow,
@@ -30,11 +30,9 @@ export function AdminAuthShell({
   const cardWrapClassName = lockViewport ? "order-1 mx-auto min-h-0 w-full max-w-xl lg:order-2 lg:max-w-none lg:justify-self-end lg:self-start" : "order-1 mx-auto w-full max-w-xl lg:order-2 lg:max-w-none lg:justify-self-end lg:self-start";
   const cardClassName = lockViewport ? "flex min-h-0 flex-col rounded-[2rem] border border-white/10 bg-white/95 p-6 shadow-2xl shadow-slate-950/30 backdrop-blur sm:p-8 lg:max-h-[calc(100vh-6rem)] lg:p-10" : "rounded-[2rem] border border-white/10 bg-white/95 p-6 shadow-2xl shadow-slate-950/30 backdrop-blur sm:p-8 lg:p-10";
   const contentClassName = contentScrollable ? "min-h-0 flex-1 overflow-visible lg:overflow-y-auto lg:pr-1" : "";
-
   useEffect(() => {
     setShowMobileForm(mobileAuthMode !== "preview");
   }, [mobileAuthMode, title]);
-
   return <div className={shellClassName}>
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(14,165,233,0.22),_transparent_35%),radial-gradient(circle_at_bottom_right,_rgba(34,211,238,0.18),_transparent_32%),linear-gradient(160deg,_#020617_0%,_#0f172a_45%,_#082f49_100%)]" />
       <div className="absolute left-[-8rem] top-16 h-64 w-64 rounded-full bg-sky-500/20 blur-3xl" />
@@ -97,5 +95,4 @@ export function AdminAuthShell({
       </div>
     </div>;
 }
-
 export default AdminAuthShell;

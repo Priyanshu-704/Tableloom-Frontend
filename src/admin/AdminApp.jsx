@@ -1,7 +1,7 @@
 import React, { lazy, Suspense, useEffect, useState } from "react";
-import { Navigate, Outlet, Route, Routes } from "react-router-dom";
+import { Navigate, Outlet, Route, Routes, useLocation } from "react-router-dom";
 import { useAuth } from "../common/context/AuthContext";
-import { buildAdminPath, resolveAdminHomePath } from "../common/utils/routes";
+import { buildAdminPath, buildPlatformAdminPath, isSuperAdminMonitoringPath, resolveAdminHomePath } from "../common/utils/routes";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { AdminHeader } from "./components/layout/AdminHeader";
 import { Sidebar } from "./components/layout/Sidebar";
@@ -143,7 +143,10 @@ const LoadingScreen = () => <div className="min-h-screen bg-gray-50 p-6">
     </div>
   </div>;
 function AdminLayout() {
-  const { user } = useAuth();
+  const {
+    user
+  } = useAuth();
+  const location = useLocation();
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isDesktopSidebarCollapsed, setIsDesktopSidebarCollapsed] = useState(() => {
     if (typeof window === "undefined") {
@@ -151,32 +154,26 @@ function AdminLayout() {
     }
     return window.localStorage.getItem("admin.sidebar.collapsed") === "true";
   });
-
+  const isMonitoringMode = isSuperAdminMonitoringPath(location.pathname, user?.role);
   useEffect(() => {
     if (typeof window === "undefined") {
       return;
     }
-    window.localStorage.setItem(
-      "admin.sidebar.collapsed",
-      String(isDesktopSidebarCollapsed)
-    );
+    window.localStorage.setItem("admin.sidebar.collapsed", String(isDesktopSidebarCollapsed));
   }, [isDesktopSidebarCollapsed]);
-
-  return <AdminNotificationCenterProvider>
-      <div className="min-h-screen bg-gray-50">
-        <AdminHeader isMobileSidebarOpen={isMobileSidebarOpen} onToggleMobileSidebar={() => setIsMobileSidebarOpen(current => !current)} isDesktopSidebarCollapsed={isDesktopSidebarCollapsed} onToggleDesktopSidebar={() => setIsDesktopSidebarCollapsed(current => !current)} />
-        <div className="flex">
-          <Sidebar isMobileSidebarOpen={isMobileSidebarOpen} onCloseMobileSidebar={() => setIsMobileSidebarOpen(false)} isDesktopCollapsed={isDesktopSidebarCollapsed} />
-          <AdminNotificationDrawer />
-          <main className={`mt-16 min-w-0 flex-1 pb-6 transition-[margin] duration-300 lg:pb-8 ${isDesktopSidebarCollapsed ? "lg:ml-24" : "lg:ml-72"}`}>
-            {String(user?.role || "").toLowerCase() === "super_admin" ? <div className="px-4 pt-4 sm:px-6 lg:px-8">
-                <MonitoringBanner />
-              </div> : null}
-            <Outlet />
-          </main>
-        </div>
+  return <div className="min-h-screen bg-gray-50">
+      <AdminHeader isMobileSidebarOpen={isMobileSidebarOpen} onToggleMobileSidebar={() => setIsMobileSidebarOpen(current => !current)} isDesktopSidebarCollapsed={isDesktopSidebarCollapsed} onToggleDesktopSidebar={() => setIsDesktopSidebarCollapsed(current => !current)} />
+      <div className="flex">
+        <Sidebar isMobileSidebarOpen={isMobileSidebarOpen} onCloseMobileSidebar={() => setIsMobileSidebarOpen(false)} isDesktopCollapsed={isDesktopSidebarCollapsed} />
+        <AdminNotificationDrawer />
+        <main className={`mt-16 min-w-0 flex-1 pb-6 transition-[margin] duration-300 lg:pb-8 ${isDesktopSidebarCollapsed ? "lg:ml-24" : "lg:ml-72"}`}>
+          {isMonitoringMode ? <div className="px-4 pt-4 sm:px-6 lg:px-8">
+              <MonitoringBanner />
+            </div> : null}
+          <Outlet />
+        </main>
       </div>
-    </AdminNotificationCenterProvider>;
+    </div>;
 }
 function ProtectedRouteWithPermission({
   children,
@@ -227,6 +224,7 @@ function AdminContent() {
               <Route path="tenant-management" element={<ProtectedRouteWithPermission>
                     <TenantManagement />
                   </ProtectedRouteWithPermission>} />
+              <Route path="admin-requests" element={<Navigate to={buildPlatformAdminPath("/tenant-management?tab=requests")} replace />} />
               <Route path="tenant-management/:tenantId" element={<ProtectedRouteWithPermission>
                     <TenantOverview />
                   </ProtectedRouteWithPermission>} />
@@ -330,5 +328,7 @@ function AdminContent() {
     </div>;
 }
 export function AdminApp() {
-  return <AdminContent />;
+  return <AdminNotificationCenterProvider>
+      <AdminContent />
+    </AdminNotificationCenterProvider>;
 }

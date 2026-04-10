@@ -12,7 +12,6 @@ import { AdminPageSkeleton } from "../components/common/AdminSkeleton";
 import { Button } from "../../common/components/ui/button";
 import { Input } from "../../common/components/ui/input";
 import { useMonitoringMode } from "../hooks/useMonitoringMode";
-import { MonitoringBanner } from "../components/common/MonitoringBanner";
 export function StaffManagement() {
   const PAGE_SIZE = 10;
   const {
@@ -305,7 +304,7 @@ export function StaffManagement() {
         </div>
       </div>
 
-      {isMonitoringMode && <MonitoringBanner message="You can review staff, roles, and permissions here, but staff creation and management actions are disabled in monitoring mode." />}
+      
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-6">
         <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-200">
@@ -406,14 +405,14 @@ export function StaffManagement() {
         </div>
       </div>
 
-      {}
+      
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {staffMembers.map(staff => <StaffCard key={staff._id} staff={staff} onToggleStatus={handleToggleStatus} onDelete={handleDeleteStaff} onUpdateRole={handleOpenRoleUpdate} canManage={canManageStaff()} canUpdateRoles={canUpdateRoles()} currentUserId={user?._id} onManagePermissions={handleManagePermissions} canManagePermissions={!isMonitoringMode && canManagePermissions} isReadOnly={isMonitoringMode} I />)}
       </div>
 
       <AdminPagination page={pagination.page} totalPages={pagination.pages} totalItems={pagination.total} pageSize={PAGE_SIZE} itemLabel="staff members" onPageChange={setCurrentPage} />
 
-      {}
+      
       {staffMembers.length === 0 && <div className="text-center py-12">
           <Users className="mx-auto h-16 w-16 text-gray-400" />
           <h3 className="mt-4 text-lg font-medium text-gray-900">
@@ -427,7 +426,7 @@ export function StaffManagement() {
               </button>}
         </div>}
 
-      {}
+      
       {!isMonitoringMode && showStaffForm && <StaffForm onSubmit={handleSubmitStaff} onClose={handleCloseForm} isLoading={isLoading} currentUserRole={user?.role} />}
 
       {!isMonitoringMode && selectedStaffForRoleUpdate && <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">

@@ -5,38 +5,36 @@ import { useAdmin } from "../context/AdminContext";
 import { useAuth } from "../../common/context/AuthContext";
 import { buildAdminPath } from "../../common/utils/routes";
 import { Navigate } from "react-router-dom";
-
 const STATUS_TONE = {
   open: "bg-amber-100 text-amber-700",
   in_progress: "bg-sky-100 text-sky-700",
-  resolved: "bg-emerald-100 text-emerald-700",
+  resolved: "bg-emerald-100 text-emerald-700"
 };
-
 const CATEGORY_LABEL = {
   access: "Access",
   tenant: "Tenant",
   billing: "Billing",
   technical: "Technical",
   account: "Account",
-  other: "Other",
+  other: "Other"
 };
-
 const initialForm = {
   category: "access",
   subject: "",
-  message: "",
+  message: ""
 };
-
 export function ContactSuperAdmin() {
-  const { user } = useAuth();
-  const { addNotification } = useAdmin();
+  const {
+    user
+  } = useAuth();
+  const {
+    addNotification
+  } = useAdmin();
   const [form, setForm] = useState(initialForm);
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-
   const isTenantAdmin = user?.role === "admin";
-
   const loadRequests = async () => {
     setLoading(true);
     try {
@@ -48,19 +46,13 @@ export function ContactSuperAdmin() {
       setLoading(false);
     }
   };
-
   useEffect(() => {
     if (!isTenantAdmin) {
       return;
     }
     loadRequests();
   }, [isTenantAdmin]);
-
-  const openRequests = useMemo(
-    () => requests.filter(request => request.status !== "resolved").length,
-    [requests]
-  );
-
+  const openRequests = useMemo(() => requests.filter(request => request.status !== "resolved").length, [requests]);
   const handleSubmit = async event => {
     event.preventDefault();
     setSubmitting(true);
@@ -75,11 +67,9 @@ export function ContactSuperAdmin() {
       setSubmitting(false);
     }
   };
-
   if (!isTenantAdmin) {
     return <Navigate to={buildAdminPath("/unauthorized")} replace />;
   }
-
   return <div className="space-y-6 p-4 sm:p-6">
       <div className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
         <div className="flex items-start gap-4">

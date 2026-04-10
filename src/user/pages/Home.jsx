@@ -70,7 +70,7 @@ export function Home() {
   return <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-orange-100 pb-24">
       <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
         <div className="mx-auto max-w-md text-center">
-          {}
+          
           <div className="mb-10 rounded-[2rem] bg-white/80 px-5 py-8 shadow-sm ring-1 ring-white/70 backdrop-blur sm:px-8">
             <BrandBadge logoSrc={settings?.restaurant?.logoThumbnail || settings?.restaurant?.logo || "/tableloom-mark.svg"} name={settings?.restaurant?.name || "Tableloom"} size="lg" className="justify-center mb-4" nameClassName="text-4xl text-gray-900" />
             <p className="text-gray-600 mb-4">
@@ -84,27 +84,27 @@ export function Home() {
             </div>
           </div>
 
-          {}
+          
           <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {}
+            
             <button onClick={() => navigate(buildCustomerPath("/home/menu"))} className="flex min-h-36 flex-col items-center justify-center rounded-3xl bg-primary-600 p-6 text-white shadow-lg transition-all duration-200 hover:scale-[1.01] hover:bg-primary-700">
               <Utensils className="h-8 w-8 mb-2" />
               <span className="font-semibold">{t("startOrdering")}</span>
             </button>
 
-            {}
+            
             <button onClick={() => navigate(buildCustomerPath("/home/bill"))} className="flex min-h-36 flex-col items-center justify-center rounded-3xl bg-green-600 p-6 text-white shadow-lg transition-all duration-200 hover:scale-[1.01] hover:bg-green-700">
               <Receipt className="h-8 w-8 mb-2" />
               <span className="font-semibold">{t("requestBill")}</span>
             </button>
 
-            {}
+            
             <button onClick={() => navigate(buildCustomerPath("/home/restaurant-info"))} className="flex min-h-36 flex-col items-center justify-center rounded-3xl bg-blue-600 p-6 text-white shadow-lg transition-all duration-200 hover:scale-[1.01] hover:bg-blue-700">
               <Info className="h-8 w-8 mb-2" />
               <span className="font-semibold">{t("restaurantInfo")}</span>
             </button>
 
-            {}
+            
             <button onClick={handleViewOrderHistory} className="flex min-h-36 flex-col items-center justify-center rounded-3xl bg-purple-600 p-6 text-white shadow-lg transition-all duration-200 hover:scale-[1.01] hover:bg-purple-700">
               <History className="h-8 w-8 mb-2" />
               <span className="font-semibold">{t("orderHistory")}</span>

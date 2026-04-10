@@ -213,12 +213,12 @@ export function ResetPassword() {
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
                 <input type={showConfirmPassword ? "text" : "password"} value={formData.confirmPassword} onChange={e => {
-                setFormData(prev => ({
-                  ...prev,
-                  confirmPassword: e.target.value
-                }));
-                setError("");
-              }} className={`w-full pl-10 pr-12 py-3 border rounded-xl bg-white shadow-sm outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100 ${formData.confirmPassword && formData.password !== formData.confirmPassword ? "border-red-300" : "border-slate-300"}`} placeholder="Confirm new password" required disabled={isLoading} />
+            setFormData(prev => ({
+              ...prev,
+              confirmPassword: e.target.value
+            }));
+            setError("");
+          }} className={`w-full pl-10 pr-12 py-3 border rounded-xl bg-white shadow-sm outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100 ${formData.confirmPassword && formData.password !== formData.confirmPassword ? "border-red-300" : "border-slate-300"}`} placeholder="Confirm new password" required disabled={isLoading} />
                 <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700" disabled={isLoading}>
                   {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                 </button>

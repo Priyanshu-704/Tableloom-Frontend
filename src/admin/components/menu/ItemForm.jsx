@@ -1,12 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Clock, Image as ImageIcon, Loader2, Plus, Trash2 } from "lucide-react";
 import { AdminModal } from "../common/AdminModal";
-import {
-  createImagePreview,
-  IMAGE_UPLOAD_ACCEPT,
-  revokeImagePreview,
-  validateImageFile
-} from "../../../common/utils/imageUpload";
+import { createImagePreview, IMAGE_UPLOAD_ACCEPT, revokeImagePreview, validateImageFile } from "../../../common/utils/imageUpload";
 const buildInitialPrices = (item, sizes) => {
   if (item?.prices?.length) {
     return item.prices.map(p => ({

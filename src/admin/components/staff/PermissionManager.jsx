@@ -247,7 +247,7 @@ export function PermissionManager({
         const isFullySelected = isCategoryFullySelected(category.permissions);
         const isPartiallySelected = isCategoryPartiallySelected(category.permissions);
         return <div key={category.name} className="mb-6 last:mb-0">
-                {}
+                
                 <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <h3 className="text-lg font-semibold text-gray-900">
                     {category.name}
@@ -264,7 +264,7 @@ export function PermissionManager({
                   </button>
                 </div>
 
-                {}
+                
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                   {category.permissions.map(permission => {
               const isSelected = selectedPermissions.includes(permission);

@@ -9,15 +9,11 @@ import { AdminPageSkeleton } from "../components/common/AdminSkeleton";
 import { menuService } from "../../common/services";
 import { buildAdminPath } from "../../common/utils/routes";
 import { useMonitoringMode } from "../hooks/useMonitoringMode";
-import { MonitoringBanner } from "../components/common/MonitoringBanner";
-
-const renderPriceList = (item) => {
+const renderPriceList = item => {
   const prices = item?.prices || [];
-
   if (!prices.length) {
     return "-";
   }
-
   return <div className="space-y-1">
       {prices.map((priceRow, idx) => <div key={`${item._id}-price-${idx}`} className="text-sm">
           {priceRow.size?.name || "Size"}: ₹{Number(priceRow.price || 0).toFixed(2)}
@@ -236,7 +232,7 @@ export function MenuManagement() {
         </div>
       </div>
 
-      {isMonitoringMode && <MonitoringBanner message="Menu data stays visible in monitoring mode, but item creation, edits, deletes, imports, and availability changes are disabled." />}
+      
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
         <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
@@ -323,12 +319,12 @@ export function MenuManagement() {
             {!isMonitoringMode && <label className="flex-1 cursor-pointer rounded-xl border border-gray-300 bg-white px-4 py-2 text-center hover:bg-gray-50">
                 Import
                 <input type="file" accept=".csv" className="hidden" onChange={e => {
-                const file = e.target.files?.[0];
-                if (file) {
-                  handleImportMenu(file);
-                  e.target.value = "";
-                }
-              }} />
+              const file = e.target.files?.[0];
+              if (file) {
+                handleImportMenu(file);
+                e.target.value = "";
+              }
+            }} />
               </label>}
           </div>
         </div>

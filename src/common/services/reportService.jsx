@@ -1,6 +1,5 @@
 import { axiosInstance } from "./api";
 import handleApiError from "../utils/handleApiError";
-
 export const reportService = {
   getReportDataset: async (params = {}) => {
     try {
@@ -33,5 +32,4 @@ export const reportService = {
     }
   }
 };
-
 export default reportService;

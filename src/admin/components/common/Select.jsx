@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDown, Check, X } from 'lucide-react';
 const Select = ({
@@ -175,7 +176,7 @@ const Select = ({
         </label>}
       
       <div ref={containerRef} className="relative" onKeyDown={handleKeyDown}>
-        {}
+        
         <div className={`
             relative w-full rounded-lg cursor-pointer
             ${sizeClasses[size].container}
@@ -208,7 +209,7 @@ const Select = ({
           </div>
         </div>
 
-        {}
+        
         {isOpen && !disabled && <div ref={dropdownRef} className={`
               absolute z-50 w-full mt-1 bg-white border border-gray-200 
               rounded-lg shadow-lg overflow-hidden
@@ -218,12 +219,12 @@ const Select = ({
         maxHeight: '300px',
         overflowY: 'auto'
       }}>
-            {}
+            
             {searchable && <div className="sticky top-0 bg-white border-b border-gray-200 p-2">
                 <input ref={searchInputRef} type="text" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} placeholder="Search..." className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent" onClick={e => e.stopPropagation()} />
               </div>}
 
-            {}
+            
             {loading ? <div className="p-4 text-center text-gray-500">
                 <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-600 mx-auto"></div>
               </div> : filteredOptions.length > 0 ? filteredOptions.map((option, index) => <div key={option.value} className={`
@@ -243,7 +244,7 @@ const Select = ({
           </div>}
       </div>
 
-      {}
+      
       {(error || helperText) && <p className={`mt-1 text-sm ${error ? 'text-red-600' : 'text-gray-500'}`}>
           {error || helperText}
         </p>}

@@ -2,7 +2,6 @@ import { axiosInstance } from "./api";
 import handleApiError from "../utils/handleApiError";
 import { createRequestCache } from "../utils/requestCache";
 import { appendImageToFormData } from "../utils/imageUpload";
-
 const menuRequestCache = createRequestCache(5000);
 const buildMultipartFormData = (data = {}, imageFile = null) => {
   const formData = new FormData();

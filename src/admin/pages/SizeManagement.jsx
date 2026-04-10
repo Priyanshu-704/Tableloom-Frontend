@@ -5,7 +5,6 @@ import { menuService } from "../../common/services";
 import { useAdmin } from "../context/AdminContext";
 import { AdminModal } from "../components/common/AdminModal";
 import { AdminPageSkeleton } from "../components/common/AdminSkeleton";
-import { MonitoringBanner } from "../components/common/MonitoringBanner";
 import { useMonitoringMode } from "../hooks/useMonitoringMode";
 const initialFormData = {
   name: "",
@@ -145,7 +144,7 @@ export function SizeManagement() {
     return <AdminPageSkeleton stats={3} filters={2} cards={4} cardHeight="h-40" />;
   }
   return <div className="space-y-6 p-4 sm:p-6">
-      {isMonitoringMode ? <MonitoringBanner message="Sizes remain visible for monitoring, but create, edit, and activate/deactivate actions are disabled for Super Admin." /> : null}
+      
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Size Management</h1>

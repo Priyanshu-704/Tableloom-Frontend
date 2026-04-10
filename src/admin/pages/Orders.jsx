@@ -9,7 +9,6 @@ import { AdminListSkeleton } from "../components/common/AdminSkeleton";
 import ResponsiveFilterSection from "../components/common/ResponsiveFilterSection";
 import { orderService } from "../../common/services";
 import { useSettings } from "../../common/context/SettingsContext";
-import { MonitoringBanner } from "../components/common/MonitoringBanner";
 import { useMonitoringMode } from "../hooks/useMonitoringMode";
 const ORDER_STATUS = [{
   value: "all",
@@ -189,7 +188,7 @@ export function Orders() {
     return <KitchenDisplay onRefreshOrders={loadOrders} isReadOnly={isMonitoringMode} />;
   }
   return <div className="space-y-6 p-4 sm:p-6">
-      {isMonitoringMode ? <MonitoringBanner message="Orders are visible for monitoring, but status changes and kitchen execution actions are disabled for Super Admin." /> : null}
+      
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Orders Management</h1>

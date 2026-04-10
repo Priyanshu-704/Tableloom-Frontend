@@ -1,7 +1,6 @@
 import { logger } from "../utils/logger.js";
 import api from './api';
 import { createRequestCache } from "../utils/requestCache";
-
 const tableRequestCache = createRequestCache(10000);
 class TableService {
   async getTables(filters = {}) {

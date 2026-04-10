@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import { logger } from "../../../common/utils/logger.js";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ChefHat, RefreshCw, Flame, Clock3, AlertTriangle } from "lucide-react";
@@ -5,7 +6,6 @@ import { useAdmin } from "../../context/AdminContext";
 import { kitchenService, kitchenStationService } from "../../../common/services";
 import { useAuth } from "../../../common/context/AuthContext";
 import { useMonitoringMode } from "../../hooks/useMonitoringMode";
-import { MonitoringBanner } from "../common/MonitoringBanner";
 const ORDER_STATUS_OPTIONS = [{
   value: "pending",
   label: "Pending"
@@ -42,9 +42,7 @@ const priorityBadge = {
   low: "bg-slate-100 text-slate-700"
 };
 const hexToRgba = (hexColor, alpha = 1) => {
-  const normalizedHex = String(hexColor || "")
-    .replace("#", "")
-    .trim();
+  const normalizedHex = String(hexColor || "").replace("#", "").trim();
   const fullHex = normalizedHex.length === 3 ? normalizedHex.split("").map(char => `${char}${char}`).join("") : normalizedHex;
   if (fullHex.length !== 6) {
     return `rgba(14, 116, 144, ${alpha})`;
@@ -305,7 +303,7 @@ export function KitchenDisplay({
       </div>
 
       <div className="mx-auto max-w-7xl space-y-6 px-6 py-6">
-        {isMonitoringMode ? <MonitoringBanner message="Kitchen queues remain visible for monitoring, but item progression and delay-check execution are disabled for Super Admin." /> : null}
+        
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
           <div className="rounded-xl border p-5 shadow-sm" style={{
           borderColor: stationTheme.border,
@@ -541,7 +539,7 @@ export function KitchenDisplay({
                           <span className="text-slate-200">
                             {item.estimatedCompletion ? new Date(item.estimatedCompletion).toLocaleTimeString([], {
                           hour: "2-digit",
-                            minute: "2-digit"
+                          minute: "2-digit"
                         }) : "N/A"}
                           </span>
                         </p>

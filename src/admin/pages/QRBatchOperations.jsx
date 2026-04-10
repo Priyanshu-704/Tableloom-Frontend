@@ -209,32 +209,30 @@ export function QRBatchOperations({
       </html>
     `);
     printWindow.document.close();
-
     const triggerPrint = () => {
       printWindow.focus();
       printWindow.print();
     };
-
-    const imageLoadPromises = Array.from(printWindow.document.images).map((image) => {
+    const imageLoadPromises = Array.from(printWindow.document.images).map(image => {
       if (image.complete) {
         return Promise.resolve();
       }
-
-      return new Promise((resolve) => {
-        image.addEventListener('load', resolve, { once: true });
-        image.addEventListener('error', resolve, { once: true });
+      return new Promise(resolve => {
+        image.addEventListener('load', resolve, {
+          once: true
+        });
+        image.addEventListener('error', resolve, {
+          once: true
+        });
       });
     });
-
-    Promise.all(imageLoadPromises)
-      .then(() => {
-        onSuccess?.(`Print window opened for ${selectedTableData.length} QR codes`);
-        window.setTimeout(triggerPrint, 150);
-      })
-      .catch(() => {
-        onSuccess?.(`Print window opened for ${selectedTableData.length} QR codes`);
-        window.setTimeout(triggerPrint, 150);
-      });
+    Promise.all(imageLoadPromises).then(() => {
+      onSuccess?.(`Print window opened for ${selectedTableData.length} QR codes`);
+      window.setTimeout(triggerPrint, 150);
+    }).catch(() => {
+      onSuccess?.(`Print window opened for ${selectedTableData.length} QR codes`);
+      window.setTimeout(triggerPrint, 150);
+    });
   };
   const handleExecute = () => {
     switch (operation) {
@@ -250,7 +248,7 @@ export function QRBatchOperations({
     }
   };
   return <div className="p-6">
-        {}
+        
         <div className="mb-6">
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Select Operation
@@ -280,7 +278,7 @@ export function QRBatchOperations({
           </div>
         </div>
 
-        {}
+        
         <div className="mb-6">
           <div className="flex items-center justify-between mb-2">
             <label className="text-sm font-medium text-gray-700">
@@ -309,7 +307,7 @@ export function QRBatchOperations({
           </div>
         </div>
 
-        {}
+        
         <div className="mb-6 space-y-4">
           <h3 className="font-medium text-gray-900">Settings</h3>
           
@@ -354,8 +352,8 @@ export function QRBatchOperations({
                       </div>
                       <div className="flex min-h-[220px] items-center justify-center rounded-lg border border-dashed border-gray-200 bg-gray-50 p-4">
                         {table.qrCode ? <img src={table.qrCode} alt={`QR Code for Table ${table.number}`} className="h-auto max-w-full" style={{
-                    width: getPreviewWidth(qrSize)
-                  }} /> : <div className="text-sm text-gray-400">QR preview not available</div>}
+                width: getPreviewWidth(qrSize)
+              }} /> : <div className="text-sm text-gray-400">QR preview not available</div>}
                       </div>
                     </div>)}
                 </div> : <div className="py-10 text-center text-sm text-gray-500">
@@ -364,7 +362,7 @@ export function QRBatchOperations({
             </div>
           </div>}
 
-        {}
+        
         {loading && <div className="mb-6">
             <div className="flex justify-between text-sm text-gray-600 mb-1">
               <span>Processing...</span>
@@ -377,7 +375,7 @@ export function QRBatchOperations({
             </div>
           </div>}
 
-        {}
+        
         {confirmRegenerate && <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
             <div className="flex items-start space-x-3">
               <AlertTriangle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
@@ -399,7 +397,7 @@ export function QRBatchOperations({
             </div>
           </div>}
 
-        {}
+        
         <div className="flex justify-end space-x-3">
           <button onClick={onClose} className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">
             Cancel

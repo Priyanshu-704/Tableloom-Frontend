@@ -191,7 +191,7 @@ export function Cart() {
       </div>;
   }
   return <div className="mx-auto max-w-4xl pb-24">
-      {}
+      
       <div className="sticky top-[4.5rem] z-40 border-b border-gray-200 bg-white p-4 lg:top-0">
         <div className="flex items-center justify-between gap-3">
           <button onClick={() => navigate(-1)} className="cursor-pointer flex items-center text-gray-600 hover:text-gray-900">
@@ -203,7 +203,7 @@ export function Cart() {
         </div>
       </div>
 
-      {}
+      
       {cart?.table && <div className="border-b border-primary-100 bg-primary-50 p-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
@@ -221,7 +221,7 @@ export function Cart() {
           </div>
         </div>}
 
-      {}
+      
       <div className="p-4 space-y-4">
         {cart.items.map(item => {
         const menuItemId = item.menuItemId || item._id;
@@ -229,7 +229,7 @@ export function Cart() {
         const lineItemKey = `${menuItemId}-${sizeId || "default"}`;
         return <div key={lineItemKey} className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
               <div className="flex flex-col gap-4 sm:flex-row">
-                {}
+                
                 {(item.thumbnail || item.image) && <div className="w-16 h-16 flex-shrink-0 mr-4">
                     <img src={item.thumbnail || item.image} alt={item.name} className="w-full h-full object-cover rounded" loading="lazy" />
                   </div>}
@@ -291,7 +291,7 @@ export function Cart() {
       })}
       </div>
 
-      {}
+      
       <div className="border-t border-gray-200 bg-white p-4">
         <label htmlFor="instructions" className="block text-sm font-medium text-gray-700 mb-2">
           {t("specialInstructions")} ({t("optional")})
@@ -299,7 +299,7 @@ export function Cart() {
         <textarea id="instructions" rows={3} value={specialInstructions} onChange={e => setSpecialInstructions(e.target.value)} placeholder={t("anySpecialRequests")} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent" />
       </div>
 
-      {}
+      
       <div className="border-t border-gray-200 bg-white p-4">
         <div className="mb-6 rounded-2xl border border-slate-200 bg-slate-50 p-4">
           <label htmlFor="couponCode" className="mb-2 block text-sm font-medium text-gray-700">

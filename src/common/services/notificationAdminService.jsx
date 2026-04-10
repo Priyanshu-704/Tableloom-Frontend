@@ -1,7 +1,6 @@
 import { axiosInstance } from "./api";
 import handleApiError from "../utils/handleApiError";
 import { createRequestCache } from "../utils/requestCache";
-
 const notificationRequestCache = createRequestCache(5000);
 export const notificationAdminService = {
   getNotifications: async (filters = {}) => {

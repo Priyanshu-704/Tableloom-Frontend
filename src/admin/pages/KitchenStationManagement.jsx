@@ -6,7 +6,6 @@ import { useAdmin } from "../context/AdminContext";
 import { AdminModal } from "../components/common/AdminModal";
 import { AdminCardGridSkeleton } from "../components/common/AdminSkeleton";
 import { useMonitoringMode } from "../hooks/useMonitoringMode";
-import { MonitoringBanner } from "../components/common/MonitoringBanner";
 const STATION_TYPES = ["grill", "fryer", "salad", "dessert", "beverage", "expediter", "fast food", "main course"];
 const STATION_STATUS = ["active", "maintenance", "closed"];
 const initialFormData = {
@@ -262,7 +261,7 @@ export function KitchenStationManagement() {
           </button>}
       </div>
 
-      {isMonitoringMode && <MonitoringBanner message="Kitchen stations and category routing are visible here for monitoring, but create, edit, delete, and assignment actions are disabled." />}
+      
 
       {pageError && <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           {pageError}

@@ -1,7 +1,6 @@
 import { axiosInstance } from "./api";
 import handleApiError from "../utils/handleApiError";
 import { createRequestCache } from "../utils/requestCache";
-
 const permissionRequestCache = createRequestCache(15000);
 const permissionState = {
   permissions: null,
@@ -18,8 +17,7 @@ const getCurrentUser = () => {
     return null;
   }
 };
-const hasFullAdminAccess = role =>
-  ["super_admin", "admin"].includes(String(role || "").toLowerCase());
+const hasFullAdminAccess = role => ["super_admin", "admin"].includes(String(role || "").toLowerCase());
 const generateDisplayNames = () => {
   if (!permissionState.permissions) {
     return;

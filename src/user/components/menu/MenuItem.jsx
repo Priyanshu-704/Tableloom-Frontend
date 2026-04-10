@@ -139,21 +139,21 @@ export function MenuItem({
   return <>
     <div className="relative overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition-shadow hover:shadow-md">
       <div className="flex flex-col sm:flex-row">
-        {}
+        
         <div className="h-40 w-full flex-shrink-0 bg-slate-100 sm:h-24 sm:w-24">
           {item.thumbnail || item.image ? <img src={item.thumbnail || item.image} alt={item.name} className="w-full h-full object-cover" loading="lazy" /> : <div className="flex h-full w-full items-center justify-center text-xs font-medium uppercase tracking-[0.18em] text-slate-400">
               No image
             </div>}
         </div>
 
-        {}
+        
         <div className="flex-1 p-4">
           <h3 className="font-semibold text-gray-900 mb-1">{item.name}</h3>
           <p className="text-gray-600 text-sm mb-2 line-clamp-2">
             {item.description}
           </p>
 
-          {}
+          
           {item.sizes?.length > 1 && <div className="mb-2">
               <button type="button" onClick={() => setShowSizeSelector(true)} className="flex w-full items-center gap-2 rounded-lg border border-gray-300 bg-gray-50 px-3 py-1.5 text-left">
                 <div className="min-w-0 flex-1 text-sm text-gray-700">
@@ -165,7 +165,7 @@ export function MenuItem({
               </button>
             </div>}
 
-          {}
+          
           {item.sizes?.length === 1 && <div className="text-sm text-gray-500 mb-2">
               {item.sizes[0].name} - {formatPrice(item.sizes[0].price)}
             </div>}
@@ -180,7 +180,7 @@ export function MenuItem({
                 </span> : null}
             </div>
 
-            {}
+            
             {checkingStatus || isSubmitting ? <div className="h-10 w-full rounded-lg bg-gray-100 animate-pulse sm:w-20"></div> : cartItemInfo.quantity > 0 ? <div className="flex w-full items-center justify-between rounded-xl bg-primary-50 px-3 py-2 sm:w-auto sm:justify-start sm:bg-transparent sm:px-0 sm:py-0 sm:space-x-2">
                 <button onClick={handleDecrement} disabled={isSubmitting} className="p-1 rounded-full bg-primary-100 text-primary-600 hover:bg-primary-200 transition-colors disabled:opacity-50">
                   <Minus className="h-4 w-4" />
@@ -198,7 +198,7 @@ export function MenuItem({
         </div>
       </div>
 
-      {}
+      
       {item.isVegetarian && <div className="absolute top-2 left-2 bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">
           Veg
         </div>}

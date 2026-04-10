@@ -10,13 +10,7 @@ import { Button } from "../../common/components/ui/button";
 import { Input } from "../../common/components/ui/input";
 import { Checkbox } from "../../common/components/ui/checkbox";
 import { useMonitoringMode } from "../hooks/useMonitoringMode";
-import { MonitoringBanner } from "../components/common/MonitoringBanner";
-import {
-  createImagePreview,
-  IMAGE_UPLOAD_ACCEPT,
-  revokeImagePreview,
-  validateImageFile
-} from "../../common/utils/imageUpload";
+import { createImagePreview, IMAGE_UPLOAD_ACCEPT, revokeImagePreview, validateImageFile } from "../../common/utils/imageUpload";
 const DAYS_OF_WEEK = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 const CURRENCIES = [{
   code: "INR",
@@ -230,12 +224,12 @@ export function Settings() {
       }
       try {
         setIsLoadingSettings(true);
-      const response = await settingsService.getAdminSettings();
-      const nextSettings = mergeSettings(response?.data || {});
-      setAdminSettings(nextSettings);
-      setLogoFile(null);
-    } catch {
-      setAdminSettings(DEFAULT_SETTINGS);
+        const response = await settingsService.getAdminSettings();
+        const nextSettings = mergeSettings(response?.data || {});
+        setAdminSettings(nextSettings);
+        setLogoFile(null);
+      } catch {
+        setAdminSettings(DEFAULT_SETTINGS);
       } finally {
         setIsLoadingSettings(false);
       }
@@ -658,7 +652,7 @@ export function Settings() {
         </div>
       </div>
 
-      {isMonitoringMode && <MonitoringBanner message="Settings are visible in monitoring mode, but profile, password, and restaurant configuration changes are disabled." />}
+      
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[260px_minmax(0,1fr)]">
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 h-fit">

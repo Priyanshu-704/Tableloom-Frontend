@@ -4,11 +4,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../../common/context/AuthContext";
 import { useSettings } from "../../common/context/SettingsContext";
 import { AdminAuthShell } from "../components/layout/AdminAuthShell";
-import {
-  buildAdminPath,
-  extractTenantFromPath,
-  resolveAdminHomePath,
-} from "../../common/utils/routes";
+import { buildAdminPath, extractTenantFromPath, resolveAdminHomePath } from "../../common/utils/routes";
 export function AdminLogin() {
   const [credentials, setCredentials] = useState({
     email: "",
@@ -24,10 +20,7 @@ export function AdminLogin() {
   const {
     settings
   } = useSettings();
-  const tenantContext =
-    typeof window !== "undefined"
-      ? extractTenantFromPath(window.location.pathname)
-      : null;
+  const tenantContext = typeof window !== "undefined" ? extractTenantFromPath(window.location.pathname) : null;
   const isPlatformLogin = !tenantContext;
   const handleSubmit = async e => {
     e.preventDefault();
@@ -65,12 +58,12 @@ export function AdminLogin() {
     }
   };
   return <AdminAuthShell settings={settings} eyebrow={isPlatformLogin ? "Platform Admin" : "Admin Portal"} title={isPlatformLogin ? "Sign in to the platform admin panel" : "Sign in to your restaurant workspace"} description={isPlatformLogin ? "This login is reserved for the super admin. Restaurant admins and staff should sign in from their tenant workspace admin URL." : "Use your staff credentials to manage orders, tables, kitchen flow, and day-to-day operations."} mobileAuthMode="preview" mobilePrimaryActionLabel="Login To Admin Panel" mobileBackActionLabel="Back to overview" sideTitle={isPlatformLogin ? "Platform oversight starts from a separate, protected admin login." : "A cleaner service dashboard starts with a calmer sign-in flow."} sideDescription={isPlatformLogin ? "Use this page only for super admin access. Tenant admins, managers, chefs, and waiters should use their own restaurant workspace admin panel." : "This admin space is designed for staff speed: quick access, clearer focus, and fewer distractions during service."} highlights={[{
-      title: "Live operations",
-      description: isPlatformLogin ? "Super admin access is separated from tenant staff sign-in for safer workspace control." : "Track orders, table status, and kitchen updates without leaving the workflow."
-    }, {
-      title: "Role-aware access",
-      description: isPlatformLogin ? "Tenant users should log in only from their own workspace admin URL." : "Admins, managers, waiters, and chefs land in the right area after sign in."
-    }]}>
+    title: "Live operations",
+    description: isPlatformLogin ? "Super admin access is separated from tenant staff sign-in for safer workspace control." : "Track orders, table status, and kitchen updates without leaving the workflow."
+  }, {
+    title: "Role-aware access",
+    description: isPlatformLogin ? "Tenant users should log in only from their own workspace admin URL." : "Admins, managers, waiters, and chefs land in the right area after sign in."
+  }]}>
         <form className="space-y-6" onSubmit={handleSubmit}>
             {error && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
                 {error}
@@ -83,9 +76,9 @@ export function AdminLogin() {
               <div className="relative">
                 <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
                 <input type="email" value={credentials.email} onChange={e => setCredentials(prev => ({
-                ...prev,
-                email: e.target.value
-              }))} className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-xl bg-white text-slate-900 shadow-sm outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100" placeholder="Enter email address" required />
+            ...prev,
+            email: e.target.value
+          }))} className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-xl bg-white text-slate-900 shadow-sm outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100" placeholder="Enter email address" required />
               </div>
             </div>
 
@@ -96,9 +89,9 @@ export function AdminLogin() {
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
                 <input type={showPassword ? "text" : "password"} value={credentials.password} onChange={e => setCredentials(prev => ({
-                ...prev,
-                password: e.target.value
-              }))} className="w-full pl-10 pr-12 py-3 border border-slate-300 rounded-xl bg-white text-slate-900 shadow-sm outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100" placeholder="Enter password" required />
+            ...prev,
+            password: e.target.value
+          }))} className="w-full pl-10 pr-12 py-3 border border-slate-300 rounded-xl bg-white text-slate-900 shadow-sm outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100" placeholder="Enter password" required />
 
                 <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-slate-900">
                   {showPassword ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}

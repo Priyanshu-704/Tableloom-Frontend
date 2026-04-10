@@ -1,14 +1,6 @@
 import { logger } from "../../../common/utils/logger.js";
 import React, { useState, useRef, useEffect } from "react";
-import {
-  LogOut,
-  ChevronDown,
-  ChevronUp,
-  UserCircle2,
-  Settings as SettingsIcon,
-  ShieldCheck,
-  Sparkles,
-} from "lucide-react";
+import { LogOut, ChevronDown, ChevronUp, UserCircle2, Settings as SettingsIcon, ShieldCheck, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../../common/context/AuthContext";
 import { buildAdminPath } from "../../../common/utils/routes";

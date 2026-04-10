@@ -6,19 +6,15 @@ const buildTenantAwareAssetUrl = path => {
   const baseUrl = String(api.defaults.baseURL || "").replace(/\/+$/, "");
   const tenantHeaders = getTenantHeaders();
   const targetUrl = new URL(`${baseUrl}${path}`, window.location.origin);
-
   if (tenantHeaders["x-tenant-id"]) {
     targetUrl.searchParams.set("tenantId", tenantHeaders["x-tenant-id"]);
   }
-
   if (tenantHeaders["x-tenant-slug"]) {
     targetUrl.searchParams.set("tenantSlug", tenantHeaders["x-tenant-slug"]);
   }
-
   if (tenantHeaders["x-tenant-key"]) {
     targetUrl.searchParams.set("tenantKey", tenantHeaders["x-tenant-key"]);
   }
-
   return targetUrl.toString();
 };
 export const billService = {

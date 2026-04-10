@@ -12,7 +12,6 @@ import { QrManagementOverlay } from "../components/tables/QrManagementOverlay";
 import { QRBatchOperations } from "./QRBatchOperations";
 import { ToastContainer } from "../../user/components/common/Toast";
 import { useMonitoringMode } from "../hooks/useMonitoringMode";
-import { MonitoringBanner } from "../components/common/MonitoringBanner";
 import { withTenantQueryParams } from "../../common/utils/qrImage";
 import { useAuth } from "../../common/context/AuthContext";
 const STATUS_CONFIG = {
@@ -396,7 +395,7 @@ export function TableManagement() {
             <span>Refresh</span>
           </button>
 
-          {}
+          
           <div className="flex min-w-0 flex-1 rounded-lg bg-gray-100 p-1 sm:min-w-[220px] sm:flex-none">
             <button onClick={() => setView("grid")} className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${view === "grid" ? "bg-white text-gray-900 shadow-sm" : "text-gray-600 hover:text-gray-900"}`}>
               Grid View
@@ -412,8 +411,8 @@ export function TableManagement() {
             </button>}
         </div>
       </div>
-      {(isMonitoringMode || !canCreateTable || !canEditTable || !canDeleteTable || !canManageQr) && <MonitoringBanner message={isMonitoringMode ? "Table layouts, occupancy, and QR status are visible in monitoring mode, but table edits, status updates, QR management, and destructive actions are disabled." : canUpdateTableStatus ? "You can monitor tables and update table status here. Table creation, editing, delete actions, and QR management are not available for your role." : "You can monitor table status here, but table editing and QR management are not available for your role."} />}
-      {}
+      
+      
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4 lg:grid-cols-6">
         {Object.entries(STATUS_CONFIG).map(([status, config]) => {
         const Icon = config.icon;
@@ -431,16 +430,16 @@ export function TableManagement() {
             </div>;
       })}
       </div>
-      {}
+      
       <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
-          {}
+          
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
             <input type="text" placeholder="Search tables..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent" />
           </div>
 
-          {}
+          
           <Select value={statusFilter} onChange={setStatusFilter} options={[{
           value: "all",
           label: "All Status"
@@ -449,19 +448,19 @@ export function TableManagement() {
           label: config.label
         }))]} placeholder="Select status" size="md" variant="outlined" />
 
-          {}
+          
           <Select value={locationFilter} onChange={setLocationFilter} options={LOCATIONS.map(loc => ({
           value: loc,
           label: loc
         }))} placeholder="Select location" searchable />
 
-          {}
+          
           <Select value={capacityFilter} onChange={setCapacityFilter} options={CAPACITIES.map(cap => ({
           value: cap,
           label: cap === "All" ? "All Capacity" : `${cap} People`
         }))} placeholder="Select capacity" />
 
-          {}
+          
           <Select value="number" onChange={() => {}} options={[{
           value: "number",
           label: "Table Number"
@@ -474,7 +473,7 @@ export function TableManagement() {
         }]} placeholder="Sort by" />
         </div>
       </div>
-      {}
+      
       {loading ? <AdminCardGridSkeleton count={6} cardHeight="h-56" columns="md:grid-cols-2 lg:grid-cols-3" /> : view === "grid" ? <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
           {tables.map(table => <TableCard key={table.id} table={table} onEdit={handleEditTable} onDelete={handleDeleteTable} onStatusChange={handleStatusChange} onClearTable={handleClearTable} onDownloadQR={handleDownloadQR} onManageQR={handleManageQR} getOccupancyTime={getOccupancyTime} isReadOnly={isMonitoringMode} canEdit={canEditTable} canDelete={canDeleteTable} canManageQr={canManageQr} canUpdateStatus={canUpdateTableStatus} />)}
         </div> : <FloorPlanView tables={tables} onTableClick={handleEditTable} onStatusChange={handleStatusChange} isReadOnly={isMonitoringMode} canEdit={canEditTable} canUpdateStatus={canUpdateTableStatus} />}
@@ -493,14 +492,13 @@ export function TableManagement() {
       setEditingTable(null);
     }} showToast={showToast} />}{" "}
       {canManageQr && showQRManagement && selectedTableForQR && <QrManagementOverlay table={selectedTableForQR} onClose={() => {
-        setShowQRManagement(false);
-        setSelectedTableForQR(null);
-      }} onSuccess={message => {
-        loadTables();
-        loadTableStats();
-        showToast(message, "success");
-      }} />
-      }
+      setShowQRManagement(false);
+      setSelectedTableForQR(null);
+    }} onSuccess={message => {
+      loadTables();
+      loadTableStats();
+      showToast(message, "success");
+    }} />}
       {canUseBatchQr && <AdminModal isOpen={showQRBatchOps} title="Batch QR Operations" subtitle="Perform bulk download, regenerate, and print actions for table QR codes." onClose={() => setShowQRBatchOps(false)} maxWidth="max-w-2xl">
         <QRBatchOperations tables={tables} onClose={() => setShowQRBatchOps(false)} onSuccess={message => {
         loadTables();
@@ -594,7 +592,7 @@ function TableCard({
   };
   const statusStyles = getStatusStyles();
   return <div className="relative z-0 flex h-full flex-col overflow-visible rounded-xl border border-gray-200 bg-white shadow-sm transition-all duration-200 hover:z-10 hover:shadow-md">
-      {}
+      
       <div className={`${statusStyles.bg} ${statusStyles.border} border-b px-4 py-3`}>
         <div className="flex items-start justify-between">
           <div className="flex items-start space-x-3 min-w-0 flex-1">
@@ -624,16 +622,16 @@ function TableCard({
         </div>
       </div>
 
-      {}
+      
       <div className="p-4 flex-1 flex flex-col">
-        {}
+        
         {tokenStatus && <div className={`mb-3 p-2 bg-${tokenStatus.color}-50 border border-${tokenStatus.color}-200 rounded-lg flex items-center justify-center`}>
             <span className={`text-xs font-medium text-${tokenStatus.color}-700`}>
               {tokenStatus.label}
             </span>
           </div>}
 
-        {}
+        
         {table.currentOrder && <div className="mb-4 bg-orange-50 border border-orange-200 rounded-lg overflow-hidden">
             <div className="p-3">
               <div className="flex items-start justify-between mb-2">
@@ -664,7 +662,7 @@ function TableCard({
             </div>
           </div>}
 
-        {}
+        
         {table.reservation && <div className="mb-4 bg-blue-50 border border-blue-200 rounded-lg p-3">
             <div className="flex items-center space-x-2 mb-1">
               <span className="text-xs font-semibold text-blue-800 uppercase tracking-wider">
@@ -688,7 +686,7 @@ function TableCard({
             </div>
           </div>}
 
-        {}
+        
         {table.maintenanceReason && <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-3">
             <div className="flex items-center space-x-2 mb-1">
               <span className="text-xs font-semibold text-red-800 uppercase tracking-wider">
@@ -700,7 +698,7 @@ function TableCard({
             </p>
           </div>}
 
-        {}
+        
         <div className="mt-auto space-y-2">
           {table.lastOccupied && !table.currentOrder && <div className="flex items-center text-xs text-gray-500">
               <Clock className="h-3.5 w-3.5 mr-1 flex-shrink-0" />
@@ -720,11 +718,11 @@ function TableCard({
             </div>}
         </div>
 
-        {}
+        
         <div className="pt-4 mt-4 border-t border-gray-200 space-y-3">
-          {}
+          
           <div className="flex items-center justify-between gap-3">
-            {}
+            
             <div className="relative flex-1">
               <Select value={table.status} onChange={newStatus => onStatusChange(table.id, newStatus)} options={Object.entries(STATUS_CONFIG).map(([value, config]) => ({
               value,
@@ -738,14 +736,14 @@ function TableCard({
               </div>
             </div>
 
-            {}
+            
             {table.qrCode && !isReadOnly && canManageQr && <button onClick={() => onManageQR(table)} className="flex items-center justify-center space-x-1 text-purple-600 hover:text-purple-800 text-sm font-medium transition-colors px-3 py-2 rounded-lg border border-purple-200 hover:bg-purple-50 whitespace-nowrap" title="Manage QR code">
                 <QrCode className="h-4 w-4" />
                 <span>Manage QR</span>
               </button>}
           </div>
 
-          {}
+          
           {!isReadOnly && (canEdit || canDelete) && <div className="flex items-center justify-end space-x-3">
               {canEdit && <button onClick={() => onEdit(table)} className="flex items-center space-x-1 text-blue-600 hover:text-blue-800 text-sm font-medium transition-colors px-3 py-2 rounded-lg border border-blue-200 hover:bg-blue-50">
                 <Edit className="h-4 w-4" />
@@ -840,7 +838,7 @@ function FloorPlanTable({
           </div>}
       </button>
 
-      {}
+      
       {!isReadOnly && canUpdateStatus && <div className="absolute top-full left-0 right-0 mt-1 hidden group-hover:block z-10">
           <Select value={table.status} onChange={newStatus => onStatusChange(table.id, newStatus)} options={Object.entries(STATUS_CONFIG).map(([value, config]) => ({
         value,
