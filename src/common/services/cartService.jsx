@@ -5,12 +5,20 @@ let cachedCartData = null;
 let cartRequestPromise = null;
 const buildFailure = (error, fallbackMessage) => ({
   success: false,
-  message: error?.response?.data?.message || error?.response?.data?.error || error?.message || fallbackMessage,
+  message:
+    error?.response?.data?.message ||
+    error?.response?.data?.error ||
+    error?.message ||
+    fallbackMessage,
   error: error?.response?.data?.error || error?.message || fallbackMessage,
-  data: null
+  data: null,
 });
 const getValidSessionId = () => {
-  const sessionId = cartService.sessionId || sessionStorage.getItem("sessionId") || localStorage.getItem("sessionId") || TEST_SESSION_ID;
+  const sessionId =
+    cartService.sessionId ||
+    sessionStorage.getItem("sessionId") ||
+    localStorage.getItem("sessionId") ||
+    TEST_SESSION_ID;
   if (sessionId === TEST_SESSION_ID) {
     sessionStorage.setItem("sessionId", TEST_SESSION_ID);
   }
@@ -25,7 +33,7 @@ const ensureSuccess = (response, fallbackMessage) => {
   }
   return response.data;
 };
-const extractCartData = data => {
+const extractCartData = (data) => {
   const cartData = data?.data ?? null;
   cachedCartData = cartData;
   cartRequestPromise = null;
@@ -52,26 +60,29 @@ export const cartService = {
         return {
           success: true,
           data: cachedCartData,
-          message: "Cart fetched successfully"
+          message: "Cart fetched successfully",
         };
       }
       if (!forceRefresh && cartRequestPromise) {
         return cartRequestPromise;
       }
-      cartRequestPromise = axiosInstance.get("/cart", {
-        params: {
-          sessionId: getValidSessionId()
-        }
-      }).then(response => {
-        const data = ensureSuccess(response, "Failed to get cart");
-        return {
-          success: true,
-          data: extractCartData(data),
-          message: data?.message || "Cart fetched successfully"
-        };
-      }).finally(() => {
-        cartRequestPromise = null;
-      });
+      cartRequestPromise = axiosInstance
+        .get("/cart", {
+          params: {
+            sessionId: getValidSessionId(),
+          },
+        })
+        .then((response) => {
+          const data = ensureSuccess(response, "Failed to get cart");
+          return {
+            success: true,
+            data: extractCartData(data),
+            message: data?.message || "Cart fetched successfully",
+          };
+        })
+        .finally(() => {
+          cartRequestPromise = null;
+        });
       return await cartRequestPromise;
     } catch (error) {
       logger.error("Error getting cart:", error);
@@ -79,7 +90,12 @@ export const cartService = {
       return buildFailure(error, "Failed to get cart");
     }
   },
-  addItemToCart: async (menuItemId, quantity = 1, specialInstructions = "", sizeId = null) => {
+  addItemToCart: async (
+    menuItemId,
+    quantity = 1,
+    specialInstructions = "",
+    sizeId = null,
+  ) => {
     try {
       if (!menuItemId) {
         throw new Error("Menu item ID is required");
@@ -88,7 +104,7 @@ export const cartService = {
         sessionId: getValidSessionId(),
         menuItem: menuItemId,
         quantity: Math.max(1, Number(quantity) || 1),
-        specialInstructions: String(specialInstructions || "").trim()
+        specialInstructions: String(specialInstructions || "").trim(),
       };
       if (sizeId) {
         payload.sizeId = sizeId;
@@ -98,7 +114,7 @@ export const cartService = {
       return {
         success: true,
         data: extractCartData(data),
-        message: data?.message || "Item added to cart successfully"
+        message: data?.message || "Item added to cart successfully",
       };
     } catch (error) {
       logger.error("Error adding item to cart:", error);
@@ -115,17 +131,20 @@ export const cartService = {
       }
       const payload = {
         sessionId: getValidSessionId(),
-        delta: Number(delta)
+        delta: Number(delta),
       };
       if (sizeId) {
         payload.sizeId = sizeId;
       }
-      const response = await axiosInstance.put(`/cart/items/${menuItemId}`, payload);
+      const response = await axiosInstance.put(
+        `/cart/items/${menuItemId}`,
+        payload,
+      );
       const data = ensureSuccess(response, "Failed to update item quantity");
       return {
         success: true,
         data: extractCartData(data),
-        message: data?.message || "Item quantity updated successfully"
+        message: data?.message || "Item quantity updated successfully",
       };
     } catch (error) {
       logger.error("Error updating item quantity:", error);
@@ -138,19 +157,19 @@ export const cartService = {
         throw new Error("Menu item ID is required");
       }
       const payload = {
-        sessionId: getValidSessionId()
+        sessionId: getValidSessionId(),
       };
       if (sizeId) {
         payload.sizeId = sizeId;
       }
       const response = await axiosInstance.delete(`/cart/items/${menuItemId}`, {
-        data: payload
+        data: payload,
       });
       const data = ensureSuccess(response, "Failed to remove item from cart");
       return {
         success: true,
         data: extractCartData(data),
-        message: data?.message || "Item removed from cart successfully"
+        message: data?.message || "Item removed from cart successfully",
       };
     } catch (error) {
       logger.error("Error removing item from cart:", error);
@@ -161,15 +180,15 @@ export const cartService = {
     try {
       const response = await axiosInstance.delete("/cart", {
         data: {
-          sessionId: getValidSessionId()
-        }
+          sessionId: getValidSessionId(),
+        },
       });
       const data = ensureSuccess(response, "Failed to clear cart");
       extractCartData(data);
       return {
         success: true,
         data: data?.data ?? null,
-        message: data?.message || "Cart cleared successfully"
+        message: data?.message || "Cart cleared successfully",
       };
     } catch (error) {
       logger.error("Error clearing cart:", error);
@@ -184,35 +203,41 @@ export const cartService = {
       const response = await axiosInstance.put("/cart/discount", {
         sessionId: getValidSessionId(),
         discountAmount: 0,
-        discountCode: String(discountCode).trim().toUpperCase()
+        discountCode: String(discountCode).trim().toUpperCase(),
       });
       const data = ensureSuccess(response, "Failed to apply discount");
       return {
         success: true,
         data: data?.data ?? null,
-        message: data?.message || "Discount applied successfully"
+        message: data?.message || "Discount applied successfully",
       };
     } catch (error) {
       logger.error("Error applying discount:", error);
       return buildFailure(error, "Failed to apply discount");
     }
   },
-  checkoutCart: async (specialInstructions = "", paymentMethod = "cash", tableNumber = "") => {
+  checkoutCart: async (
+    specialInstructions = "",
+    paymentMethod = "cash",
+    tableNumber = "",
+  ) => {
     try {
       const response = await axiosInstance.post("/cart/checkout", {
         sessionId: getValidSessionId(),
         specialInstructions: String(specialInstructions || "").trim(),
         paymentMethod,
-        ...(tableNumber ? {
-          tableNumber
-        } : {})
+        ...(tableNumber
+          ? {
+              tableNumber,
+            }
+          : {}),
       });
       const data = ensureSuccess(response, "Failed to checkout cart");
       cartService.clearCachedCart();
       return {
         success: true,
         data: data?.data ?? null,
-        message: data?.message || "Order placed successfully"
+        message: data?.message || "Order placed successfully",
       };
     } catch (error) {
       logger.error("Error checking out cart:", error);
@@ -227,7 +252,7 @@ export const cartService = {
         success: Boolean(cart?.success),
         count: summary?.itemCount || 0,
         total: summary?.total || 0,
-        message: cart?.message
+        message: cart?.message,
       };
     } catch (error) {
       logger.error("Error getting item count:", error);
@@ -235,7 +260,7 @@ export const cartService = {
         success: false,
         count: 0,
         total: 0,
-        message: error?.message || "Failed to get item count"
+        message: error?.message || "Failed to get item count",
       };
     }
   },
@@ -247,7 +272,7 @@ export const cartService = {
       if (!cart?.success) {
         return {
           success: false,
-          message: cart?.message || "Failed to get cart summary"
+          message: cart?.message || "Failed to get cart summary",
         };
       }
       return {
@@ -268,8 +293,8 @@ export const cartService = {
           currency: summary?.currency || "INR",
           currencySymbol: summary?.currencySymbol || "₹",
           total: summary?.total || 0,
-          items: cartData?.items || []
-        }
+          items: cartData?.items || [],
+        },
       };
     } catch (error) {
       logger.error("Error getting cart summary:", error);
@@ -278,23 +303,30 @@ export const cartService = {
   },
   isItemInCart: async (menuItemId, sizeId = null) => {
     try {
-      const cart = cachedCartData ? {
-        success: true,
-        data: cachedCartData,
-        message: "Cart fetched successfully"
-      } : await cartService.getCart();
+      const cart = cachedCartData
+        ? {
+            success: true,
+            data: cachedCartData,
+            message: "Cart fetched successfully",
+          }
+        : await cartService.getCart();
       const items = cart?.data?.items || [];
-      const item = items.find(entry => {
-        const matchesMenuItem = String(entry?.menuItemId || entry?._id || "") === String(menuItemId);
-        const matchesSize = sizeId ? String(entry?.sizeId || "") === String(sizeId) : true;
-        return matchesMenuItem && matchesSize;
-      }) || null;
+      const item =
+        items.find((entry) => {
+          const matchesMenuItem =
+            String(entry?.menuItemId || entry?._id || "") ===
+            String(menuItemId);
+          const matchesSize = sizeId
+            ? String(entry?.sizeId || "") === String(sizeId)
+            : true;
+          return matchesMenuItem && matchesSize;
+        }) || null;
       return {
         success: Boolean(cart?.success),
         isInCart: Boolean(item),
         item,
         quantity: item?.quantity || 0,
-        message: cart?.message
+        message: cart?.message,
       };
     } catch (error) {
       logger.error("Error checking if item is in cart:", error);
@@ -303,7 +335,7 @@ export const cartService = {
         isInCart: false,
         item: null,
         quantity: 0,
-        message: error?.message || "Failed to check cart"
+        message: error?.message || "Failed to check cart",
       };
     }
   },
@@ -315,7 +347,7 @@ export const cartService = {
       if (!cart?.success) {
         return {
           success: false,
-          message: cart?.message || "Failed to get cart totals"
+          message: cart?.message || "Failed to get cart totals",
         };
       }
       return {
@@ -338,13 +370,13 @@ export const cartService = {
           currency: summary?.currency || "INR",
           currencySymbol: summary?.currencySymbol || "₹",
           total: summary?.total || 0,
-          itemCount: summary?.itemCount || 0
-        }
+          itemCount: summary?.itemCount || 0,
+        },
       };
     } catch (error) {
       logger.error("Error getting cart totals:", error);
       return buildFailure(error, "Failed to get cart totals");
     }
-  }
+  },
 };
 export default cartService;

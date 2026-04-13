@@ -1,12 +1,15 @@
 const ensureApiSuffix = (value = "") => {
-  const normalized = String(value || "").trim().replace(/\/+$/, "");
+  const normalized = String(value || "")
+    .trim()
+    .replace(/\/+$/, "");
   if (!normalized) {
     return "";
   }
   return normalized.endsWith("/api") ? normalized : `${normalized}/api`;
 };
 const resolveConfiguredApiUrl = () => {
-  const configured = import.meta.env.VITE_APP_API_URL || import.meta.env.VITE_API_BASE_URL || "";
+  const configured =
+    import.meta.env.VITE_APP_API_URL || import.meta.env.VITE_API_BASE_URL || "";
   if (configured) {
     return ensureApiSuffix(configured);
   }

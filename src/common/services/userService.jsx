@@ -3,9 +3,17 @@ import axios from "axios";
 import { axiosInstance, getTenantHeaders } from "./api";
 import handleApiError from "../utils/handleApiError";
 import pushNotificationService from "./pushNotificationService";
-import { clearStoredTenantId, syncStoredTenantId } from "../utils/tenantStorage.js";
+import {
+  clearStoredTenantId,
+  syncStoredTenantId,
+} from "../utils/tenantStorage.js";
 import { createRequestCache } from "../utils/requestCache";
-import { buildAdminPath, buildPlatformAdminPath, buildSuperAdminPath, isSuperAdminPath } from "../utils/routes.js";
+import {
+  buildAdminPath,
+  buildPlatformAdminPath,
+  buildSuperAdminPath,
+  isSuperAdminPath,
+} from "../utils/routes.js";
 import toServiceResponse from "./serviceResponse";
 const apiBaseUrl = import.meta.env.VITE_APP_API_URL;
 const authRequestCache = createRequestCache(5000);
@@ -16,15 +24,15 @@ const externalRequest = async (method, path, data, config = {}) => {
     data,
     headers: {
       ...(config.headers || {}),
-      ...getTenantHeaders()
+      ...getTenantHeaders(),
     },
     withCredentials: true,
-    ...config
+    ...config,
   });
   return toServiceResponse(response, {
     success: false,
     message: "Invalid server response",
-    data: null
+    data: null,
   });
 };
 const getCurrentUser = () => {
@@ -46,7 +54,7 @@ const syncStoredUser = (partialUser = {}) => {
   const currentUser = getCurrentUser() || {};
   const nextUser = {
     ...currentUser,
-    ...(partialUser || {})
+    ...(partialUser || {}),
   };
   sessionStorage.setItem("user", JSON.stringify(nextUser));
   syncStoredTenantId(nextUser);
@@ -56,7 +64,7 @@ export const userService = {
     try {
       const response = await externalRequest("post", "/users/login", {
         email,
-        password
+        password,
       });
       if (response?.success) {
         authRequestCache.invalidate("auth:profile");
@@ -77,7 +85,7 @@ export const userService = {
     try {
       const response = await axiosInstance.post("/users/register", staffData);
       return toServiceResponse(response, {
-        data: null
+        data: null,
       });
     } catch (error) {
       handleApiError(error, "Failed to register staff");
@@ -92,17 +100,24 @@ export const userService = {
     } finally {
       clearLocalAuth();
       pushNotificationService.clearAllStoredTokens();
-      window.location.href = getCurrentUser()?.role === "super_admin" ? buildPlatformAdminPath("/login") : isSuperAdminPath(window.location.pathname) ? buildSuperAdminPath("/login") : buildAdminPath("/login");
+      window.location.href =
+        getCurrentUser()?.role === "super_admin"
+          ? buildPlatformAdminPath("/login")
+          : isSuperAdminPath(window.location.pathname)
+            ? buildSuperAdminPath("/login")
+            : buildAdminPath("/login");
     }
   },
   getProfile: async () => {
     try {
-      const response = await authRequestCache.run("auth:profile", async () => axiosInstance.get("/users/profile"));
+      const response = await authRequestCache.run("auth:profile", async () =>
+        axiosInstance.get("/users/profile"),
+      );
       if (response?.data?.success && response?.data?.data) {
         syncStoredUser(response.data.data);
       }
       return toServiceResponse(response, {
-        data: null
+        data: null,
       });
     } catch (error) {
       handleApiError(error, "Failed to fetch profile");
@@ -116,7 +131,7 @@ export const userService = {
         syncStoredUser(response.data.data);
       }
       return toServiceResponse(response, {
-        data: null
+        data: null,
       });
     } catch (error) {
       handleApiError(error, "Failed to update profile");
@@ -126,7 +141,7 @@ export const userService = {
     try {
       const response = await axiosInstance.put("/users/update-password", {
         currentPassword,
-        newPassword
+        newPassword,
       });
       authRequestCache.invalidate("auth:profile");
       if (response?.data?.success && response?.data?.logoutRequired !== false) {
@@ -136,7 +151,7 @@ export const userService = {
         syncStoredUser(response.data.data);
       }
       return toServiceResponse(response, {
-        data: null
+        data: null,
       });
     } catch (error) {
       handleApiError(error, "Failed to update password");
@@ -153,16 +168,16 @@ export const userService = {
         syncStoredUser(response.data.data);
       }
       return toServiceResponse(response, {
-        data: null
+        data: null,
       });
     } catch (error) {
       handleApiError(error, "Failed to refresh token");
     }
   },
-  forgotPassword: async email => {
+  forgotPassword: async (email) => {
     try {
       return await externalRequest("post", "/users/forgot-password", {
-        email
+        email,
       });
     } catch (error) {
       handleApiError(error, "Failed to request password reset");
@@ -170,9 +185,13 @@ export const userService = {
   },
   resetPassword: async (token, password) => {
     try {
-      const response = await externalRequest("put", `/users/reset-password/${token}`, {
-        password
-      });
+      const response = await externalRequest(
+        "put",
+        `/users/reset-password/${token}`,
+        {
+          password,
+        },
+      );
       if (response?.success) {
         clearLocalAuth();
       }
@@ -181,9 +200,13 @@ export const userService = {
       handleApiError(error, "Failed to reset password");
     }
   },
-  validateResetToken: async token => {
+  validateResetToken: async (token) => {
     try {
-      return await externalRequest("post", `/users/validate-reset-token/${token}`, {});
+      return await externalRequest(
+        "post",
+        `/users/validate-reset-token/${token}`,
+        {},
+      );
     } catch (error) {
       handleApiError(error, "Failed to validate reset token");
     }
@@ -191,12 +214,14 @@ export const userService = {
   getAllStaff: async (filters = {}) => {
     try {
       const response = await axiosInstance.get("/users/staff", {
-        params: filters
+        params: filters,
       });
-      return response?.data ?? {
-        success: true,
-        data: []
-      };
+      return (
+        response?.data ?? {
+          success: true,
+          data: [],
+        }
+      );
     } catch (error) {
       handleApiError(error, "Failed to fetch staff");
     }
@@ -204,29 +229,33 @@ export const userService = {
   toggleStaffStatus: async (userId, isActive) => {
     try {
       const response = await axiosInstance.put(`/users/${userId}/status`, {
-        isActive
+        isActive,
       });
       const currentUser = getCurrentUser();
       if (currentUser?._id === userId && !isActive) {
         clearLocalAuth();
       }
-      return response?.data ?? {
-        success: true
-      };
+      return (
+        response?.data ?? {
+          success: true,
+        }
+      );
     } catch (error) {
       handleApiError(error, "Failed to update staff status");
     }
   },
-  deleteStaff: async userId => {
+  deleteStaff: async (userId) => {
     try {
       const response = await axiosInstance.delete(`/users/${userId}`);
       const currentUser = getCurrentUser();
       if (currentUser?._id === userId) {
         clearLocalAuth();
       }
-      return response?.data ?? {
-        success: true
-      };
+      return (
+        response?.data ?? {
+          success: true,
+        }
+      );
     } catch (error) {
       handleApiError(error, "Failed to delete staff");
     }
@@ -234,20 +263,22 @@ export const userService = {
   updateUserRole: async (userId, role) => {
     try {
       const response = await axiosInstance.put(`/users/${userId}/role`, {
-        role
+        role,
       });
       if (response?.data?.success && response?.data?.data) {
         const currentUser = getCurrentUser();
         if (currentUser?._id === userId) {
           syncStoredUser({
             role: response?.data?.data?.role,
-            permissions: response?.data?.data?.permissions
+            permissions: response?.data?.data?.permissions,
           });
         }
       }
-      return response?.data ?? {
-        success: true
-      };
+      return (
+        response?.data ?? {
+          success: true,
+        }
+      );
     } catch (error) {
       handleApiError(error, "Failed to update user role");
     }
@@ -267,14 +298,22 @@ export const userService = {
       return true;
     }
   },
-  hasRole: role => getCurrentUser()?.role === role,
+  hasRole: (role) => getCurrentUser()?.role === role,
   hasAnyRole: (roles = []) => roles.includes(getCurrentUser()?.role),
   isAdmin: () => getCurrentUser()?.role === "admin",
-  isManagerOrAdmin: () => ["super_admin", "admin", "manager"].includes(getCurrentUser()?.role),
-  canRegisterStaff: () => Boolean(getCurrentUser()?.permissions?.includes("user_create")),
-  canManageStaff: () => Boolean(getCurrentUser()?.permissions?.includes("user_edit") || getCurrentUser()?.permissions?.includes("user_delete") || getCurrentUser()?.permissions?.includes("user_change_status")),
+  isManagerOrAdmin: () =>
+    ["super_admin", "admin", "manager"].includes(getCurrentUser()?.role),
+  canRegisterStaff: () =>
+    Boolean(getCurrentUser()?.permissions?.includes("user_create")),
+  canManageStaff: () =>
+    Boolean(
+      getCurrentUser()?.permissions?.includes("user_edit") ||
+      getCurrentUser()?.permissions?.includes("user_delete") ||
+      getCurrentUser()?.permissions?.includes("user_change_status"),
+    ),
   clearLocalAuth,
-  canManagePermissions: () => Boolean(getCurrentUser()?.permissions?.includes("user_manage_permissions")),
+  canManagePermissions: () =>
+    Boolean(getCurrentUser()?.permissions?.includes("user_manage_permissions")),
   checkAuth: async () => {
     try {
       await userService.getProfile();
@@ -282,6 +321,6 @@ export const userService = {
     } catch {
       return false;
     }
-  }
+  },
 };
 export default userService;

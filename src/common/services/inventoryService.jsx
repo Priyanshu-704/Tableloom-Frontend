@@ -4,12 +4,14 @@ export const inventoryService = {
   getInventoryItems: async (params = {}) => {
     try {
       const response = await axiosInstance.get("/inventory", {
-        params
+        params,
       });
-      return response?.data ?? {
-        success: true,
-        data: []
-      };
+      return (
+        response?.data ?? {
+          success: true,
+          data: [],
+        }
+      );
     } catch (error) {
       handleApiError(error, "Failed to fetch inventory items");
     }
@@ -17,9 +19,11 @@ export const inventoryService = {
   createInventoryItem: async (payload = {}) => {
     try {
       const response = await axiosInstance.post("/inventory", payload);
-      return response?.data ?? {
-        success: true
-      };
+      return (
+        response?.data ?? {
+          success: true,
+        }
+      );
     } catch (error) {
       handleApiError(error, "Failed to create inventory item");
     }
@@ -27,49 +31,64 @@ export const inventoryService = {
   updateInventoryItem: async (id, payload = {}) => {
     try {
       const response = await axiosInstance.put(`/inventory/${id}`, payload);
-      return response?.data ?? {
-        success: true
-      };
+      return (
+        response?.data ?? {
+          success: true,
+        }
+      );
     } catch (error) {
       handleApiError(error, "Failed to update inventory item");
     }
   },
   adjustInventoryStock: async (id, payload = {}) => {
     try {
-      const response = await axiosInstance.patch(`/inventory/${id}/adjust`, payload);
-      return response?.data ?? {
-        success: true
-      };
+      const response = await axiosInstance.patch(
+        `/inventory/${id}/adjust`,
+        payload,
+      );
+      return (
+        response?.data ?? {
+          success: true,
+        }
+      );
     } catch (error) {
       handleApiError(error, "Failed to adjust inventory stock");
     }
   },
-  bulkUploadInventory: async file => {
+  bulkUploadInventory: async (file) => {
     try {
       const formData = new FormData();
       formData.append("file", file);
-      const response = await axiosInstance.post("/inventory/bulk-upload", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data"
+      const response = await axiosInstance.post(
+        "/inventory/bulk-upload",
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        },
+      );
+      return (
+        response?.data ?? {
+          success: true,
+          data: null,
         }
-      });
-      return response?.data ?? {
-        success: true,
-        data: null
-      };
+      );
     } catch (error) {
       handleApiError(error, "Failed to bulk upload inventory");
     }
   },
-  deleteInventoryItem: async id => {
+  deleteInventoryItem: async (id) => {
     try {
       const response = await axiosInstance.delete(`/inventory/${id}`);
-      return response?.data ?? {
-        success: true
-      };
+      return (
+        response?.data ?? {
+          success: true,
+        }
+      );
     } catch (error) {
       handleApiError(error, "Failed to delete inventory item");
     }
-  }
+  },
 };
 export default inventoryService;

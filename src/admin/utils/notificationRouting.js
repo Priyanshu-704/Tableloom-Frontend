@@ -1,6 +1,12 @@
-import { buildAdminPath, buildPlatformAdminPath } from "../../common/utils/routes";
-const resolveActionPath = action => String(action || "").trim().toLowerCase();
-const normalizeDashboardPath = path => {
+import {
+  buildAdminPath,
+  buildPlatformAdminPath,
+} from "../../common/utils/routes";
+const resolveActionPath = (action) =>
+  String(action || "")
+    .trim()
+    .toLowerCase();
+const normalizeDashboardPath = (path) => {
   const normalized = resolveActionPath(path);
   if (!normalized) {
     return "";
@@ -41,17 +47,22 @@ const typeRouteMap = {
   customer_checkin: buildAdminPath("/dashboard"),
   customer_checkout: buildAdminPath("/dashboard"),
   table_assigned: buildAdminPath("/tables/list"),
-  system_alert: buildAdminPath("/dashboard")
+  system_alert: buildAdminPath("/dashboard"),
 };
-export const getNotificationNavigationTarget = notification => {
-  const linkAction = (notification?.actions || []).find(action => String(action?.type || "").toLowerCase() === "link");
+export const getNotificationNavigationTarget = (notification) => {
+  const linkAction = (notification?.actions || []).find(
+    (action) => String(action?.type || "").toLowerCase() === "link",
+  );
   const actionTarget = normalizeDashboardPath(linkAction?.action);
   if (actionTarget) {
     return actionTarget;
   }
   return typeRouteMap[String(notification?.type || "").toLowerCase()] || "";
 };
-export const getNotificationNavigationLabel = notification => {
-  const linkAction = (notification?.actions || []).find(action => String(action?.type || "").toLowerCase() === "link" && action?.label);
+export const getNotificationNavigationLabel = (notification) => {
+  const linkAction = (notification?.actions || []).find(
+    (action) =>
+      String(action?.type || "").toLowerCase() === "link" && action?.label,
+  );
   return linkAction?.label || "Open Related Page";
 };

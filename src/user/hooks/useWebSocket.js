@@ -1,5 +1,5 @@
 import { logger } from "../../common/utils/logger.js";
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from "react";
 export function useWebSocket(url, options = {}) {
   const [isConnected, setIsConnected] = useState(false);
   const [lastMessage, setLastMessage] = useState(null);
@@ -9,34 +9,34 @@ export function useWebSocket(url, options = {}) {
     try {
       ws.current = new WebSocket(url);
       ws.current.onopen = () => {
-        logger.info('WebSocket connected');
+        logger.info("WebSocket connected");
         setIsConnected(true);
         if (options.onOpen) options.onOpen();
       };
-      ws.current.onmessage = event => {
+      ws.current.onmessage = (event) => {
         const data = JSON.parse(event.data);
         setLastMessage(data);
         if (options.onMessage) options.onMessage(data);
       };
       ws.current.onclose = () => {
-        logger.info('WebSocket disconnected');
+        logger.info("WebSocket disconnected");
         setIsConnected(false);
         if (options.autoReconnect && reconnectCount < 5) {
           setTimeout(() => {
-            setReconnectCount(prev => prev + 1);
+            setReconnectCount((prev) => prev + 1);
             connect();
           }, 3000);
         }
       };
-      ws.current.onerror = error => {
-        logger.error('WebSocket error:', error);
+      ws.current.onerror = (error) => {
+        logger.error("WebSocket error:", error);
         if (options.onError) options.onError(error);
       };
     } catch (error) {
-      logger.error('Failed to connect WebSocket:', error);
+      logger.error("Failed to connect WebSocket:", error);
     }
   };
-  const sendMessage = message => {
+  const sendMessage = (message) => {
     if (ws.current && isConnected) {
       ws.current.send(JSON.stringify(message));
     }
@@ -51,12 +51,13 @@ export function useWebSocket(url, options = {}) {
     return () => {
       disconnect();
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [url]);
   return {
     isConnected,
     lastMessage,
     sendMessage,
     disconnect,
-    reconnect: connect
+    reconnect: connect,
   };
 }

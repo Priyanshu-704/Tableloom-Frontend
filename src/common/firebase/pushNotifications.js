@@ -1,7 +1,18 @@
 import { initializeApp } from "firebase/app";
-import { getMessaging, getToken, isSupported, onMessage } from "firebase/messaging";
+import {
+  getMessaging,
+  getToken,
+  isSupported,
+  onMessage,
+} from "firebase/messaging";
 import { logger } from "../utils/logger.js";
-import { buildFirebaseWorkerUrl, firebaseMessagingConfig, firebasePublicVapidKey, isFirebaseMessagingConfigured, appBasePath } from "./config.js";
+import {
+  buildFirebaseWorkerUrl,
+  firebaseMessagingConfig,
+  firebasePublicVapidKey,
+  isFirebaseMessagingConfigured,
+  appBasePath,
+} from "./config.js";
 let firebaseAppInstance = null;
 let messagingInstance = null;
 let messagingSupportPromise = null;
@@ -13,11 +24,17 @@ const getFirebaseApp = () => {
   return firebaseAppInstance;
 };
 export const isPushMessagingAvailable = async () => {
-  if (typeof window === "undefined" || typeof navigator === "undefined" || !("Notification" in window) || !("serviceWorker" in navigator) || !isFirebaseMessagingConfigured()) {
+  if (
+    typeof window === "undefined" ||
+    typeof navigator === "undefined" ||
+    !("Notification" in window) ||
+    !("serviceWorker" in navigator) ||
+    !isFirebaseMessagingConfigured()
+  ) {
     return false;
   }
   if (!messagingSupportPromise) {
-    messagingSupportPromise = isSupported().catch(error => {
+    messagingSupportPromise = isSupported().catch((error) => {
       logger.warn("Firebase messaging support check failed", error);
       return false;
     });
@@ -57,25 +74,28 @@ export const registerFirebaseServiceWorker = async () => {
   if (!serviceWorkerRegistrationPromise) {
     const scope = appBasePath ? `${appBasePath}/` : "/";
     const scriptUrl = buildFirebaseWorkerUrl(window.location.origin);
-    serviceWorkerRegistrationPromise = navigator.serviceWorker.register(scriptUrl, {
-      scope
-    }).catch(error => {
-      serviceWorkerRegistrationPromise = null;
-      logger.error("Failed to register Firebase messaging service worker", error);
-      throw error;
-    });
+    serviceWorkerRegistrationPromise = navigator.serviceWorker
+      .register(scriptUrl, {
+        scope,
+      })
+      .catch((error) => {
+        serviceWorkerRegistrationPromise = null;
+        logger.error(
+          "Failed to register Firebase messaging service worker",
+          error,
+        );
+        throw error;
+      });
   }
   return serviceWorkerRegistrationPromise;
 };
-export const getPushToken = async ({
-  requestPermission = true
-} = {}) => {
+export const getPushToken = async ({ requestPermission = true } = {}) => {
   if (!isFirebaseMessagingConfigured()) {
     return {
       success: false,
       token: "",
       reason: "missing-config",
-      permission: "unsupported"
+      permission: "unsupported",
     };
   }
   if (!(await isPushMessagingAvailable())) {
@@ -83,16 +103,18 @@ export const getPushToken = async ({
       success: false,
       token: "",
       reason: "unsupported",
-      permission: "unsupported"
+      permission: "unsupported",
     };
   }
-  const permission = requestPermission ? await requestNotificationPermission() : window.Notification.permission;
+  const permission = requestPermission
+    ? await requestNotificationPermission()
+    : window.Notification.permission;
   if (permission !== "granted") {
     return {
       success: false,
       token: "",
       reason: "permission-not-granted",
-      permission
+      permission,
     };
   }
   const messaging = await getMessagingInstance();
@@ -102,17 +124,17 @@ export const getPushToken = async ({
       success: false,
       token: "",
       reason: "messaging-init-failed",
-      permission
+      permission,
     };
   }
   const token = await getToken(messaging, {
     vapidKey: firebasePublicVapidKey,
-    serviceWorkerRegistration
+    serviceWorkerRegistration,
   });
   return {
     success: Boolean(token),
     token: token || "",
-    permission
+    permission,
   };
 };
 export const normalizeIncomingPushPayload = (payload = {}) => {
@@ -121,21 +143,26 @@ export const normalizeIncomingPushPayload = (payload = {}) => {
   return {
     ...data,
     rawPayload: payload,
-    _id: data.notificationId || data._id || data.id || payload?.messageId || `push-${Date.now()}`,
+    _id:
+      data.notificationId ||
+      data._id ||
+      data.id ||
+      payload?.messageId ||
+      `push-${Date.now()}`,
     title: data.title || notification.title || "Notification",
     message: data.message || data.body || notification.body || "",
     body: data.body || data.message || notification.body || "",
     type: data.type || "info",
     priority: data.priority || "medium",
-    createdAt: data.createdAt || new Date().toISOString()
+    createdAt: data.createdAt || new Date().toISOString(),
   };
 };
-export const subscribeToForegroundPush = async handler => {
+export const subscribeToForegroundPush = async (handler) => {
   const messaging = await getMessagingInstance();
   if (!messaging || typeof handler !== "function") {
     return () => {};
   }
-  return onMessage(messaging, payload => {
+  return onMessage(messaging, (payload) => {
     try {
       handler(normalizeIncomingPushPayload(payload));
     } catch (error) {

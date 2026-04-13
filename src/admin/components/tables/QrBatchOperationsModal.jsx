@@ -7,10 +7,22 @@ export function QrBatchOperationsModal({
   title = "Batch QR Operations",
   subtitle = "Perform operations on multiple QR codes.",
   onClose,
-  onSuccess
+  onSuccess,
 }) {
-  return <AdminModal isOpen={isOpen} title={title} subtitle={subtitle} onClose={onClose} maxWidth="max-w-2xl">
-      <QRBatchOperations tables={tables} onClose={onClose} onSuccess={onSuccess} />
-    </AdminModal>;
+  return (
+    <AdminModal
+      isOpen={isOpen}
+      title={title}
+      subtitle={subtitle}
+      onClose={onClose}
+      maxWidth="max-w-2xl"
+    >
+      <QRBatchOperations
+        tables={tables}
+        onClose={onClose}
+        onSuccess={onSuccess}
+      />
+    </AdminModal>
+  );
 }
 export default QrBatchOperationsModal;

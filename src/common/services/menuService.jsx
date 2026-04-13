@@ -14,7 +14,7 @@ const buildMultipartFormData = (data = {}, imageFile = null) => {
 };
 const processMenuItemFormData = (data = {}) => {
   const processed = {
-    ...(data || {})
+    ...(data || {}),
   };
   delete processed.image;
   delete processed.thumbnail;
@@ -30,7 +30,10 @@ const processMenuItemFormData = (data = {}) => {
   if (Array.isArray(processed.prices)) {
     processed.prices = JSON.stringify(processed.prices);
   }
-  if (processed.nutritionalInfo && typeof processed.nutritionalInfo === "object") {
+  if (
+    processed.nutritionalInfo &&
+    typeof processed.nutritionalInfo === "object"
+  ) {
     processed.nutritionalInfo = JSON.stringify(processed.nutritionalInfo);
   }
   if (processed.seasonal && typeof processed.seasonal === "object") {
@@ -43,7 +46,7 @@ const processMenuItemFormData = (data = {}) => {
 };
 const processFilters = (filters = {}) => {
   const processed = {
-    ...(filters || {})
+    ...(filters || {}),
   };
   if (typeof processed.activeOnly === "boolean") {
     processed.activeOnly = String(processed.activeOnly);
@@ -79,11 +82,12 @@ const downloadBlob = (blobData, filename) => {
   window.URL.revokeObjectURL(url);
 };
 export const menuService = {
-  formatPrice: value => new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
-    maximumFractionDigits: 2
-  }).format(Number(value || 0)),
+  formatPrice: (value) =>
+    new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: "INR",
+      maximumFractionDigits: 2,
+    }).format(Number(value || 0)),
   isItemSeasonal: (seasonal = {}) => {
     if (!seasonal?.isSeasonal) {
       return false;
@@ -101,20 +105,30 @@ export const menuService = {
   },
   createCategory: async (categoryData = {}, imageFile = null) => {
     try {
-      const response = await axiosInstance.post("/menu/categories", buildMultipartFormData(categoryData, imageFile), {
-        headers: {
-          "Content-Type": "multipart/form-data"
-        }
-      });
+      const response = await axiosInstance.post(
+        "/menu/categories",
+        buildMultipartFormData(categoryData, imageFile),
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        },
+      );
       menuRequestCache.invalidate("menu:categories");
-      return response?.data ?? {
-        success: true
-      };
+      return (
+        response?.data ?? {
+          success: true,
+        }
+      );
     } catch (error) {
       handleApiError(error, "Failed to create category");
     }
   },
-  getCategories: async (activeOnly = "all", withStation = true, options = {}) => {
+  getCategories: async (
+    activeOnly = "all",
+    withStation = true,
+    options = {},
+  ) => {
     try {
       const params = {};
       if (activeOnly === true || activeOnly === "true") {
@@ -128,66 +142,89 @@ export const menuService = {
       if (options?.view) {
         params.view = options.view;
       }
-      return await menuRequestCache.run({
-        scope: "menu:categories",
-        params
-      }, async () => {
-        const response = await axiosInstance.get("/menu/categories", {
-          params
-        });
-        return response?.data ?? {
-          success: true,
-          data: []
-        };
-      });
+      return await menuRequestCache.run(
+        {
+          scope: "menu:categories",
+          params,
+        },
+        async () => {
+          const response = await axiosInstance.get("/menu/categories", {
+            params,
+          });
+          return (
+            response?.data ?? {
+              success: true,
+              data: [],
+            }
+          );
+        },
+      );
     } catch (error) {
       handleApiError(error, "Failed to fetch categories");
     }
   },
-  getCategoryById: async categoryId => {
+  getCategoryById: async (categoryId) => {
     try {
-      const response = await axiosInstance.get(`/menu/categories/${categoryId}`);
-      return response?.data ?? {
-        success: true,
-        data: null
-      };
+      const response = await axiosInstance.get(
+        `/menu/categories/${categoryId}`,
+      );
+      return (
+        response?.data ?? {
+          success: true,
+          data: null,
+        }
+      );
     } catch (error) {
       handleApiError(error, "Failed to fetch category");
     }
   },
   updateCategory: async (categoryId, updateData = {}, imageFile = null) => {
     try {
-      const response = await axiosInstance.put(`/menu/categories/${categoryId}`, buildMultipartFormData(updateData, imageFile), {
-        headers: {
-          "Content-Type": "multipart/form-data"
-        }
-      });
+      const response = await axiosInstance.put(
+        `/menu/categories/${categoryId}`,
+        buildMultipartFormData(updateData, imageFile),
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        },
+      );
       menuRequestCache.invalidate("menu:categories");
-      return response?.data ?? {
-        success: true
-      };
+      return (
+        response?.data ?? {
+          success: true,
+        }
+      );
     } catch (error) {
       handleApiError(error, "Failed to update category");
     }
   },
-  toggleCategoryStatus: async categoryId => {
+  toggleCategoryStatus: async (categoryId) => {
     try {
-      const response = await axiosInstance.put(`/menu/categories/${categoryId}/status`);
+      const response = await axiosInstance.put(
+        `/menu/categories/${categoryId}/status`,
+      );
       menuRequestCache.invalidate("menu:categories");
-      return response?.data ?? {
-        success: true
-      };
+      return (
+        response?.data ?? {
+          success: true,
+        }
+      );
     } catch (error) {
       handleApiError(error, "Failed to toggle category status");
     }
   },
-  deleteCategory: async categoryId => {
+  deleteCategory: async (categoryId) => {
     try {
-      const response = await axiosInstance.delete(`/menu/categories/${categoryId}`);
+      const response = await axiosInstance.delete(
+        `/menu/categories/${categoryId}`,
+      );
       menuRequestCache.invalidate("menu:categories");
-      return response?.data ?? {
-        success: true
-      };
+      return (
+        response?.data ?? {
+          success: true,
+        }
+      );
     } catch (error) {
       handleApiError(error, "Failed to delete category");
     }
@@ -200,18 +237,23 @@ export const menuService = {
       } else if (activeOnly === false || activeOnly === "false") {
         params.activeOnly = "false";
       }
-      return await menuRequestCache.run({
-        scope: "menu:sizes",
-        params
-      }, async () => {
-        const response = await axiosInstance.get("/menu/sizes", {
-          params
-        });
-        return response?.data ?? {
-          success: true,
-          data: []
-        };
-      });
+      return await menuRequestCache.run(
+        {
+          scope: "menu:sizes",
+          params,
+        },
+        async () => {
+          const response = await axiosInstance.get("/menu/sizes", {
+            params,
+          });
+          return (
+            response?.data ?? {
+              success: true,
+              data: [],
+            }
+          );
+        },
+      );
     } catch (error) {
       handleApiError(error, "Failed to fetch sizes");
     }
@@ -220,31 +262,42 @@ export const menuService = {
     try {
       const response = await axiosInstance.post("/menu/sizes", sizeData);
       menuRequestCache.invalidate("menu:sizes");
-      return response?.data ?? {
-        success: true
-      };
+      return (
+        response?.data ?? {
+          success: true,
+        }
+      );
     } catch (error) {
       handleApiError(error, "Failed to create size");
     }
   },
   updateSize: async (sizeId, sizeData = {}) => {
     try {
-      const response = await axiosInstance.put(`/menu/sizes/${sizeId}`, sizeData);
+      const response = await axiosInstance.put(
+        `/menu/sizes/${sizeId}`,
+        sizeData,
+      );
       menuRequestCache.invalidate("menu:sizes");
-      return response?.data ?? {
-        success: true
-      };
+      return (
+        response?.data ?? {
+          success: true,
+        }
+      );
     } catch (error) {
       handleApiError(error, "Failed to update size");
     }
   },
-  toggleSizeStatus: async sizeId => {
+  toggleSizeStatus: async (sizeId) => {
     try {
-      const response = await axiosInstance.patch(`/menu/sizes/${sizeId}/toggle-status`);
+      const response = await axiosInstance.patch(
+        `/menu/sizes/${sizeId}/toggle-status`,
+      );
       menuRequestCache.invalidate("menu:sizes");
-      return response?.data ?? {
-        success: true
-      };
+      return (
+        response?.data ?? {
+          success: true,
+        }
+      );
     } catch (error) {
       handleApiError(error, "Failed to toggle size status");
     }
@@ -258,12 +311,14 @@ export const menuService = {
         params.activeOnly = "false";
       }
       const response = await axiosInstance.get("/menu/coupons", {
-        params
+        params,
       });
-      return response?.data ?? {
-        success: true,
-        data: []
-      };
+      return (
+        response?.data ?? {
+          success: true,
+          data: [],
+        }
+      );
     } catch (error) {
       handleApiError(error, "Failed to fetch coupons");
     }
@@ -271,44 +326,64 @@ export const menuService = {
   createCoupon: async (couponData = {}) => {
     try {
       const response = await axiosInstance.post("/menu/coupons", couponData);
-      return response?.data ?? {
-        success: true
-      };
+      return (
+        response?.data ?? {
+          success: true,
+        }
+      );
     } catch (error) {
       handleApiError(error, "Failed to create coupon");
     }
   },
   updateCoupon: async (couponId, couponData = {}) => {
     try {
-      const response = await axiosInstance.put(`/menu/coupons/${couponId}`, couponData);
-      return response?.data ?? {
-        success: true
-      };
+      const response = await axiosInstance.put(
+        `/menu/coupons/${couponId}`,
+        couponData,
+      );
+      return (
+        response?.data ?? {
+          success: true,
+        }
+      );
     } catch (error) {
       handleApiError(error, "Failed to update coupon");
     }
   },
-  toggleCouponStatus: async couponId => {
+  toggleCouponStatus: async (couponId) => {
     try {
-      const response = await axiosInstance.patch(`/menu/coupons/${couponId}/toggle-status`);
-      return response?.data ?? {
-        success: true
-      };
+      const response = await axiosInstance.patch(
+        `/menu/coupons/${couponId}/toggle-status`,
+      );
+      return (
+        response?.data ?? {
+          success: true,
+        }
+      );
     } catch (error) {
       handleApiError(error, "Failed to toggle coupon status");
     }
   },
   createMenuItem: async (menuItemData = {}, imageFile = null) => {
     try {
-      const response = await axiosInstance.post("/menu/items", buildMultipartFormData(processMenuItemFormData(menuItemData), imageFile), {
-        headers: {
-          "Content-Type": "multipart/form-data"
-        }
-      });
+      const response = await axiosInstance.post(
+        "/menu/items",
+        buildMultipartFormData(
+          processMenuItemFormData(menuItemData),
+          imageFile,
+        ),
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        },
+      );
       menuRequestCache.invalidate("menu:");
-      return response?.data ?? {
-        success: true
-      };
+      return (
+        response?.data ?? {
+          success: true,
+        }
+      );
     } catch (error) {
       handleApiError(error, "Failed to create menu item");
     }
@@ -320,60 +395,76 @@ export const menuService = {
         processedFilters.view = "admin";
       }
       const response = await axiosInstance.get("/menu/items", {
-        params: processedFilters
+        params: processedFilters,
       });
-      return response?.data ?? {
-        success: true,
-        data: []
-      };
+      return (
+        response?.data ?? {
+          success: true,
+          data: [],
+        }
+      );
     } catch (error) {
       handleApiError(error, "Failed to fetch menu items");
     }
   },
-  getMenuItem: async itemId => {
+  getMenuItem: async (itemId) => {
     try {
       const response = await axiosInstance.get(`/menu/items/${itemId}`);
-      return response?.data ?? {
-        success: true,
-        data: null
-      };
+      return (
+        response?.data ?? {
+          success: true,
+          data: null,
+        }
+      );
     } catch (error) {
       handleApiError(error, "Failed to fetch menu item");
     }
   },
   updateMenuItem: async (itemId, updateData = {}, imageFile = null) => {
     try {
-      const response = await axiosInstance.put(`/menu/items/${itemId}`, buildMultipartFormData(processMenuItemFormData(updateData), imageFile), {
-        headers: {
-          "Content-Type": "multipart/form-data"
-        }
-      });
+      const response = await axiosInstance.put(
+        `/menu/items/${itemId}`,
+        buildMultipartFormData(processMenuItemFormData(updateData), imageFile),
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        },
+      );
       menuRequestCache.invalidate("menu:");
-      return response?.data ?? {
-        success: true
-      };
+      return (
+        response?.data ?? {
+          success: true,
+        }
+      );
     } catch (error) {
       handleApiError(error, "Failed to update menu item");
     }
   },
-  toggleMenuItemAvailability: async itemId => {
+  toggleMenuItemAvailability: async (itemId) => {
     try {
-      const response = await axiosInstance.put(`/menu/items/${itemId}/availability`);
+      const response = await axiosInstance.put(
+        `/menu/items/${itemId}/availability`,
+      );
       menuRequestCache.invalidate("menu:");
-      return response?.data ?? {
-        success: true
-      };
+      return (
+        response?.data ?? {
+          success: true,
+        }
+      );
     } catch (error) {
       handleApiError(error, "Failed to toggle menu item availability");
     }
   },
-  deleteMenuItem: async itemId => {
+  deleteMenuItem: async (itemId) => {
     try {
       const response = await axiosInstance.delete(`/menu/items/${itemId}`);
       menuRequestCache.invalidate("menu:");
-      return response?.data ?? {
-        success: true
-      };
+      return (
+        response?.data ?? {
+          success: true,
+        }
+      );
     } catch (error) {
       handleApiError(error, "Failed to delete menu item");
     }
@@ -381,25 +472,32 @@ export const menuService = {
   getSeasonalItems: async () => {
     try {
       const response = await axiosInstance.get("/menu/items/seasonal");
-      return response?.data ?? {
-        success: true,
-        data: []
-      };
+      return (
+        response?.data ?? {
+          success: true,
+          data: [],
+        }
+      );
     } catch (error) {
       handleApiError(error, "Failed to fetch seasonal items");
     }
   },
   getPriceHistory: async (itemId, period = "all") => {
     try {
-      const response = await axiosInstance.get(`/menu/items/${itemId}/price-history`, {
-        params: {
-          period
+      const response = await axiosInstance.get(
+        `/menu/items/${itemId}/price-history`,
+        {
+          params: {
+            period,
+          },
+        },
+      );
+      return (
+        response?.data ?? {
+          success: true,
+          data: [],
         }
-      });
-      return response?.data ?? {
-        success: true,
-        data: []
-      };
+      );
     } catch (error) {
       handleApiError(error, "Failed to fetch price history");
     }
@@ -407,42 +505,56 @@ export const menuService = {
   getAllPriceChanges: async (filters = {}) => {
     try {
       const response = await axiosInstance.get("/menu/price-changes", {
-        params: processFilters(filters)
+        params: processFilters(filters),
       });
-      return response?.data ?? {
-        success: true,
-        data: []
-      };
+      return (
+        response?.data ?? {
+          success: true,
+          data: [],
+        }
+      );
     } catch (error) {
       handleApiError(error, "Failed to fetch price changes");
     }
   },
   getMenuStatistics: async () => {
     try {
-      return await menuRequestCache.run("menu:statistics", async () => {
-        const response = await axiosInstance.get("/menu/statistics");
-        return response?.data ?? {
-          success: true,
-          data: {}
-        };
-      }, {
-        ttlMs: 10000
-      });
+      return await menuRequestCache.run(
+        "menu:statistics",
+        async () => {
+          const response = await axiosInstance.get("/menu/statistics");
+          return (
+            response?.data ?? {
+              success: true,
+              data: {},
+            }
+          );
+        },
+        {
+          ttlMs: 10000,
+        },
+      );
     } catch (error) {
       handleApiError(error, "Failed to fetch menu statistics");
     }
   },
   getMenuFilterOptions: async () => {
     try {
-      return await menuRequestCache.run("menu:filters", async () => {
-        const response = await axiosInstance.get("/menu/filters");
-        return response?.data ?? {
-          success: true,
-          data: {}
-        };
-      }, {
-        ttlMs: 30000
-      });
+      return await menuRequestCache.run(
+        "menu:filters",
+        async () => {
+          const response = await axiosInstance.get("/menu/filters");
+          return (
+            response?.data ?? {
+              success: true,
+              data: {},
+            }
+          );
+        },
+        {
+          ttlMs: 30000,
+        },
+      );
     } catch (error) {
       handleApiError(error, "Failed to fetch menu filter options");
     }
@@ -451,11 +563,13 @@ export const menuService = {
     try {
       const response = await axiosInstance.put("/menu/items/bulk/update", {
         updates,
-        action
+        action,
       });
-      return response?.data ?? {
-        success: true
-      };
+      return (
+        response?.data ?? {
+          success: true,
+        }
+      );
     } catch (error) {
       handleApiError(error, "Failed to bulk update menu items");
     }
@@ -476,7 +590,7 @@ export const menuService = {
     try {
       const response = await axiosInstance.get("/menu/export", {
         params: processFilters(filters),
-        responseType: "blob"
+        responseType: "blob",
       });
       const contentDisposition = response?.headers?.["content-disposition"];
       let filename = `menu-export-${Date.now()}.csv`;
@@ -489,7 +603,7 @@ export const menuService = {
       downloadBlob(response?.data, filename);
       return {
         success: true,
-        filename
+        filename,
       };
     } catch (error) {
       handleApiError(error, "Failed to export menu items");
@@ -498,33 +612,39 @@ export const menuService = {
   downloadImportTemplate: async () => {
     try {
       const response = await axiosInstance.get("/menu/import/template", {
-        responseType: "blob"
+        responseType: "blob",
       });
       downloadBlob(response?.data, "menu-import-template.csv");
       return {
-        success: true
+        success: true,
       };
     } catch (error) {
       handleApiError(error, "Failed to download import template");
     }
   },
-  importMenuItems: async csvFile => {
+  importMenuItems: async (csvFile) => {
     try {
       const formData = new FormData();
       formData.append("file", csvFile);
-      const response = await axiosInstance.post("/menu/items/bulk/import", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data"
+      const response = await axiosInstance.post(
+        "/menu/items/bulk/import",
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        },
+      );
+      return (
+        response?.data ?? {
+          success: true,
         }
-      });
-      return response?.data ?? {
-        success: true
-      };
+      );
     } catch (error) {
       handleApiError(error, "Failed to import menu items");
     }
   },
   processMenuItemFormData,
-  processFilters
+  processFilters,
 };
 export default menuService;

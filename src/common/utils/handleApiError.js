@@ -7,16 +7,28 @@ const STATUS_MESSAGES = {
   422: "The submitted data is invalid",
   429: "Too many requests. Please try again later",
   500: "Server error. Please try again later",
-  503: "Service unavailable. Please try again later"
+  503: "Service unavailable. Please try again later",
 };
-export const getApiMessage = (source, fallbackMessage = "Something went wrong") => {
+export const getApiMessage = (
+  source,
+  fallbackMessage = "Something went wrong",
+) => {
   if (typeof source === "string") {
     return source.trim() || fallbackMessage;
   }
   const backendData = source?.response?.data || source?.data || source || {};
   const status = source?.response?.status ?? source?.status ?? 0;
-  const backendMessage = backendData?.error || backendData?.message || backendData?.details || backendData?.errors?.[0]?.message;
-  return backendMessage || STATUS_MESSAGES[status] || source?.message || fallbackMessage;
+  const backendMessage =
+    backendData?.error ||
+    backendData?.message ||
+    backendData?.details ||
+    backendData?.errors?.[0]?.message;
+  return (
+    backendMessage ||
+    STATUS_MESSAGES[status] ||
+    source?.message ||
+    fallbackMessage
+  );
 };
 const normalizeApiError = (error, fallbackMessage = "Something went wrong") => {
   const backendData = error?.response?.data;
@@ -27,19 +39,24 @@ const normalizeApiError = (error, fallbackMessage = "Something went wrong") => {
     status,
     data: backendData?.data ?? null,
     meta: backendData?.meta ?? null,
-    errors: backendData?.errors ?? null
+    errors: backendData?.errors ?? null,
   };
 };
 const handleApiError = (error, fallbackMessage = "Something went wrong") => {
   throw normalizeApiError(error, fallbackMessage);
 };
-export const createSafeResponse = (data = null, message = "Request failed", extra = {}) => ({
+export const createSafeResponse = (
+  data = null,
+  message = "Request failed",
+  extra = {},
+) => ({
   success: false,
   data,
   message,
-  ...extra
+  ...extra,
 });
-export const getResponseData = (response, fallback = null) => response?.data?.data ?? response?.data ?? fallback;
+export const getResponseData = (response, fallback = null) =>
+  response?.data?.data ?? response?.data ?? fallback;
 export const normalizeServiceSuccess = (response, fallbackMessage = "") => {
   const payload = response?.data ?? response ?? null;
   if (!payload) {
@@ -47,7 +64,7 @@ export const normalizeServiceSuccess = (response, fallbackMessage = "") => {
   }
   return {
     ...payload,
-    message: getApiMessage(payload, fallbackMessage)
+    message: getApiMessage(payload, fallbackMessage),
   };
 };
 export default handleApiError;

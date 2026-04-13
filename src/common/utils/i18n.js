@@ -52,7 +52,8 @@ export const translations = {
     estimatedWait: "Estimated Wait",
     needHelp: "Need Help?",
     orderComplete: "Order Complete!",
-    thankYouDining: "Thank you for dining with us. We hope you enjoyed your meal!",
+    thankYouDining:
+      "Thank you for dining with us. We hope you enjoyed your meal!",
     orderPlaced: "Order Placed",
     orderConfirmed: "Order Confirmed",
     preparing: "Preparing",
@@ -90,8 +91,10 @@ export const translations = {
     scanQRCodeStep: "Scan the QR code on your table to access the menu",
     orderPayStep: "Browse the menu, place your order, and pay securely",
     enjoyStep: "Your food will be prepared and served at your table",
-    orderPlacedSuccess: "Order placed successfully! Our chefs are now preparing your meal.",
-    waiterNotifiedShortly: "Waiter has been notified! They will be with you shortly.",
+    orderPlacedSuccess:
+      "Order placed successfully! Our chefs are now preparing your meal.",
+    waiterNotifiedShortly:
+      "Waiter has been notified! They will be with you shortly.",
     paymentSuccessful: "Payment successful! Thank you for dining with us.",
     confirm: "Confirm",
     cancel: "Cancel",
@@ -114,7 +117,8 @@ export const translations = {
     scanQRCodeStepDesc: "Scan the QR code on your table to access the menu",
     orderPayStepDesc: "Browse the menu, place your order, and pay securely",
     enjoyStepDesc: "Your food will be prepared and served at your table",
-    restaurantDescription: "Experience the finest dining with our carefully crafted menu featuring local and international cuisine."
+    restaurantDescription:
+      "Experience the finest dining with our carefully crafted menu featuring local and international cuisine.",
   },
   hi: {
     welcome: "स्वागत है",
@@ -169,7 +173,8 @@ export const translations = {
     estimatedWait: "अनुमानित इंतज़ार",
     needHelp: "मदद चाहिए?",
     orderComplete: "ऑर्डर पूरा!",
-    thankYouDining: "हमारे साथ भोजन करने के लिए धन्यवाद। हमें उम्मीद है कि आपने अपना भोजन का आनंद लिया!",
+    thankYouDining:
+      "हमारे साथ भोजन करने के लिए धन्यवाद। हमें उम्मीद है कि आपने अपना भोजन का आनंद लिया!",
     orderPlaced: "ऑर्डर दिया गया",
     orderConfirmed: "ऑर्डर कन्फर्म्ड",
     preparing: "तैयार हो रहा है",
@@ -207,8 +212,10 @@ export const translations = {
     scanQRCodeStep: "मेन्यू एक्सेस करने के लिए अपनी टेबल पर QR कोड स्कैन करें",
     orderPayStep: "मेन्यू ब्राउज़ करें, ऑर्डर दें और सुरक्षित भुगतान करें",
     enjoyStep: "आपका खाना तैयार करके आपकी टेबल पर परोस दिया जाएगा",
-    orderPlacedSuccess: "ऑर्डर सफलतापूर्वक दिया गया! हमारे शेफ अब आपका भोजन तैयार कर रहे हैं।",
-    waiterNotifiedShortly: "वेटर को सूचित किया गया है! वे जल्द ही आपके पास होंगे।",
+    orderPlacedSuccess:
+      "ऑर्डर सफलतापूर्वक दिया गया! हमारे शेफ अब आपका भोजन तैयार कर रहे हैं।",
+    waiterNotifiedShortly:
+      "वेटर को सूचित किया गया है! वे जल्द ही आपके पास होंगे।",
     paymentSuccessful: "भुगतान सफल! हमारे साथ भोजन करने के लिए धन्यवाद।",
     confirm: "पुष्टि करें",
     cancel: "रद्द करें",
@@ -228,21 +235,26 @@ export const translations = {
     ParkingAvailable: "पार्किंग उपलब्ध",
     WheelchairAccessible: "व्हीलचेयर एक्सेस",
     OutdoorSeating: "आउटडोर बैठने की जगह",
-    scanQRCodeStepDesc: "मेन्यू एक्सेस करने के लिए अपनी टेबल पर QR कोड स्कैन करें",
+    scanQRCodeStepDesc:
+      "मेन्यू एक्सेस करने के लिए अपनी टेबल पर QR कोड स्कैन करें",
     orderPayStepDesc: "मेन्यू ब्राउज़ करें, ऑर्डर दें और सुरक्षित भुगतान करें",
     enjoyStepDesc: "आपका खाना तैयार करके आपकी टेबल पर परोस दिया जाएगा",
-    restaurantDescription: "स्थानीय और अंतर्राष्ट्रीय व्यंजनों वाले हमारे सावधानीपूर्वक तैयार मेनू के साथ उत्तम डाइनिंग का अनुभव करें।"
-  }
+    restaurantDescription:
+      "स्थानीय और अंतर्राष्ट्रीय व्यंजनों वाले हमारे सावधानीपूर्वक तैयार मेनू के साथ उत्तम डाइनिंग का अनुभव करें।",
+  },
 };
-export const languages = [{
-  code: "en",
-  name: "English",
-  nativeName: "English"
-}, {
-  code: "hi",
-  name: "Hindi",
-  nativeName: "हिन्दी"
-}];
+export const languages = [
+  {
+    code: "en",
+    name: "English",
+    nativeName: "English",
+  },
+  {
+    code: "hi",
+    name: "Hindi",
+    nativeName: "हिन्दी",
+  },
+];
 export function getCurrentLanguage() {
   return localStorage.getItem("preferred-language") || "en";
 }

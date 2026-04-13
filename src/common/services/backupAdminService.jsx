@@ -4,13 +4,15 @@ export const backupAdminService = {
   exportBackup: async () => {
     try {
       const response = await axiosInstance.get("/backups/export", {
-        responseType: "blob"
+        responseType: "blob",
       });
-      const contentDisposition = response.headers?.["content-disposition"] || "";
+      const contentDisposition =
+        response.headers?.["content-disposition"] || "";
       const filenameMatch = contentDisposition.match(/filename="(.+)"/);
-      const filename = filenameMatch?.[1] || `tableloom-backup-${Date.now()}.json`;
+      const filename =
+        filenameMatch?.[1] || `tableloom-backup-${Date.now()}.json`;
       const blob = new Blob([response.data], {
-        type: "application/json"
+        type: "application/json",
       });
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
@@ -22,7 +24,7 @@ export const backupAdminService = {
       window.URL.revokeObjectURL(url);
       return {
         success: true,
-        filename
+        filename,
       };
     } catch (error) {
       handleApiError(error, "Failed to export backup");
@@ -31,13 +33,15 @@ export const backupAdminService = {
   cloneBackup: async (payload = {}) => {
     try {
       const response = await axiosInstance.post("/backups/clone", payload);
-      return response?.data ?? {
-        success: true,
-        data: {}
-      };
+      return (
+        response?.data ?? {
+          success: true,
+          data: {},
+        }
+      );
     } catch (error) {
       handleApiError(error, "Failed to clone backup");
     }
-  }
+  },
 };
 export default backupAdminService;

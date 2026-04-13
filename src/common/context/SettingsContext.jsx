@@ -1,4 +1,11 @@
-import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useLocation } from "react-router-dom";
 import { settingsService } from "../services";
 import { extractTenantFromPath, stripAppBasePath } from "../utils/routes.js";
@@ -9,62 +16,63 @@ const defaultSettings = {
     phone: "+1 (555) 123-4567",
     email: "hello@tableloom.app",
     website: "www.tableloom.app",
-    description: "Tableloom turns table-side ordering into a polished dining flow with live menus, staff coordination, and smoother guest service.",
+    description:
+      "Tableloom turns table-side ordering into a polished dining flow with live menus, staff coordination, and smoother guest service.",
     logo: "/tableloom-mark.svg",
     logoThumbnail: "/tableloom-mark.svg",
-    theme: "light"
+    theme: "light",
   },
   businessHours: {
     Monday: {
       open: "11:00",
       close: "22:00",
-      closed: false
+      closed: false,
     },
     Tuesday: {
       open: "11:00",
       close: "22:00",
-      closed: false
+      closed: false,
     },
     Wednesday: {
       open: "11:00",
       close: "22:00",
-      closed: false
+      closed: false,
     },
     Thursday: {
       open: "11:00",
       close: "23:00",
-      closed: false
+      closed: false,
     },
     Friday: {
       open: "11:00",
       close: "23:00",
-      closed: false
+      closed: false,
     },
     Saturday: {
       open: "10:00",
       close: "23:00",
-      closed: false
+      closed: false,
     },
     Sunday: {
       open: "10:00",
       close: "21:00",
-      closed: false
-    }
+      closed: false,
+    },
   },
   taxSettings: {
     taxRate: 9,
     serviceCharge: 10,
     taxInclusive: false,
     currency: "INR",
-    currencySymbol: "₹"
+    currencySymbol: "₹",
   },
   paymentMethods: {
     cash: true,
     card: true,
     upi: true,
     digitalWallet: false,
-    splitBill: true
-  }
+    splitBill: true,
+  },
 };
 const SettingsContext = createContext(null);
 const mergeSettings = (current = defaultSettings, incoming = {}) => ({
@@ -72,24 +80,22 @@ const mergeSettings = (current = defaultSettings, incoming = {}) => ({
   ...(incoming || {}),
   restaurant: {
     ...current.restaurant,
-    ...(incoming?.restaurant || {})
+    ...(incoming?.restaurant || {}),
   },
   businessHours: {
     ...current.businessHours,
-    ...(incoming?.businessHours || {})
+    ...(incoming?.businessHours || {}),
   },
   taxSettings: {
     ...current.taxSettings,
-    ...(incoming?.taxSettings || {})
+    ...(incoming?.taxSettings || {}),
   },
   paymentMethods: {
     ...current.paymentMethods,
-    ...(incoming?.paymentMethods || {})
-  }
+    ...(incoming?.paymentMethods || {}),
+  },
 });
-export function SettingsProvider({
-  children
-}) {
+export function SettingsProvider({ children }) {
   const location = useLocation();
   const [settings, setSettings] = useState(defaultSettings);
   const [loading, setLoading] = useState(false);
@@ -106,9 +112,9 @@ export function SettingsProvider({
       setLoading(true);
       const response = await settingsService.getPublicSettings();
       const nextSettings = response?.data || {};
-      setSettings(current => mergeSettings(current, nextSettings || {}));
+      setSettings((current) => mergeSettings(current, nextSettings || {}));
     } catch {
-      setSettings(current => current);
+      setSettings((current) => current);
     } finally {
       setLoading(false);
     }
@@ -120,14 +126,23 @@ export function SettingsProvider({
     hasFetchedRef.current = settingsScope;
     refreshSettings();
   }, [settingsScope]);
-  const value = useMemo(() => ({
-    settings,
-    loading,
-    refreshSettings,
-    applySettings: nextSettings => setSettings(current => mergeSettings(current, nextSettings))
-  }), [loading, settings]);
-  return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>;
+  const value = useMemo(
+    () => ({
+      settings,
+      loading,
+      refreshSettings,
+      applySettings: (nextSettings) =>
+        setSettings((current) => mergeSettings(current, nextSettings)),
+    }),
+    [loading, settings],
+  );
+  return (
+    <SettingsContext.Provider value={value}>
+      {children}
+    </SettingsContext.Provider>
+  );
 }
+// eslint-disable-next-line react-refresh/only-export-components
 export function useSettings() {
   const context = useContext(SettingsContext);
   if (!context) {

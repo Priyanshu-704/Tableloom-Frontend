@@ -9,8 +9,10 @@ if ("serviceWorker" in navigator) {
     navigator.serviceWorker.register(serviceWorkerUrl).catch(() => {});
   });
 }
-ReactDOM.createRoot(document.getElementById("root")).render(<React.StrictMode>
+ReactDOM.createRoot(document.getElementById("root")).render(
+  <React.StrictMode>
     <Router>
       <App />
     </Router>
-  </React.StrictMode>);
+  </React.StrictMode>,
+);

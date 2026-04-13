@@ -1,8 +1,13 @@
 import api, { getTenantHeaders } from "./api";
 import handleApiError from "../utils/handleApiError";
 import toServiceResponse from "./serviceResponse";
-const buildQuery = (filters = {}) => Object.fromEntries(Object.entries(filters).filter(([, value]) => value !== undefined && value !== null && value !== ""));
-const buildTenantAwareAssetUrl = path => {
+const buildQuery = (filters = {}) =>
+  Object.fromEntries(
+    Object.entries(filters).filter(
+      ([, value]) => value !== undefined && value !== null && value !== "",
+    ),
+  );
+const buildTenantAwareAssetUrl = (path) => {
   const baseUrl = String(api.defaults.baseURL || "").replace(/\/+$/, "");
   const tenantHeaders = getTenantHeaders();
   const targetUrl = new URL(`${baseUrl}${path}`, window.location.origin);
@@ -21,11 +26,11 @@ export const billService = {
   getBills: async (filters = {}) => {
     try {
       const response = await api.get("/bills/admin/list", {
-        params: buildQuery(filters)
+        params: buildQuery(filters),
       });
       return toServiceResponse(response, {
         data: [],
-        pagination: {}
+        pagination: {},
       });
     } catch (error) {
       handleApiError(error, "Failed to fetch bills");
@@ -35,7 +40,7 @@ export const billService = {
     try {
       const response = await api.get("/bills/admin/statistics");
       return toServiceResponse(response, {
-        data: {}
+        data: {},
       });
     } catch (error) {
       handleApiError(error, "Failed to fetch bill statistics");
@@ -44,7 +49,7 @@ export const billService = {
   sendBillEmail: async (billId, email) => {
     try {
       const response = await api.post(`/bills/${billId}/send-email`, {
-        email
+        email,
       });
       return toServiceResponse(response);
     } catch (error) {
@@ -55,23 +60,25 @@ export const billService = {
     try {
       const response = await api.post(`/bills/${billId}/pay`, paymentData);
       return toServiceResponse(response, {
-        data: null
+        data: null,
       });
     } catch (error) {
       handleApiError(error, "Failed to process bill payment");
     }
   },
-  getPaymentQr: async billId => {
+  getPaymentQr: async (billId) => {
     try {
       const response = await api.get(`/bills/${billId}/payment-qr`);
       return toServiceResponse(response, {
-        data: {}
+        data: {},
       });
     } catch (error) {
       handleApiError(error, "Failed to generate bill payment QR");
     }
   },
-  getBillViewUrl: billId => buildTenantAwareAssetUrl(`/images/bills/${billId}/pdf`),
-  getBillDownloadUrl: billId => buildTenantAwareAssetUrl(`/images/bills/${billId}/pdf`)
+  getBillViewUrl: (billId) =>
+    buildTenantAwareAssetUrl(`/images/bills/${billId}/pdf`),
+  getBillDownloadUrl: (billId) =>
+    buildTenantAwareAssetUrl(`/images/bills/${billId}/pdf`),
 };
 export default billService;

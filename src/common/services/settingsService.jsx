@@ -18,31 +18,37 @@ const getSettingsScope = () => {
 export const settingsService = {
   getPublicSettings: async () => {
     try {
-      return await settingsRequestCache.run({
-        scope: getSettingsScope(),
-        type: "public-settings"
-      }, async () => {
-        const response = await axiosInstance.get("/settings/public");
-        return toServiceResponse(response, {
-          data: {}
-        });
-      });
+      return await settingsRequestCache.run(
+        {
+          scope: getSettingsScope(),
+          type: "public-settings",
+        },
+        async () => {
+          const response = await axiosInstance.get("/settings/public");
+          return toServiceResponse(response, {
+            data: {},
+          });
+        },
+      );
     } catch (error) {
       handleApiError(error, "Failed to fetch public settings");
     }
   },
   getAdminSettings: async () => {
     try {
-      return await settingsRequestCache.run({
-        scope: getSettingsScope(),
-        type: "admin-settings"
-      }, async () => {
-        const response = await axiosInstance.get("/settings");
-        return toServiceResponse(response, {
-          data: {},
-          meta: {}
-        });
-      });
+      return await settingsRequestCache.run(
+        {
+          scope: getSettingsScope(),
+          type: "admin-settings",
+        },
+        async () => {
+          const response = await axiosInstance.get("/settings");
+          return toServiceResponse(response, {
+            data: {},
+            meta: {},
+          });
+        },
+      );
     } catch (error) {
       handleApiError(error, "Failed to fetch settings");
     }
@@ -52,9 +58,11 @@ export const settingsService = {
       const hasImage = Boolean(imageFile);
       const sanitizedPayload = {
         ...(payload || {}),
-        restaurant: payload?.restaurant ? {
-          ...payload.restaurant
-        } : undefined
+        restaurant: payload?.restaurant
+          ? {
+              ...payload.restaurant,
+            }
+          : undefined,
       };
       const requestBody = hasImage ? new FormData() : sanitizedPayload;
       if (sanitizedPayload?.restaurant) {
@@ -63,24 +71,33 @@ export const settingsService = {
       }
       if (hasImage) {
         Object.entries(sanitizedPayload || {}).forEach(([key, value]) => {
-          requestBody.append(key, typeof value === "object" ? JSON.stringify(value) : value);
+          requestBody.append(
+            key,
+            typeof value === "object" ? JSON.stringify(value) : value,
+          );
         });
         appendImageToFormData(requestBody, imageFile);
       }
-      const response = await axiosInstance.put("/settings", requestBody, hasImage ? {
-        headers: {
-          "Content-Type": "multipart/form-data"
-        }
-      } : undefined);
+      const response = await axiosInstance.put(
+        "/settings",
+        requestBody,
+        hasImage
+          ? {
+              headers: {
+                "Content-Type": "multipart/form-data",
+              },
+            }
+          : undefined,
+      );
       settingsRequestCache.clear();
       return toServiceResponse(response, {
         data: {},
         publicSettings: {},
-        meta: {}
+        meta: {},
       });
     } catch (error) {
       handleApiError(error, "Failed to update settings");
     }
-  }
+  },
 };
 export default settingsService;

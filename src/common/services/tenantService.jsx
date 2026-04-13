@@ -8,37 +8,37 @@ export const tenantService = {
     try {
       const response = await axiosInstance.get("/tenants");
       return toServiceResponse(response, {
-        data: []
+        data: [],
       });
     } catch (error) {
       handleApiError(error, "Failed to fetch tenants");
     }
   },
-  createTenant: async payload => {
+  createTenant: async (payload) => {
     try {
       const response = await axiosInstance.post("/tenants", payload);
       return toServiceResponse(response, {
-        data: null
+        data: null,
       });
     } catch (error) {
       handleApiError(error, "Failed to create tenant");
     }
   },
-  getTenantOverview: async tenantId => {
+  getTenantOverview: async (tenantId) => {
     try {
       const response = await axiosInstance.get(`/tenants/${tenantId}/overview`);
       return toServiceResponse(response, {
-        data: null
+        data: null,
       });
     } catch (error) {
       handleApiError(error, "Failed to fetch tenant overview");
     }
   },
-  verifyTenant: async tenantId => {
+  verifyTenant: async (tenantId) => {
     try {
       const response = await axiosInstance.patch(`/tenants/${tenantId}/verify`);
       return toServiceResponse(response, {
-        data: null
+        data: null,
       });
     } catch (error) {
       handleApiError(error, "Failed to verify tenant");
@@ -46,9 +46,12 @@ export const tenantService = {
   },
   rejectTenant: async (tenantId, payload = {}) => {
     try {
-      const response = await axiosInstance.patch(`/tenants/${tenantId}/reject`, payload);
+      const response = await axiosInstance.patch(
+        `/tenants/${tenantId}/reject`,
+        payload,
+      );
       return toServiceResponse(response, {
-        data: null
+        data: null,
       });
     } catch (error) {
       handleApiError(error, "Failed to reject tenant");
@@ -56,27 +59,34 @@ export const tenantService = {
   },
   updateTenantStatus: async (tenantId, status) => {
     try {
-      const response = await axiosInstance.patch(`/tenants/${tenantId}/status`, {
-        status
-      });
+      const response = await axiosInstance.patch(
+        `/tenants/${tenantId}/status`,
+        {
+          status,
+        },
+      );
       return toServiceResponse(response, {
-        data: null
+        data: null,
       });
     } catch (error) {
       handleApiError(error, "Failed to update tenant status");
     }
   },
-  registerTenant: async payload => {
+  registerTenant: async (payload) => {
     try {
-      const response = await axios.post(`${apiBaseUrl}/tenants/register`, payload, {
-        withCredentials: true
-      });
+      const response = await axios.post(
+        `${apiBaseUrl}/tenants/register`,
+        payload,
+        {
+          withCredentials: true,
+        },
+      );
       return toServiceResponse(response, {
-        data: null
+        data: null,
       });
     } catch (error) {
       handleApiError(error, "Failed to submit tenant registration");
     }
-  }
+  },
 };
 export default tenantService;

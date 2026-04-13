@@ -1,6 +1,7 @@
 const CACHE_PREFIX = "tableloom:offline-api:";
 const MAX_AGE_MS = 1000 * 60 * 30;
-const isStorageAvailable = () => typeof window !== "undefined" && typeof window.localStorage !== "undefined";
+const isStorageAvailable = () =>
+  typeof window !== "undefined" && typeof window.localStorage !== "undefined";
 const toAbsoluteUrl = (url = "") => {
   if (typeof window === "undefined") {
     return String(url || "");
@@ -11,7 +12,7 @@ const toCacheKey = ({
   url = "",
   method = "GET",
   params,
-  tenantHeaders
+  tenantHeaders,
 } = {}) => {
   const normalizedMethod = String(method || "GET").toUpperCase();
   const normalizedUrl = toAbsoluteUrl(url);
@@ -19,19 +20,20 @@ const toCacheKey = ({
     method: normalizedMethod,
     url: normalizedUrl,
     params: params || {},
-    tenantHeaders: tenantHeaders || {}
+    tenantHeaders: tenantHeaders || {},
   })}`;
 };
-export const getOfflineCacheKey = config => toCacheKey({
-  url: config?.url,
-  method: config?.method,
-  params: config?.params,
-  tenantHeaders: {
-    tenantSlug: config?.headers?.["x-tenant-slug"] || "",
-    tenantKey: config?.headers?.["x-tenant-key"] || "",
-    tenantId: config?.headers?.["x-tenant-id"] || ""
-  }
-});
+export const getOfflineCacheKey = (config) =>
+  toCacheKey({
+    url: config?.url,
+    method: config?.method,
+    params: config?.params,
+    tenantHeaders: {
+      tenantSlug: config?.headers?.["x-tenant-slug"] || "",
+      tenantKey: config?.headers?.["x-tenant-key"] || "",
+      tenantId: config?.headers?.["x-tenant-id"] || "",
+    },
+  });
 export const saveOfflineApiResponse = (config, response) => {
   if (!isStorageAvailable() || !config || !response) {
     return;
@@ -45,12 +47,15 @@ export const saveOfflineApiResponse = (config, response) => {
       timestamp: Date.now(),
       status: response.status || 200,
       statusText: response.statusText || "OK",
-      data: response.data
+      data: response.data,
     };
-    window.localStorage.setItem(getOfflineCacheKey(config), JSON.stringify(payload));
-  } catch {}
+    window.localStorage.setItem(
+      getOfflineCacheKey(config),
+      JSON.stringify(payload),
+    );
+  } catch { /* empty */ }
 };
-export const getOfflineApiResponse = config => {
+export const getOfflineApiResponse = (config) => {
   if (!isStorageAvailable() || !config) {
     return null;
   }

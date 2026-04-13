@@ -1,53 +1,80 @@
-import { Navigate, Route, Routes, useParams, useSearchParams } from "react-router-dom";
+import {
+  Navigate,
+  Route,
+  Routes,
+  useParams,
+  useSearchParams,
+} from "react-router-dom";
 import { useApp } from "./context/AppContext";
 import React, { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { UserLiveUpdatesProvider } from "./context/UserLiveUpdatesContext";
 import customerSessionService from "../common/services/CustomerSessionService";
-import SessionRequiredRoute, { ScanRequiredState } from "./components/SessionRequiredRoute";
+import SessionRequiredRoute, {
+  ScanRequiredState,
+} from "./components/SessionRequiredRoute";
 import { buildCustomerPath } from "../common/utils/routes";
-const CustomerInfoForm = lazy(() => import("./pages/CustomerInfoForm").then(m => ({
-  default: m.CustomerInfoForm
-})));
-const Home = lazy(() => import("./pages/Home").then(m => ({
-  default: m.Home
-})));
-const Menu = lazy(() => import("./pages/Menu").then(m => ({
-  default: m.Menu
-})));
-const Cart = lazy(() => import("./pages/Cart").then(m => ({
-  default: m.Cart
-})));
-const OrderStatus = lazy(() => import("./pages/OrderStatus").then(m => ({
-  default: m.OrderStatus
-})));
-const OrderHistory = lazy(() => import("./pages/OrderHistory").then(m => ({
-  default: m.OrderHistory
-})));
-const BillRequest = lazy(() => import("./pages/BillRequest").then(m => ({
-  default: m.BillRequest
-})));
-const Feedback = lazy(() => import("./pages/Feedback").then(m => ({
-  default: m.Feedback
-})));
-const RestaurantInfo = lazy(() => import("./pages/RestaurantInfo").then(m => ({
-  default: m.RestaurantInfo
-})));
-const ThankYou = lazy(() => import("./pages/ThankYou").then(m => ({
-  default: m.ThankYou
-})));
+const CustomerInfoForm = lazy(() =>
+  import("./pages/CustomerInfoForm").then((m) => ({
+    default: m.CustomerInfoForm,
+  })),
+);
+const Home = lazy(() =>
+  import("./pages/Home").then((m) => ({
+    default: m.Home,
+  })),
+);
+const Menu = lazy(() =>
+  import("./pages/Menu").then((m) => ({
+    default: m.Menu,
+  })),
+);
+const Cart = lazy(() =>
+  import("./pages/Cart").then((m) => ({
+    default: m.Cart,
+  })),
+);
+const OrderStatus = lazy(() =>
+  import("./pages/OrderStatus").then((m) => ({
+    default: m.OrderStatus,
+  })),
+);
+const OrderHistory = lazy(() =>
+  import("./pages/OrderHistory").then((m) => ({
+    default: m.OrderHistory,
+  })),
+);
+const BillRequest = lazy(() =>
+  import("./pages/BillRequest").then((m) => ({
+    default: m.BillRequest,
+  })),
+);
+const Feedback = lazy(() =>
+  import("./pages/Feedback").then((m) => ({
+    default: m.Feedback,
+  })),
+);
+const RestaurantInfo = lazy(() =>
+  import("./pages/RestaurantInfo").then((m) => ({
+    default: m.RestaurantInfo,
+  })),
+);
+const ThankYou = lazy(() =>
+  import("./pages/ThankYou").then((m) => ({
+    default: m.ThankYou,
+  })),
+);
 const CustomerLayout = lazy(() => import("./components/layout/CustomerLayout"));
-const RouteLoader = () => <div className="flex min-h-[40vh] items-center justify-center">
+const RouteLoader = () => (
+  <div className="flex min-h-[40vh] items-center justify-center">
     <div className="h-10 w-10 animate-spin rounded-full border-b-2 border-t-2 border-primary-600" />
-  </div>;
-const BYPASS_CUSTOMER_SESSION_GUARD = import.meta.env.DEV && import.meta.env.VITE_BYPASS_CUSTOMER_SESSION_GUARD === "true";
+  </div>
+);
+const BYPASS_CUSTOMER_SESSION_GUARD =
+  import.meta.env.DEV &&
+  import.meta.env.VITE_BYPASS_CUSTOMER_SESSION_GUARD === "true";
 function CustomerApp() {
-  const {
-    dispatch,
-    sessionId
-  } = useApp();
-  const {
-    tableNumber: routeTableNumber
-  } = useParams();
+  const { dispatch, sessionId } = useApp();
+  const { tableNumber: routeTableNumber } = useParams();
   const [searchParams] = useSearchParams();
   const [isHydratingSession, setIsHydratingSession] = useState(true);
   const scanContext = useMemo(() => {
@@ -58,11 +85,15 @@ function CustomerApp() {
     return {
       tableId,
       token,
-      tableNumber: routeTableNumber || queryTableNumber || ""
+      tableNumber: routeTableNumber || queryTableNumber || "",
     };
   }, [routeTableNumber, searchParams]);
   useEffect(() => {
-    if (!scanContext.tableId && !scanContext.token && !scanContext.tableNumber) {
+    if (
+      !scanContext.tableId &&
+      !scanContext.token &&
+      !scanContext.tableNumber
+    ) {
       return;
     }
     dispatch({
@@ -71,8 +102,8 @@ function CustomerApp() {
         tableId: scanContext.tableId,
         tableNumber: scanContext.tableNumber,
         token: scanContext.token,
-        restaurantId: "1"
-      }
+        restaurantId: "1",
+      },
     });
   }, [dispatch, scanContext]);
   useEffect(() => {
@@ -98,20 +129,22 @@ function CustomerApp() {
         }
         dispatch({
           type: "SET_SESSION_DETAILS",
-          payload: details
+          payload: details,
         });
         dispatch({
           type: "SET_TABLE_INFO",
           payload: {
             tableId: details?.table?._id || scanContext.tableId,
-            tableNumber: details?.table?.tableNumber || scanContext.tableNumber || "",
+            tableNumber:
+              details?.table?.tableNumber || scanContext.tableNumber || "",
             token: scanContext.token,
-            restaurantId: "1"
-          }
+            restaurantId: "1",
+          },
         });
+      // eslint-disable-next-line no-unused-vars
       } catch (error) {
         dispatch({
-          type: "CLEAR_SESSION"
+          type: "CLEAR_SESSION",
         });
       } finally {
         if (active) {
@@ -123,15 +156,39 @@ function CustomerApp() {
     return () => {
       active = false;
     };
-  }, [dispatch, scanContext.tableId, scanContext.tableNumber, scanContext.token, sessionId]);
-  return <UserLiveUpdatesProvider>
+  }, [
+    dispatch,
+    scanContext.tableId,
+    scanContext.tableNumber,
+    scanContext.token,
+    sessionId,
+  ]);
+  return (
+    <UserLiveUpdatesProvider>
       <Suspense fallback={<RouteLoader />}>
         <Routes>
-          <Route path="/" element={sessionId || BYPASS_CUSTOMER_SESSION_GUARD ? <Navigate to={buildCustomerPath("/home")} replace /> : <CustomerInfoForm />} />
+          <Route
+            path="/"
+            element={
+              sessionId || BYPASS_CUSTOMER_SESSION_GUARD ? (
+                <Navigate to={buildCustomerPath("/home")} replace />
+              ) : (
+                <CustomerInfoForm />
+              )
+            }
+          />
           <Route path="/thank-you" element={<ThankYou />} />
-          <Route path="/home" element={<SessionRequiredRoute hasSession={Boolean(sessionId)} isHydrating={isHydratingSession}>
+          <Route
+            path="/home"
+            element={
+              <SessionRequiredRoute
+                hasSession={Boolean(sessionId)}
+                isHydrating={isHydratingSession}
+              >
                 <CustomerLayout />
-              </SessionRequiredRoute>}>
+              </SessionRequiredRoute>
+            }
+          >
             <Route index element={<Home />} />
             <Route path="menu" element={<Menu />} />
             <Route path="cart" element={<Cart />} />
@@ -141,9 +198,19 @@ function CustomerApp() {
             <Route path="feedback" element={<Feedback />} />
             <Route path="restaurant-info" element={<RestaurantInfo />} />
           </Route>
-          <Route path="*" element={sessionId || BYPASS_CUSTOMER_SESSION_GUARD ? <Navigate to={buildCustomerPath("/home")} replace /> : <ScanRequiredState />} />
+          <Route
+            path="*"
+            element={
+              sessionId || BYPASS_CUSTOMER_SESSION_GUARD ? (
+                <Navigate to={buildCustomerPath("/home")} replace />
+              ) : (
+                <ScanRequiredState />
+              )
+            }
+          />
         </Routes>
       </Suspense>
-    </UserLiveUpdatesProvider>;
+    </UserLiveUpdatesProvider>
+  );
 }
 export default CustomerApp;

@@ -7,7 +7,7 @@ const permissionState = {
   allPermissions: null,
   rolePermissions: null,
   permissionCategories: null,
-  permissionDisplayNames: null
+  permissionDisplayNames: null,
 };
 const getCurrentUser = () => {
   try {
@@ -17,17 +17,22 @@ const getCurrentUser = () => {
     return null;
   }
 };
-const hasFullAdminAccess = role => ["super_admin", "admin"].includes(String(role || "").toLowerCase());
+const hasFullAdminAccess = (role) =>
+  ["super_admin", "admin"].includes(String(role || "").toLowerCase());
 const generateDisplayNames = () => {
   if (!permissionState.permissions) {
     return;
   }
   permissionState.permissionDisplayNames = {};
   Object.entries(permissionState.permissions).forEach(([key, value]) => {
-    permissionState.permissionDisplayNames[value] = key.toLowerCase().split("_").map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(" ");
+    permissionState.permissionDisplayNames[value] = key
+      .toLowerCase()
+      .split("_")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ");
   });
 };
-const getCategoryName = prefix => {
+const getCategoryName = (prefix) => {
   const names = {
     USER: "User Management",
     MENU: "Menu Management",
@@ -40,7 +45,7 @@ const getCategoryName = prefix => {
     WAITER: "Waiter Call Management",
     VIEW: "Reports & Analytics",
     SYSTEM: "System",
-    BACKUP: "Backup & Restore"
+    BACKUP: "Backup & Restore",
   };
   return names[prefix] || `${prefix} Management`;
 };
@@ -56,24 +61,29 @@ const generateCategories = () => {
     }
     categoryMap[prefix].push(value);
   });
-  permissionState.permissionCategories = Object.entries(categoryMap).map(([prefix, permissions]) => ({
-    name: getCategoryName(prefix),
-    permissions
-  }));
+  permissionState.permissionCategories = Object.entries(categoryMap).map(
+    ([prefix, permissions]) => ({
+      name: getCategoryName(prefix),
+      permissions,
+    }),
+  );
 };
 export const permissionService = {
   fetchAllPermissions: async () => {
     try {
-      return await permissionRequestCache.run("permissions-available", async () => {
-        const response = await axiosInstance.get("/permissions/available");
-        const data = response?.data?.data || response?.data || {};
-        permissionState.permissions = data?.permissions || {};
-        permissionState.allPermissions = data?.allPermissions || [];
-        permissionState.rolePermissions = data?.rolePermissions || {};
-        generateDisplayNames();
-        generateCategories();
-        return data;
-      });
+      return await permissionRequestCache.run(
+        "permissions-available",
+        async () => {
+          const response = await axiosInstance.get("/permissions/available");
+          const data = response?.data?.data || response?.data || {};
+          permissionState.permissions = data?.permissions || {};
+          permissionState.allPermissions = data?.allPermissions || [];
+          permissionState.rolePermissions = data?.rolePermissions || {};
+          generateDisplayNames();
+          generateCategories();
+          return data;
+        },
+      );
     } catch (error) {
       handleApiError(error, "Failed to fetch permissions");
     }
@@ -110,7 +120,7 @@ export const permissionService = {
       handleApiError(error, "Failed to fetch your permissions");
     }
   },
-  getUserPermissions: async userId => {
+  getUserPermissions: async (userId) => {
     try {
       const response = await axiosInstance.get(`/permissions/user/${userId}`);
       return response?.data?.permissions || response?.data?.data || [];
@@ -122,35 +132,41 @@ export const permissionService = {
   updateUserPermissions: async (userId, permissions = []) => {
     try {
       const response = await axiosInstance.put(`/permissions/user/${userId}`, {
-        permissions
+        permissions,
       });
       permissionRequestCache.invalidate("permissions-me");
-      return response?.data ?? {
-        success: true
-      };
+      return (
+        response?.data ?? {
+          success: true,
+        }
+      );
     } catch (error) {
       handleApiError(error, "Failed to update user permissions");
     }
   },
-  resetUserPermissions: async userId => {
+  resetUserPermissions: async (userId) => {
     try {
-      const response = await axiosInstance.post(`/permissions/user/${userId}/reset`);
+      const response = await axiosInstance.post(
+        `/permissions/user/${userId}/reset`,
+      );
       permissionRequestCache.invalidate("permissions-me");
-      return response?.data ?? {
-        success: true
-      };
+      return (
+        response?.data ?? {
+          success: true,
+        }
+      );
     } catch (error) {
       handleApiError(error, "Failed to reset user permissions");
     }
   },
-  hasPermission: async permission => {
+  hasPermission: async (permission) => {
     if (hasFullAdminAccess(getCurrentUser()?.role)) {
       return true;
     }
     const myPerms = await permissionService.getMyPermissions();
     return myPerms.includes(permission);
   },
-  getPermissionDisplayName: async permission => {
+  getPermissionDisplayName: async (permission) => {
     if (!permissionState.permissionDisplayNames) {
       await permissionService.fetchAllPermissions();
     }
@@ -162,10 +178,10 @@ export const permissionService = {
     }
     return permissionState.permissionCategories || [];
   },
-  getDefaultPermissionsForRole: async role => {
+  getDefaultPermissionsForRole: async (role) => {
     const rolePerms = await permissionService.getRolePermissions();
     return rolePerms?.[role] || [];
   },
-  getCurrentUser
+  getCurrentUser,
 };
 export default permissionService;

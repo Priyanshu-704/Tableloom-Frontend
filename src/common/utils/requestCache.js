@@ -1,4 +1,5 @@
-const toCacheKey = key => typeof key === "string" ? key : JSON.stringify(key || {});
+const toCacheKey = (key) =>
+  typeof key === "string" ? key : JSON.stringify(key || {});
 export const createRequestCache = (defaultTtlMs = 5000) => {
   const inflight = new Map();
   const settled = new Map();
@@ -15,31 +16,37 @@ export const createRequestCache = (defaultTtlMs = 5000) => {
         return inflight.get(cacheKey);
       }
     }
-    const requestPromise = Promise.resolve().then(fetcher).then(value => {
-      settled.set(cacheKey, {
-        value,
-        timestamp: Date.now()
+    const requestPromise = Promise.resolve()
+      .then(fetcher)
+      .then((value) => {
+        settled.set(cacheKey, {
+          value,
+          timestamp: Date.now(),
+        });
+        return value;
+      })
+      .finally(() => {
+        inflight.delete(cacheKey);
       });
-      return value;
-    }).finally(() => {
-      inflight.delete(cacheKey);
-    });
     inflight.set(cacheKey, requestPromise);
     return requestPromise;
   };
-  const invalidate = matcher => {
+  const invalidate = (matcher) => {
     if (!matcher) {
       settled.clear();
       inflight.clear();
       return;
     }
-    const matches = cacheKey => typeof matcher === "function" ? matcher(cacheKey) : cacheKey.includes(String(matcher));
-    [...settled.keys()].forEach(cacheKey => {
+    const matches = (cacheKey) =>
+      typeof matcher === "function"
+        ? matcher(cacheKey)
+        : cacheKey.includes(String(matcher));
+    [...settled.keys()].forEach((cacheKey) => {
       if (matches(cacheKey)) {
         settled.delete(cacheKey);
       }
     });
-    [...inflight.keys()].forEach(cacheKey => {
+    [...inflight.keys()].forEach((cacheKey) => {
       if (matches(cacheKey)) {
         inflight.delete(cacheKey);
       }
@@ -48,6 +55,6 @@ export const createRequestCache = (defaultTtlMs = 5000) => {
   return {
     run,
     invalidate,
-    clear: () => invalidate()
+    clear: () => invalidate(),
   };
 };

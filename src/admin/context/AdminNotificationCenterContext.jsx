@@ -1,10 +1,21 @@
 import { logger } from "../../common/utils/logger.js";
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useLocation } from "react-router-dom";
 import { io } from "socket.io-client";
 import { useAuth } from "../../common/context/AuthContext";
 import { useSettings } from "../../common/context/SettingsContext";
-import { getPushToken, subscribeToForegroundPush } from "../../common/firebase/pushNotifications.js";
+import {
+  getPushToken,
+  subscribeToForegroundPush,
+} from "../../common/firebase/pushNotifications.js";
 import { notificationAdminService } from "../../common/services";
 import pushNotificationService from "../../common/services/pushNotificationService";
 import { isSuperAdminMonitoringPath } from "../../common/utils/routes";
@@ -16,23 +27,27 @@ const defaultFilters = {
   type: "all",
   priority: "all",
   unreadOnly: false,
-  actionRequired: false
+  actionRequired: false,
 };
 const priorityWeight = {
   urgent: 4,
   high: 3,
   medium: 2,
-  low: 1
+  low: 1,
 };
 const matchesServerFilters = (notification, filters) => {
-  const status = notification.effectiveStatus || notification.status || "unread";
+  const status =
+    notification.effectiveStatus || notification.status || "unread";
   if (filters.status !== "all" && status !== filters.status) {
     return false;
   }
   if (filters.type !== "all" && notification.type !== filters.type) {
     return false;
   }
-  if (filters.priority !== "all" && notification.priority !== filters.priority) {
+  if (
+    filters.priority !== "all" &&
+    notification.priority !== filters.priority
+  ) {
     return false;
   }
   if (filters.unreadOnly && notification.isRead) {
@@ -48,29 +63,30 @@ const matchesSearch = (notification, search) => {
   if (!keyword) {
     return true;
   }
-  return [notification.title, notification.message, notification.type, notification.sender?.name].filter(Boolean).some(value => String(value).toLowerCase().includes(keyword));
+  return [
+    notification.title,
+    notification.message,
+    notification.type,
+    notification.sender?.name,
+  ]
+    .filter(Boolean)
+    .some((value) => String(value).toLowerCase().includes(keyword));
 };
 const getSocketUrl = () => {
   const apiUrl = import.meta.env.VITE_APP_API_URL;
   return apiUrl.replace(/\/api\/?$/, "");
 };
-export function AdminNotificationCenterProvider({
-  children
-}) {
+export function AdminNotificationCenterProvider({ children }) {
   const location = useLocation();
-  const {
-    user,
-    isAuthenticated,
-    hasPermission
-  } = useAuth();
-  const {
-    addNotification
-  } = useAdmin();
-  const {
-    settings
-  } = useSettings();
-  const isMonitoringMode = isSuperAdminMonitoringPath(location.pathname, user?.role);
-  const canViewNotifications = hasPermission("notification_view") && !isMonitoringMode;
+  const { user, isAuthenticated, hasPermission } = useAuth();
+  const { addNotification } = useAdmin();
+  const { settings } = useSettings();
+  const isMonitoringMode = isSuperAdminMonitoringPath(
+    location.pathname,
+    user?.role,
+  );
+  const canViewNotifications =
+    hasPermission("notification_view") && !isMonitoringMode;
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [stats, setStats] = useState(null);
@@ -84,7 +100,12 @@ export function AdminNotificationCenterProvider({
   const lastFetchKeyRef = useRef("");
   const handledEventIdsRef = useRef(new Map());
   const markLiveEventHandled = useCallback((payload = {}) => {
-    const eventKey = payload?._id || payload?.notificationId || payload?.messageId || payload?.id || "";
+    const eventKey =
+      payload?._id ||
+      payload?.notificationId ||
+      payload?.messageId ||
+      payload?.id ||
+      "";
     if (!eventKey) {
       return true;
     }
@@ -100,29 +121,34 @@ export function AdminNotificationCenterProvider({
     handledEventIdsRef.current.set(eventKey, now);
     return true;
   }, []);
-  const appendLiveNotification = useCallback((incoming = {}) => {
-    if (!markLiveEventHandled(incoming)) {
-      return;
-    }
-    const notification = {
-      ...incoming,
-      effectiveStatus: incoming.effectiveStatus || incoming.status || "unread",
-      isRead: Boolean(incoming.isRead)
-    };
-    setStats(current => ({
-      ...(current || {}),
-      total: (current?.total || 0) + 1,
-      unreadCount: (current?.unreadCount || 0) + (notification.isRead ? 0 : 1)
-    }));
-    setActivityVersion(current => current + 1);
-    if (!matchesServerFilters(notification, filtersRef.current)) {
-      return;
-    }
-    setNotifications(current => {
-      const next = current.filter(item => item._id !== notification._id);
-      return [notification, ...next].slice(0, 100);
-    });
-  }, [markLiveEventHandled]);
+  const appendLiveNotification = useCallback(
+    (incoming = {}) => {
+      if (!markLiveEventHandled(incoming)) {
+        return;
+      }
+      const notification = {
+        ...incoming,
+        effectiveStatus:
+          incoming.effectiveStatus || incoming.status || "unread",
+        isRead: Boolean(incoming.isRead),
+      };
+      setStats((current) => ({
+        ...(current || {}),
+        total: (current?.total || 0) + 1,
+        unreadCount:
+          (current?.unreadCount || 0) + (notification.isRead ? 0 : 1),
+      }));
+      setActivityVersion((current) => current + 1);
+      if (!matchesServerFilters(notification, filtersRef.current)) {
+        return;
+      }
+      setNotifications((current) => {
+        const next = current.filter((item) => item._id !== notification._id);
+        return [notification, ...next].slice(0, 100);
+      });
+    },
+    [markLiveEventHandled],
+  );
   const loadStats = useCallback(async () => {
     if (!isAuthenticated || !canViewNotifications) {
       setStats(null);
@@ -130,64 +156,87 @@ export function AdminNotificationCenterProvider({
     }
     try {
       const statsResponse = await notificationAdminService.getStats("today");
-      setStats(current => ({
+      setStats((current) => ({
         ...(current || {}),
-        ...(statsResponse.data || {})
+        ...(statsResponse.data || {}),
       }));
     } catch (error) {
       logger.error("Failed to load notification stats:", error);
     }
   }, [canViewNotifications, isAuthenticated]);
-  const loadNotifications = useCallback(async ({
-    silent = false,
-    force = false
-  } = {}) => {
-    if (!isAuthenticated || !canViewNotifications) {
-      return;
-    }
-    if (!force && !isDrawerOpen) {
-      return;
-    }
-    try {
-      if (!silent) {
-        setLoading(true);
+  const loadNotifications = useCallback(
+    async ({ silent = false, force = false } = {}) => {
+      if (!isAuthenticated || !canViewNotifications) {
+        return;
       }
-      const params = {
-        limit: 100
-      };
-      if (filters.status !== "all") {
-        params.status = filters.status;
+      if (!force && !isDrawerOpen) {
+        return;
       }
-      if (filters.type !== "all") {
-        params.type = filters.type;
+      try {
+        if (!silent) {
+          setLoading(true);
+        }
+        const params = {
+          limit: 100,
+        };
+        if (filters.status !== "all") {
+          params.status = filters.status;
+        }
+        if (filters.type !== "all") {
+          params.type = filters.type;
+        }
+        if (filters.priority !== "all") {
+          params.priority = filters.priority;
+        }
+        if (filters.unreadOnly) {
+          params.unreadOnly = true;
+        }
+        if (filters.actionRequired) {
+          params.actionRequired = true;
+        }
+        const [notificationsResponse, statsResponse] = await Promise.all([
+          notificationAdminService.getNotifications(params),
+          notificationAdminService.getStats("today"),
+        ]);
+        setNotifications(notificationsResponse.data || []);
+        setStats({
+          ...(statsResponse.data || {}),
+          unreadCount:
+            statsResponse.data?.unreadCount ??
+            notificationsResponse.unreadCount ??
+            0,
+          total:
+            statsResponse.data?.total ??
+            notificationsResponse.pagination?.total ??
+            notificationsResponse.data?.length ??
+            0,
+        });
+      } catch (error) {
+        logger.error("Failed to load notification center:", error);
+        if (!silent) {
+          addNotification(
+            error.response?.data?.message || "Failed to load notifications",
+            "error",
+          );
+        }
+      } finally {
+        if (!silent) {
+          setLoading(false);
+        }
       }
-      if (filters.priority !== "all") {
-        params.priority = filters.priority;
-      }
-      if (filters.unreadOnly) {
-        params.unreadOnly = true;
-      }
-      if (filters.actionRequired) {
-        params.actionRequired = true;
-      }
-      const [notificationsResponse, statsResponse] = await Promise.all([notificationAdminService.getNotifications(params), notificationAdminService.getStats("today")]);
-      setNotifications(notificationsResponse.data || []);
-      setStats({
-        ...(statsResponse.data || {}),
-        unreadCount: statsResponse.data?.unreadCount ?? notificationsResponse.unreadCount ?? 0,
-        total: statsResponse.data?.total ?? notificationsResponse.pagination?.total ?? notificationsResponse.data?.length ?? 0
-      });
-    } catch (error) {
-      logger.error("Failed to load notification center:", error);
-      if (!silent) {
-        addNotification(error.response?.data?.message || "Failed to load notifications", "error");
-      }
-    } finally {
-      if (!silent) {
-        setLoading(false);
-      }
-    }
-  }, [addNotification, canViewNotifications, filters.actionRequired, filters.priority, filters.status, filters.type, filters.unreadOnly, isDrawerOpen, isAuthenticated]);
+    },
+    [
+      addNotification,
+      canViewNotifications,
+      filters.actionRequired,
+      filters.priority,
+      filters.status,
+      filters.type,
+      filters.unreadOnly,
+      isDrawerOpen,
+      isAuthenticated,
+    ],
+  );
   useEffect(() => {
     loadStats();
   }, [loadStats]);
@@ -207,16 +256,22 @@ export function AdminNotificationCenterProvider({
       isAuthenticated,
       canViewNotifications,
       isDrawerOpen,
-      filters
+      filters,
     });
     if (lastFetchKeyRef.current === fetchKey) {
       return;
     }
     lastFetchKeyRef.current = fetchKey;
     loadNotifications({
-      force: true
+      force: true,
     });
-  }, [canViewNotifications, filters, isAuthenticated, isDrawerOpen, loadNotifications]);
+  }, [
+    canViewNotifications,
+    filters,
+    isAuthenticated,
+    isDrawerOpen,
+    loadNotifications,
+  ]);
   useEffect(() => {
     filtersRef.current = filters;
   }, [filters]);
@@ -227,7 +282,7 @@ export function AdminNotificationCenterProvider({
     }
     const socket = io(getSocketUrl(), {
       withCredentials: true,
-      transports: ["websocket", "polling"]
+      transports: ["websocket", "polling"],
     });
     socketRef.current = socket;
     const joinRooms = () => {
@@ -240,38 +295,40 @@ export function AdminNotificationCenterProvider({
         socket.emit("join-management-room");
       }
     };
-    const handleIncomingNotification = incoming => appendLiveNotification({
-      ...incoming,
-      isRead: false
-    });
-    const handleCountUpdate = payload => {
-      setStats(current => ({
+    const handleIncomingNotification = (incoming) =>
+      appendLiveNotification({
+        ...incoming,
+        isRead: false,
+      });
+    const handleCountUpdate = (payload) => {
+      setStats((current) => ({
         ...(current || {}),
-        unreadCount: payload.unreadCount ?? current?.unreadCount ?? 0
+        unreadCount: payload.unreadCount ?? current?.unreadCount ?? 0,
       }));
     };
     const handleNotificationUpdate = (payload = {}) => {
       if (payload.action === "cleared") {
         setNotifications([]);
       }
-      setActivityVersion(current => current + 1);
+      setActivityVersion((current) => current + 1);
       if (isDrawerOpen) {
         loadNotifications({
           silent: true,
-          force: true
+          force: true,
         });
       } else {
         loadStats();
       }
     };
     const handleWaiterCall = (payload = {}) => {
-      const tableLabel = payload.tableName || `Table ${payload.tableNumber || ""}`.trim();
+      const tableLabel =
+        payload.tableName || `Table ${payload.tableNumber || ""}`.trim();
       addNotification(`${tableLabel} requested staff attention`, "warning");
-      setActivityVersion(current => current + 1);
+      setActivityVersion((current) => current + 1);
       if (isDrawerOpen) {
         loadNotifications({
           silent: true,
-          force: true
+          force: true,
         });
       } else {
         loadStats();
@@ -300,20 +357,35 @@ export function AdminNotificationCenterProvider({
       socketRef.current = null;
       setIsConnected(false);
     };
-  }, [appendLiveNotification, addNotification, canViewNotifications, isAuthenticated, isDrawerOpen, loadNotifications, loadStats, user?._id, user?.role]);
+  }, [
+    appendLiveNotification,
+    addNotification,
+    canViewNotifications,
+    isAuthenticated,
+    isDrawerOpen,
+    loadNotifications,
+    loadStats,
+    user?._id,
+    user?.role,
+  ]);
   useEffect(() => {
     let unsubscribe = () => {};
     let isCancelled = false;
     const pushEnabled = settings?.notifications?.pushNotifications !== false;
-    const storageKey = pushNotificationService.buildStorageKey("staff", user?._id || "guest");
+    const storageKey = pushNotificationService.buildStorageKey(
+      "staff",
+      user?._id || "guest",
+    );
     const startPushSync = async () => {
       if (!pushEnabled || !isAuthenticated || !user?._id) {
-        await pushNotificationService.removeStoredToken({
-          storageKey,
-          audience: "staff",
-          userId: user?._id,
-          role: user?.role
-        }).catch(() => {});
+        await pushNotificationService
+          .removeStoredToken({
+            storageKey,
+            audience: "staff",
+            userId: user?._id,
+            role: user?.role,
+          })
+          .catch(() => {});
         return;
       }
       if (!canViewNotifications) {
@@ -323,45 +395,54 @@ export function AdminNotificationCenterProvider({
         return;
       }
       const tokenResult = await getPushToken({
-        requestPermission: true
-      }).catch(error => {
+        requestPermission: true,
+      }).catch((error) => {
         logger.warn("Failed to initialize staff push notifications", error);
         return {
           success: false,
-          token: ""
+          token: "",
         };
       });
       if (!tokenResult?.success || !tokenResult?.token) {
         if (tokenResult?.permission === "denied") {
-          await pushNotificationService.removeStoredToken({
-            storageKey,
-            audience: "staff",
-            userId: user?._id,
-            role: user?.role
-          }).catch(() => {});
+          await pushNotificationService
+            .removeStoredToken({
+              storageKey,
+              audience: "staff",
+              userId: user?._id,
+              role: user?.role,
+            })
+            .catch(() => {});
         }
         return;
       }
-      await pushNotificationService.syncToken({
-        storageKey,
-        audience: "staff",
-        userId: user._id,
-        role: user.role,
-        permission: tokenResult.permission,
-        token: tokenResult.token
-      }).catch(error => {
-        logger.warn("Failed to sync staff push notification token", error);
-      });
-      unsubscribe = await subscribeToForegroundPush(payload => {
+      await pushNotificationService
+        .syncToken({
+          storageKey,
+          audience: "staff",
+          userId: user._id,
+          role: user.role,
+          permission: tokenResult.permission,
+          token: tokenResult.token,
+        })
+        .catch((error) => {
+          logger.warn("Failed to sync staff push notification token", error);
+        });
+      unsubscribe = await subscribeToForegroundPush((payload) => {
         if (isCancelled) {
           return;
         }
         appendLiveNotification({
           ...payload,
-          isRead: false
+          isRead: false,
         });
         if (payload?.message) {
-          addNotification(payload.message, payload.priority === "urgent" || payload.type === "waiter_call" ? "warning" : "info");
+          addNotification(
+            payload.message,
+            payload.priority === "urgent" || payload.type === "waiter_call"
+              ? "warning"
+              : "info",
+          );
         }
       });
     };
@@ -370,65 +451,154 @@ export function AdminNotificationCenterProvider({
       isCancelled = true;
       unsubscribe();
     };
-  }, [addNotification, appendLiveNotification, canViewNotifications, isAuthenticated, settings?.notifications?.pushNotifications, user?._id, user?.role]);
-  const runAction = useCallback(async (actionKey, task, successMessage) => {
-    try {
-      setActiveAction(actionKey);
-      await task();
-      if (successMessage) {
-        addNotification(successMessage, "success");
-      }
-      await loadNotifications({
-        silent: true,
-        force: true
-      });
-    } catch (error) {
-      logger.error("Notification center action failed:", error);
-      addNotification(error.response?.data?.message || "Failed to update notifications", "error");
-    } finally {
-      setActiveAction("");
-    }
-  }, [addNotification, loadNotifications]);
-  const filteredNotifications = useMemo(() => notifications.filter(notification => matchesSearch(notification, filters.search)), [filters.search, notifications]);
-  const importantNotifications = useMemo(() => filteredNotifications.filter(item => ["urgent", "high"].includes(item.priority)).sort((left, right) => (priorityWeight[right.priority] || 0) - (priorityWeight[left.priority] || 0)), [filteredNotifications]);
-  const otherNotifications = useMemo(() => filteredNotifications.filter(item => !["urgent", "high"].includes(item.priority)), [filteredNotifications]);
-  const value = useMemo(() => ({
-    notifications: filteredNotifications,
-    rawNotifications: notifications,
-    importantNotifications,
-    otherNotifications,
-    stats,
-    activityVersion,
-    filters,
-    loading,
-    activeAction,
-    isConnected,
-    isDrawerOpen,
+  }, [
+    addNotification,
+    appendLiveNotification,
     canViewNotifications,
-    setFilters,
-    resetFilters: () => setFilters(defaultFilters),
-    refreshNotifications: () => loadNotifications({
-      force: true
+    isAuthenticated,
+    settings?.notifications?.pushNotifications,
+    user?._id,
+    user?.role,
+  ]);
+  const runAction = useCallback(
+    async (actionKey, task, successMessage) => {
+      try {
+        setActiveAction(actionKey);
+        await task();
+        if (successMessage) {
+          addNotification(successMessage, "success");
+        }
+        await loadNotifications({
+          silent: true,
+          force: true,
+        });
+      } catch (error) {
+        logger.error("Notification center action failed:", error);
+        addNotification(
+          error.response?.data?.message || "Failed to update notifications",
+          "error",
+        );
+      } finally {
+        setActiveAction("");
+      }
+    },
+    [addNotification, loadNotifications],
+  );
+  const filteredNotifications = useMemo(
+    () =>
+      notifications.filter((notification) =>
+        matchesSearch(notification, filters.search),
+      ),
+    [filters.search, notifications],
+  );
+  const importantNotifications = useMemo(
+    () =>
+      filteredNotifications
+        .filter((item) => ["urgent", "high"].includes(item.priority))
+        .sort(
+          (left, right) =>
+            (priorityWeight[right.priority] || 0) -
+            (priorityWeight[left.priority] || 0),
+        ),
+    [filteredNotifications],
+  );
+  const otherNotifications = useMemo(
+    () =>
+      filteredNotifications.filter(
+        (item) => !["urgent", "high"].includes(item.priority),
+      ),
+    [filteredNotifications],
+  );
+  const value = useMemo(
+    () => ({
+      notifications: filteredNotifications,
+      rawNotifications: notifications,
+      importantNotifications,
+      otherNotifications,
+      stats,
+      activityVersion,
+      filters,
+      loading,
+      activeAction,
+      isConnected,
+      isDrawerOpen,
+      canViewNotifications,
+      setFilters,
+      resetFilters: () => setFilters(defaultFilters),
+      refreshNotifications: () =>
+        loadNotifications({
+          force: true,
+        }),
+      toggleDrawer: () => setIsDrawerOpen((current) => !current),
+      openDrawer: () => setIsDrawerOpen(true),
+      closeDrawer: () => setIsDrawerOpen(false),
+      markAsRead: (notificationId) =>
+        runAction(
+          notificationId,
+          () => notificationAdminService.markAsRead(notificationId),
+          "Notification marked as read",
+        ),
+      acknowledge: (notificationId) =>
+        runAction(
+          notificationId,
+          () => notificationAdminService.acknowledge(notificationId),
+          "Notification acknowledged",
+        ),
+      dismiss: (notificationId) =>
+        runAction(
+          notificationId,
+          () => notificationAdminService.dismiss(notificationId),
+          "Notification cleared from your drawer",
+        ),
+      markAllAsRead: () =>
+        runAction(
+          "mark-all",
+          () => notificationAdminService.markAllAsRead(),
+          "All notifications marked as read",
+        ),
+      clearAll: () =>
+        runAction(
+          "clear-all",
+          () => notificationAdminService.clearAll(),
+          "Notifications cleared",
+        ),
+      cleanupExpired: () =>
+        runAction(
+          "cleanup",
+          () => notificationAdminService.cleanup(),
+          "Expired notifications cleaned up",
+        ),
     }),
-    toggleDrawer: () => setIsDrawerOpen(current => !current),
-    openDrawer: () => setIsDrawerOpen(true),
-    closeDrawer: () => setIsDrawerOpen(false),
-    markAsRead: notificationId => runAction(notificationId, () => notificationAdminService.markAsRead(notificationId), "Notification marked as read"),
-    acknowledge: notificationId => runAction(notificationId, () => notificationAdminService.acknowledge(notificationId), "Notification acknowledged"),
-    dismiss: notificationId => runAction(notificationId, () => notificationAdminService.dismiss(notificationId), "Notification cleared from your drawer"),
-    markAllAsRead: () => runAction("mark-all", () => notificationAdminService.markAllAsRead(), "All notifications marked as read"),
-    clearAll: () => runAction("clear-all", () => notificationAdminService.clearAll(), "Notifications cleared"),
-    cleanupExpired: () => runAction("cleanup", () => notificationAdminService.cleanup(), "Expired notifications cleaned up")
-  }), [activeAction, activityVersion, canViewNotifications, filteredNotifications, filters, importantNotifications, isConnected, isDrawerOpen, loadNotifications, loading, notifications, otherNotifications, runAction, stats]);
-  return <AdminNotificationCenterContext.Provider value={value}>
+    [
+      activeAction,
+      activityVersion,
+      canViewNotifications,
+      filteredNotifications,
+      filters,
+      importantNotifications,
+      isConnected,
+      isDrawerOpen,
+      loadNotifications,
+      loading,
+      notifications,
+      otherNotifications,
+      runAction,
+      stats,
+    ],
+  );
+  return (
+    <AdminNotificationCenterContext.Provider value={value}>
       {children}
-    </AdminNotificationCenterContext.Provider>;
+    </AdminNotificationCenterContext.Provider>
+  );
 }
 // eslint-disable-next-line react-refresh/only-export-components
 export function useAdminNotificationCenter() {
   const context = useContext(AdminNotificationCenterContext);
   if (!context) {
-    throw new Error("useAdminNotificationCenter must be used within AdminNotificationCenterProvider");
+    throw new Error(
+      "useAdminNotificationCenter must be used within AdminNotificationCenterProvider",
+    );
   }
   return context;
 }

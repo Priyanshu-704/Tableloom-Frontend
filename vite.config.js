@@ -7,12 +7,10 @@ const normalizeBasePath = (path = "/") => {
   const trimmed = `/${String(path || "/").replace(/^\/+|\/+$/g, "")}`;
   return trimmed === "/" ? "/" : `${trimmed}/`;
 };
-export default defineConfig(({
-  mode
-}) => {
+export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, projectRoot, "");
   return {
     plugins: [react(), tailwindcss()],
-    base: normalizeBasePath(env.VITE_CONTEXT_PATH || "/")
+    base: normalizeBasePath(env.VITE_CONTEXT_PATH || "/"),
   };
 });

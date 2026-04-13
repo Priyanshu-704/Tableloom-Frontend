@@ -7,21 +7,23 @@ export const dashboardService = {
     try {
       return await dashboardRequestCache.run("dashboard:overview", async () => {
         const response = await axiosInstance.get("/dashboard/overview");
-        return response?.data ?? {
-          success: true,
-          data: {
-            stats: {},
-            recentActivity: [],
-            orderStats: {},
-            customerAnalytics: {},
-            feedbackDashboard: {},
-            waiterDashboard: {}
+        return (
+          response?.data ?? {
+            success: true,
+            data: {
+              stats: {},
+              recentActivity: [],
+              orderStats: {},
+              customerAnalytics: {},
+              feedbackDashboard: {},
+              waiterDashboard: {},
+            },
           }
-        };
+        );
       });
     } catch (error) {
       handleApiError(error, "Failed to fetch dashboard");
     }
-  }
+  },
 };
 export default dashboardService;

@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import { axiosInstance } from "./api";
 import handleApiError from "../utils/handleApiError";
 import { createRequestCache } from "../utils/requestCache";
@@ -6,17 +7,21 @@ const sanitizeNumber = (value, fallback = 0) => {
   const nextValue = Number(value);
   return Number.isFinite(nextValue) ? nextValue : fallback;
 };
-const normalizeResponse = (response, fallbackData = null) => response?.data ?? {
-  success: true,
-  data: fallbackData
-};
+const normalizeResponse = (response, fallbackData = null) =>
+  response?.data ?? {
+    success: true,
+    data: fallbackData,
+  };
 export const customerSessionService = {
   validateScan: async (tableId, token) => {
     try {
-      const response = await axiosInstance.post("/customers/session/scan/validate", {
-        tableId,
-        token
-      });
+      const response = await axiosInstance.post(
+        "/customers/session/scan/validate",
+        {
+          tableId,
+          token,
+        },
+      );
       return normalizeResponse(response);
     } catch (error) {
       handleApiError(error, "Failed to validate QR code");
@@ -30,57 +35,71 @@ export const customerSessionService = {
         customerData: {
           name: customerData?.name || "",
           email: customerData?.email || "",
-          phone: customerData?.phone || ""
-        }
+          phone: customerData?.phone || "",
+        },
       });
       return normalizeResponse(response);
     } catch (error) {
       handleApiError(error, "Failed to start customer session");
     }
   },
-  getSession: async sessionId => {
+  getSession: async (sessionId) => {
     try {
-      return await sessionRequestCache.run(`customer-session:${sessionId}`, async () => {
-        const response = await axiosInstance.get(`/customers/session/${sessionId}`);
-        return normalizeResponse(response);
-      });
+      return await sessionRequestCache.run(
+        `customer-session:${sessionId}`,
+        async () => {
+          const response = await axiosInstance.get(
+            `/customers/session/${sessionId}`,
+          );
+          return normalizeResponse(response);
+        },
+      );
     } catch (error) {
       handleApiError(error, "Failed to fetch customer session");
     }
   },
   completeSessionOnline: async (sessionId, paymentData = {}) => {
     try {
-      const response = await axiosInstance.put(`/customers/session/${sessionId}/complete-online`, {
-        paymentData: {
-          paymentMethod: paymentData?.paymentMethod || "online",
-          transactionId: paymentData?.transactionId || "",
-          amount: sanitizeNumber(paymentData?.amount, 0)
-        }
-      });
+      const response = await axiosInstance.put(
+        `/customers/session/${sessionId}/complete-online`,
+        {
+          paymentData: {
+            paymentMethod: paymentData?.paymentMethod || "online",
+            transactionId: paymentData?.transactionId || "",
+            amount: sanitizeNumber(paymentData?.amount, 0),
+          },
+        },
+      );
       return normalizeResponse(response);
     } catch (error) {
       handleApiError(error, "Failed to complete online payment");
     }
   },
-  logoutFromSession: async sessionId => {
+  logoutFromSession: async (sessionId) => {
     try {
-      const response = await axiosInstance.put(`/customers/session/${sessionId}/logout`);
+      const response = await axiosInstance.put(
+        `/customers/session/${sessionId}/logout`,
+      );
       return normalizeResponse(response);
     } catch (error) {
       handleApiError(error, "Failed to logout from session");
     }
   },
-  generateBillBeforePayment: async sessionId => {
+  generateBillBeforePayment: async (sessionId) => {
     try {
-      const response = await axiosInstance.post(`/customers/session/${sessionId}/generate-bill-before-payment`);
+      const response = await axiosInstance.post(
+        `/customers/session/${sessionId}/generate-bill-before-payment`,
+      );
       return normalizeResponse(response);
     } catch (error) {
       handleApiError(error, "Failed to generate bill");
     }
   },
-  getBillSummary: async sessionId => {
+  getBillSummary: async (sessionId) => {
     try {
-      const response = await axiosInstance.get(`/customers/session/${sessionId}/bill-summary`);
+      const response = await axiosInstance.get(
+        `/customers/session/${sessionId}/bill-summary`,
+      );
       return normalizeResponse(response);
     } catch (error) {
       handleApiError(error, "Failed to fetch bill summary");
@@ -88,11 +107,14 @@ export const customerSessionService = {
   },
   requestBill: async (sessionId, options = {}) => {
     try {
-      const response = await axiosInstance.post(`/customers/session/${sessionId}/request-bill`, {
-        email: options?.email || "",
-        forceNew: Boolean(options?.forceNew),
-        paymentMethod: options?.paymentMethod || ""
-      });
+      const response = await axiosInstance.post(
+        `/customers/session/${sessionId}/request-bill`,
+        {
+          email: options?.email || "",
+          forceNew: Boolean(options?.forceNew),
+          paymentMethod: options?.paymentMethod || "",
+        },
+      );
       return normalizeResponse(response);
     } catch (error) {
       handleApiError(error, "Failed to request bill");
@@ -100,9 +122,12 @@ export const customerSessionService = {
   },
   completeSessionOffline: async (sessionId, notes = "") => {
     try {
-      const response = await axiosInstance.put(`/customers/session/${sessionId}/complete-offline`, {
-        notes: String(notes || "").trim()
-      });
+      const response = await axiosInstance.put(
+        `/customers/session/${sessionId}/complete-offline`,
+        {
+          notes: String(notes || "").trim(),
+        },
+      );
       return normalizeResponse(response);
     } catch (error) {
       handleApiError(error, "Failed to complete session");
@@ -110,9 +135,12 @@ export const customerSessionService = {
   },
   cancelSession: async (sessionId, reason = "") => {
     try {
-      const response = await axiosInstance.put(`/customers/session/${sessionId}/cancel`, {
-        reason: String(reason || "").trim()
-      });
+      const response = await axiosInstance.put(
+        `/customers/session/${sessionId}/cancel`,
+        {
+          reason: String(reason || "").trim(),
+        },
+      );
       return normalizeResponse(response);
     } catch (error) {
       handleApiError(error, "Failed to cancel session");
@@ -120,9 +148,12 @@ export const customerSessionService = {
   },
   extendSession: async (sessionId, minutes = 30) => {
     try {
-      const response = await axiosInstance.put(`/customers/session/${sessionId}/extend`, {
-        minutes: Math.min(Math.max(sanitizeNumber(minutes, 30), 1), 240)
-      });
+      const response = await axiosInstance.put(
+        `/customers/session/${sessionId}/extend`,
+        {
+          minutes: Math.min(Math.max(sanitizeNumber(minutes, 30), 1), 240),
+        },
+      );
       return normalizeResponse(response);
     } catch (error) {
       handleApiError(error, "Failed to extend session");
@@ -130,19 +161,24 @@ export const customerSessionService = {
   },
   markBillAsPaid: async (sessionId, billId, paymentData = {}) => {
     try {
-      const response = await axiosInstance.post(`/customers/session/${sessionId}/bill/${billId}/mark-paid`, {
-        paymentMethod: paymentData?.paymentMethod || "",
-        transactionId: paymentData?.transactionId || "",
-        staffId: paymentData?.staffId || ""
-      });
+      const response = await axiosInstance.post(
+        `/customers/session/${sessionId}/bill/${billId}/mark-paid`,
+        {
+          paymentMethod: paymentData?.paymentMethod || "",
+          transactionId: paymentData?.transactionId || "",
+          staffId: paymentData?.staffId || "",
+        },
+      );
       return normalizeResponse(response);
     } catch (error) {
       handleApiError(error, "Failed to mark bill as paid");
     }
   },
-  getSessionByTable: async tableId => {
+  getSessionByTable: async (tableId) => {
     try {
-      const response = await axiosInstance.get(`/customers/session/table/${tableId}`);
+      const response = await axiosInstance.get(
+        `/customers/session/table/${tableId}`,
+      );
       return normalizeResponse(response);
     } catch (error) {
       handleApiError(error, "Failed to fetch session by table");
@@ -152,8 +188,8 @@ export const customerSessionService = {
     try {
       const response = await axiosInstance.get("/customers/analytics", {
         params: {
-          period
-        }
+          period,
+        },
       });
       return normalizeResponse(response, {});
     } catch (error) {
@@ -163,26 +199,27 @@ export const customerSessionService = {
   getSessions: async (filters = {}) => {
     try {
       const response = await axiosInstance.get("/customers/sessions", {
-        params: filters
+        params: filters,
       });
       return normalizeResponse(response, []);
     } catch (error) {
       handleApiError(error, "Failed to fetch sessions");
     }
   },
-  getActiveSessions: async (page = 1, limit = 50) => customerSessionService.getSessions({
-    mode: "active",
-    page,
-    limit
-  }),
+  getActiveSessions: async (page = 1, limit = 50) =>
+    customerSessionService.getSessions({
+      mode: "active",
+      page,
+      limit,
+    }),
   getInactiveSessions: async (_timeoutMinutes = 30, page = 1, limit = 50) => {
     try {
       const response = await axiosInstance.get("/customers/sessions", {
         params: {
           mode: "inactive",
           page,
-          limit
-        }
+          limit,
+        },
       });
       return normalizeResponse(response, []);
     } catch (error) {
@@ -192,13 +229,15 @@ export const customerSessionService = {
   timeoutInactiveSessions: async (timeoutMinutes = 30) => {
     return customerSessionService.getInactiveSessions(timeoutMinutes);
   },
-  getSessionWithBill: async sessionId => {
+  getSessionWithBill: async (sessionId) => {
     try {
-      const response = await axiosInstance.get(`/customers/session/${sessionId}/with-bill`);
+      const response = await axiosInstance.get(
+        `/customers/session/${sessionId}/with-bill`,
+      );
       return normalizeResponse(response);
     } catch (error) {
       handleApiError(error, "Failed to fetch session bill details");
     }
-  }
+  },
 };
 export default customerSessionService;

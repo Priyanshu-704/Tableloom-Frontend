@@ -7,11 +7,14 @@ let profileBootstrapPromise = null;
 let profileBootstrapResult = null;
 let permissionBootstrapPromise = null;
 let permissionBootstrapResult = null;
-const normalizePermission = permission => String(permission || "").trim().replace(/[\s-]+/g, "_").toUpperCase();
-const hasFullAdminAccess = role => ["super_admin", "admin"].includes(String(role || "").toLowerCase());
-export const AuthProvider = ({
-  children
-}) => {
+const normalizePermission = (permission) =>
+  String(permission || "")
+    .trim()
+    .replace(/[\s-]+/g, "_")
+    .toUpperCase();
+const hasFullAdminAccess = (role) =>
+  ["super_admin", "admin"].includes(String(role || "").toLowerCase());
+export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [permissions, setPermissions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -29,27 +32,35 @@ export const AuthProvider = ({
         return;
       }
       if (!profileBootstrapPromise) {
-        profileBootstrapPromise = userService.getProfile().then(response => {
-          profileBootstrapResult = response;
-          return response;
-        }).finally(() => {
-          profileBootstrapPromise = null;
-        });
+        profileBootstrapPromise = userService
+          .getProfile()
+          .then((response) => {
+            profileBootstrapResult = response;
+            return response;
+          })
+          .finally(() => {
+            profileBootstrapPromise = null;
+          });
       }
-      const response = profileBootstrapResult || (await profileBootstrapPromise);
+      const response =
+        profileBootstrapResult || (await profileBootstrapPromise);
       const profile = response?.data;
       if (profile) {
         setUser(profile);
         setIsAuthenticated(true);
         if (!permissionBootstrapPromise) {
-          permissionBootstrapPromise = permissionService.getMyPermissions().then(result => {
-            permissionBootstrapResult = result;
-            return result;
-          }).finally(() => {
-            permissionBootstrapPromise = null;
-          });
+          permissionBootstrapPromise = permissionService
+            .getMyPermissions()
+            .then((result) => {
+              permissionBootstrapResult = result;
+              return result;
+            })
+            .finally(() => {
+              permissionBootstrapPromise = null;
+            });
         }
-        const userPerms = permissionBootstrapResult || (await permissionBootstrapPromise);
+        const userPerms =
+          permissionBootstrapResult || (await permissionBootstrapPromise);
         setPermissions(userPerms);
       }
     } catch (err) {
@@ -85,29 +96,37 @@ export const AuthProvider = ({
     setPermissions([]);
     setIsAuthenticated(false);
   };
-  const hasPermission = perm => {
+  const hasPermission = (perm) => {
     if (!perm) return true;
     if (hasFullAdminAccess(user?.role)) return true;
     const normalizedTarget = normalizePermission(perm);
-    return permissions.some(userPermission => normalizePermission(userPermission) === normalizedTarget);
+    return permissions.some(
+      (userPermission) =>
+        normalizePermission(userPermission) === normalizedTarget,
+    );
   };
   const hasAnyPermission = (...requiredPermissions) => {
     if (!requiredPermissions.length) return true;
-    return requiredPermissions.some(permission => hasPermission(permission));
+    return requiredPermissions.some((permission) => hasPermission(permission));
   };
-  return <AuthContext.Provider value={{
-    user,
-    permissions,
-    loading,
-    isAuthenticated,
-    requiresPasswordChange,
-    login,
-    logout,
-    hasPermission,
-    hasAnyPermission,
-    refreshProfile: loadProfile
-  }}>
+  return (
+    <AuthContext.Provider
+      value={{
+        user,
+        permissions,
+        loading,
+        isAuthenticated,
+        requiresPasswordChange,
+        login,
+        logout,
+        hasPermission,
+        hasAnyPermission,
+        refreshProfile: loadProfile,
+      }}
+    >
       {children}
-    </AuthContext.Provider>;
+    </AuthContext.Provider>
+  );
 };
+// eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = () => useContext(AuthContext);
