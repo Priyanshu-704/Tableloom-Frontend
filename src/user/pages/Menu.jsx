@@ -315,7 +315,7 @@ export function Menu() {
         <MenuFilterSidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} filterOptions={filterOptions} filters={filters} onFiltersChange={updateFilters} onClearFilters={clearFilters} />
 
         <div className="min-w-0">
-          <div className="sticky top-[4.5rem] z-30 -mx-4 space-y-3 border-b border-slate-200 bg-gray-50/95 px-4 pb-3 pt-2 backdrop-blur lg:top-0 lg:mx-0 lg:px-0">
+          <div className="sticky top-[7rem] z-30 -mx-4 space-y-3 border-b border-slate-200 bg-gray-50/95 px-4 pb-3 pt-2 backdrop-blur sm:top-[4.5rem] lg:top-0 lg:mx-0 lg:px-0">
             <div className="flex flex-col gap-3 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />

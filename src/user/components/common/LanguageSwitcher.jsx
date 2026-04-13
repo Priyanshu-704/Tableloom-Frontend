@@ -10,9 +10,9 @@ export function LanguageSwitcher() {
   const [isOpen, setIsOpen] = useState(false);
   const currentLanguage = languages.find(lang => lang.code === currentLang);
   return <div className="relative">
-      <button onClick={() => setIsOpen(!isOpen)} className="flex items-center space-x-2 px-3 py-2 text-gray-700 hover:text-primary-600 transition-colors border border-gray-300 rounded-lg hover:border-primary-300">
+      <button onClick={() => setIsOpen(!isOpen)} className="flex w-full items-center justify-center gap-2 rounded-2xl border border-gray-300 px-3 py-2 text-gray-700 transition-colors hover:border-primary-300 hover:text-primary-600 sm:w-auto sm:space-x-2 sm:rounded-lg">
         <Globe className="h-4 w-4" />
-        <span className="text-sm font-medium">{currentLanguage?.nativeName}</span>
+        <span className="truncate text-sm font-medium">{currentLanguage?.nativeName}</span>
       </button>
 
       {isOpen && <>

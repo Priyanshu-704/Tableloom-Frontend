@@ -47,7 +47,7 @@ export function Toast({
     bgColor,
     textColor
   } = TOAST_TYPES[type] || TOAST_TYPES.info;
-  return <div className={`${bgColor} ${textColor} rounded-lg shadow-lg p-4 mb-2 transform transition-all duration-300 animate-in slide-in-from-right-full`}>
+  return <div className={`pointer-events-auto ${bgColor} ${textColor} mb-2 w-full rounded-lg p-4 shadow-lg transform transition-all duration-300 animate-in slide-in-from-right-full`}>
       <div className="flex items-center space-x-3">
         <Icon className="h-5 w-5 flex-shrink-0" />
         <p className="flex-1 font-medium text-sm">{message}</p>
@@ -62,7 +62,9 @@ export function ToastContainer({
   onRemoveToast
 }) {
   if (toasts.length === 0) return null;
-  return <div className="fixed top-16 right-4 z-50 max-w-sm w-full space-y-2">
+  return <div className="pointer-events-none fixed inset-x-0 top-[calc(env(safe-area-inset-top)+0.75rem)] z-[80] flex justify-center px-3 sm:top-4 sm:justify-end sm:px-4">
+      <div className="w-full max-w-sm space-y-2">
       {toasts.map(toast => <Toast key={toast.id} id={toast.id} message={toast.message} type={toast.type} duration={toast.duration} onClose={onRemoveToast} />)}
+      </div>
     </div>;
 }

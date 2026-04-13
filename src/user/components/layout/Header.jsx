@@ -20,7 +20,9 @@ export function Header() {
   const navigate = useNavigate();
   const {
     getCartItemsCount
-  } = useCart();
+  } = useCart({
+    autoInitialize: false
+  });
   const {
     notifications,
     unreadCount,
@@ -85,20 +87,28 @@ export function Header() {
     }
   };
   return <header className="sticky top-0 z-50 border-b border-sky-100 bg-white/88 shadow-sm backdrop-blur">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="flex min-h-16 flex-wrap items-center justify-between gap-3 py-3 sm:flex-nowrap sm:py-2">
-          <button type="button" onClick={() => navigate(buildCustomerPath("/home"))} className="flex min-w-0 flex-1 items-center text-left sm:flex-none">
-            <BrandBadge logoSrc={settings?.restaurant?.logoThumbnail || settings?.restaurant?.logo || "/tableloom-mark.svg"} name={settings?.restaurant?.name || "Tableloom"} size="sm" nameClassName="hidden max-w-[8rem] text-base text-slate-900 sm:block sm:max-w-[14rem] sm:text-xl" />
-            {tableNumber && <span className="ml-2 rounded-full bg-primary-100 px-2 py-1 text-xs text-primary-700 shadow-sm sm:ml-4 sm:text-sm">
-                {t("table")} {tableNumber}
-              </span>}
-          </button>
+      <div className="mx-auto max-w-7xl px-3 sm:px-6 lg:px-8">
+        <div className="flex flex-col gap-3 py-3 sm:min-h-16 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:py-2">
+          <div className="flex items-start justify-between gap-3 sm:min-w-0 sm:flex-1 sm:items-center">
+            <button type="button" onClick={() => navigate(buildCustomerPath("/home"))} className="flex min-w-0 flex-1 flex-col items-start text-left sm:flex-row sm:items-center sm:gap-3">
+              <BrandBadge logoSrc={settings?.restaurant?.logoThumbnail || settings?.restaurant?.logo || "/tableloom-mark.svg"} name={settings?.restaurant?.name || "Tableloom"} size="sm" nameClassName="max-w-[10rem] text-base text-slate-900 sm:max-w-[14rem] sm:text-xl" />
+              {tableNumber ? <span className="mt-2 rounded-full bg-primary-100 px-2 py-1 text-xs text-primary-700 shadow-sm sm:mt-0 sm:text-sm">
+                  {t("table")} {tableNumber}
+                </span> : null}
+            </button>
 
-          <div className="flex w-full items-center justify-end gap-1 sm:w-auto sm:gap-3">
-            <LanguageSwitcher />
+            {sessionId ? <button type="button" onClick={handleLogout} disabled={loggingOut} className="rounded-full p-2 text-slate-600 transition-colors hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-60 sm:hidden" aria-label="Logout">
+                <LogOut className="h-6 w-6" />
+              </button> : null}
+          </div>
+
+          <div className="grid w-full grid-cols-[minmax(0,1.3fr)_repeat(3,minmax(0,2.75rem))] gap-2 sm:flex sm:w-auto sm:grid-cols-none sm:items-center sm:justify-end sm:gap-3">
+            <div className="min-w-0">
+              <LanguageSwitcher />
+            </div>
 
             <div className="relative">
-              <button onClick={() => setShowNotifications(!showNotifications)} className="relative rounded-full p-2 text-slate-600 transition-colors hover:bg-sky-50 hover:text-primary-600">
+              <button onClick={() => setShowNotifications(!showNotifications)} className="relative flex w-full items-center justify-center rounded-2xl border border-slate-200 bg-white p-2 text-slate-600 transition-colors hover:bg-sky-50 hover:text-primary-600 sm:w-auto sm:rounded-full sm:border-transparent">
                 <Bell className="h-6 w-6" />
                 {unreadCount > 0 && <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
                     {unreadCount}
@@ -140,18 +150,18 @@ export function Header() {
                 </div>}
             </div>
 
-            <button onClick={() => navigate(buildCustomerPath("/home/feedback"))} className="rounded-full p-2 text-slate-600 transition-colors hover:bg-sky-50 hover:text-primary-600" aria-label="Feedback">
+            <button onClick={() => navigate(buildCustomerPath("/home/feedback"))} className="flex items-center justify-center rounded-2xl border border-slate-200 bg-white p-2 text-slate-600 transition-colors hover:bg-sky-50 hover:text-primary-600 sm:rounded-full sm:border-transparent" aria-label="Feedback">
               <MessageSquareText className="h-6 w-6" />
             </button>
 
-            <button onClick={() => navigate(buildCustomerPath("/home/cart"))} className="relative rounded-full p-2 text-slate-600 transition-colors hover:bg-sky-50 hover:text-primary-600">
+            <button onClick={() => navigate(buildCustomerPath("/home/cart"))} className="relative flex items-center justify-center rounded-2xl border border-slate-200 bg-white p-2 text-slate-600 transition-colors hover:bg-sky-50 hover:text-primary-600 sm:rounded-full sm:border-transparent">
               <ShoppingCart className="h-6 w-6" />
               {cartCount > 0 && <span className="absolute -top-1 -right-1 bg-primary-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
                   {cartCount}
                 </span>}
             </button>
 
-            {sessionId ? <button type="button" onClick={handleLogout} disabled={loggingOut} className="rounded-full p-2 text-slate-600 transition-colors hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-60" aria-label="Logout">
+            {sessionId ? <button type="button" onClick={handleLogout} disabled={loggingOut} className="hidden rounded-full p-2 text-slate-600 transition-colors hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-60 sm:inline-flex" aria-label="Logout">
                 <LogOut className="h-6 w-6" />
               </button> : null}
           </div>

@@ -8,6 +8,24 @@ import { useNotification } from "../../common/NotificationContext";
 import { useApp } from "../context/AppContext";
 import { buildCustomerPath } from "../../common/utils/routes";
 import { useSettings } from "../../common/context/SettingsContext";
+import menuService from "../../common/services/menuService";
+
+const isCouponAvailable = coupon => {
+  if (!coupon?.isActive) {
+    return false;
+  }
+  const now = Date.now();
+  if (coupon.startDate && new Date(coupon.startDate).getTime() > now) {
+    return false;
+  }
+  if (coupon.endDate && new Date(coupon.endDate).getTime() < now) {
+    return false;
+  }
+  if (coupon.usageLimit && Number(coupon.usageCount || 0) >= Number(coupon.usageLimit || 0)) {
+    return false;
+  }
+  return true;
+};
 export function Cart() {
   const {
     notify
@@ -34,11 +52,14 @@ export function Cart() {
     checkout,
     fetchCart,
     applyDiscount
-  } = useCart();
+  } = useCart({
+    autoInitialize: false
+  });
   const [specialInstructions, setSpecialInstructions] = useState("");
   const [couponCode, setCouponCode] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isApplyingDiscount, setIsApplyingDiscount] = useState(false);
+  const [availableCoupons, setAvailableCoupons] = useState([]);
   const formatPrice = value => new Intl.NumberFormat("en-IN", {
     style: "currency",
     currency: settings?.taxSettings?.currency || cart?.summary?.currency || cartSummary?.currency || "INR",
@@ -60,6 +81,24 @@ export function Cart() {
       mounted = false;
     };
   }, [fetchCart]);
+  useEffect(() => {
+    let active = true;
+    const loadCoupons = async () => {
+      try {
+        const response = await menuService.getCoupons(true);
+        const coupons = Array.isArray(response?.data) ? response.data : response?.data?.data || [];
+        if (active) {
+          setAvailableCoupons(coupons.filter(isCouponAvailable));
+        }
+      } catch (couponError) {
+        logger.error("Failed to load active coupons:", couponError);
+      }
+    };
+    loadCoupons();
+    return () => {
+      active = false;
+    };
+  }, []);
   const handleIncrement = async (menuItemId, sizeId) => {
     const cartItem = cart?.items?.find(item => String(item.menuItemId || item._id) === String(menuItemId) && String(item.sizeId || "") === String(sizeId || ""));
     if (cartItem) {
@@ -192,7 +231,7 @@ export function Cart() {
   }
   return <div className="mx-auto max-w-4xl pb-24">
       
-      <div className="sticky top-[4.5rem] z-40 border-b border-gray-200 bg-white p-4 lg:top-0">
+      <div className="sticky top-[7rem] z-40 border-b border-gray-200 bg-white p-4 sm:top-[4.5rem] lg:top-0">
         <div className="flex items-center justify-between gap-3">
           <button onClick={() => navigate(-1)} className="cursor-pointer flex items-center text-gray-600 hover:text-gray-900">
             <ArrowLeft className="h-5 w-5 mr-2" />
@@ -305,12 +344,22 @@ export function Cart() {
           <label htmlFor="couponCode" className="mb-2 block text-sm font-medium text-gray-700">
             Apply Coupon
           </label>
+          {availableCoupons.length > 0 ? <select value={couponCode} onChange={event => setCouponCode(event.target.value)} className="mb-3 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 focus:border-transparent focus:ring-2 focus:ring-primary-500">
+              <option value="">Choose from available coupons</option>
+              {availableCoupons.map(coupon => <option key={coupon._id} value={coupon.code}>
+                  {coupon.code} • {coupon.type === "percentage" ? `${coupon.value}% off` : `₹${coupon.value} off`}
+                  {coupon.minOrderAmount ? ` • Min ₹${coupon.minOrderAmount}` : ""}
+                </option>)}
+            </select> : null}
           <div className="flex flex-col gap-3 sm:flex-row">
             <input id="couponCode" type="text" value={couponCode} onChange={event => setCouponCode(event.target.value)} placeholder="Enter coupon code" className="flex-1 rounded-lg border border-gray-300 px-3 py-2 focus:border-transparent focus:ring-2 focus:ring-primary-500" />
             <button type="button" onClick={handleApplyDiscount} disabled={isApplyingDiscount || loading} className="cursor-pointer w-full rounded-lg bg-primary-600 px-4 py-2 font-semibold text-white transition-colors hover:bg-primary-700 disabled:bg-gray-400 sm:w-auto">
               {isApplyingDiscount ? "Applying..." : activeCouponCode ? "Replace Coupon" : "Apply Coupon"}
             </button>
           </div>
+          {availableCoupons.length > 0 ? <p className="mt-3 text-xs text-slate-500">
+              You can pick a coupon from the dropdown or enter a code manually.
+            </p> : null}
           {activeCouponCode ? <div className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
               <p>Active coupon: <span className="font-semibold">{activeCouponCode}</span></p>
               <p className="mt-1 text-xs text-emerald-600">Applying a new coupon will replace the current one.</p>

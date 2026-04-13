@@ -65,7 +65,7 @@ export function OrderHistory() {
   }
   return <div className="min-h-screen bg-gray-50 p-4 pb-24">
       <div className="mx-auto max-w-3xl space-y-4">
-        <div className="sticky top-[4.5rem] z-20 flex items-center justify-between gap-3 rounded-2xl border border-gray-200 bg-white px-4 py-4 shadow-sm lg:top-0">
+        <div className="sticky top-[7rem] z-20 flex items-center justify-between gap-3 rounded-2xl border border-gray-200 bg-white px-4 py-4 shadow-sm sm:top-[4.5rem] lg:top-0">
           <button type="button" onClick={() => navigate(buildCustomerPath("/home"))} className="flex items-center text-gray-600 hover:text-gray-900">
             <ArrowLeft className="mr-2 h-5 w-5" />
             Back

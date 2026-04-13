@@ -54,7 +54,8 @@ export function BillRequest() {
   const navigate = useNavigate();
   const {
     sessionId,
-    tableNumber
+    tableNumber,
+    customerInfo
   } = useApp();
   const {
     notify
@@ -69,7 +70,7 @@ export function BillRequest() {
   const [isRequestingBill, setIsRequestingBill] = useState(false);
   const [isPaying, setIsPaying] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState("online");
-  const [splitCount, setSplitCount] = useState(2);
+  const [splitCountInput, setSplitCountInput] = useState("2");
   const [lastPaymentSummary, setLastPaymentSummary] = useState(null);
   const [paymentQrState, setPaymentQrState] = useState({
     isOpen: false,
@@ -115,7 +116,7 @@ export function BillRequest() {
         setBillData(null);
         return;
       }
-      setEmail(payload?.session?.email || "");
+      setEmail(payload?.session?.email || customerInfo?.email || "");
       setBillData({
         session: payload.session || null,
         summary: payload.summary || {},
@@ -129,10 +130,12 @@ export function BillRequest() {
       setIsLoading(false);
       setIsRefreshing(false);
     }
-  }, [sessionId]);
+  }, [customerInfo?.email, sessionId]);
   useEffect(() => {
     loadBillData();
   }, [loadBillData]);
+  const sessionEmail = String(billData?.session?.email || customerInfo?.email || "").trim();
+  const billDeliveryEmail = sessionEmail || String(email || "").trim();
   const requestBillForSelection = async ({
     notifyUser = true
   } = {}) => {
@@ -144,7 +147,7 @@ export function BillRequest() {
     }
     setIsRequestingBill(true);
     const response = await customerSessionService.requestBill(sessionId, {
-      email,
+      email: billDeliveryEmail,
       forceNew: false,
       paymentMethod: selectedPayment
     });
@@ -247,7 +250,7 @@ export function BillRequest() {
     if (!activeBillId) {
       setIsRequestingBill(true);
       const billResponse = await customerSessionService.requestBill(sessionId, {
-        email,
+        email: billDeliveryEmail,
         forceNew: false,
         paymentMethod: selectedPayment
       });
@@ -338,7 +341,7 @@ export function BillRequest() {
   const hasGeneratedBill = Boolean(billData?.bill?._id);
   const isPaid = (billData?.bill?.paymentStatus || billData?.session?.paymentStatus) === "paid";
   const splitBillEnabled = settings?.paymentMethods?.splitBill !== false;
-  const normalizedSplitCount = Math.min(Math.max(Number(splitCount) || 2, 2), 12);
+  const normalizedSplitCount = Math.min(Math.max(Number(splitCountInput || 2) || 2, 2), 12);
   const splitPerPersonAmount = normalizedSplitCount > 0 ? totalAmount / normalizedSplitCount : totalAmount;
   return <div className="min-h-screen bg-gray-50 pb-24">
       {paymentQrState.isOpen ? <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4">
@@ -407,7 +410,7 @@ export function BillRequest() {
           </div>
         </div> : null}
 
-      <div className="sticky top-[4.5rem] z-30 border-b border-gray-200 bg-white shadow-sm lg:top-0">
+      <div className="sticky top-0 z-30 border-b border-gray-200 bg-white shadow-sm">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-4">
           <button type="button" onClick={() => navigate(buildCustomerPath("/home"))} className="cursor-pointer flex items-center text-gray-600 hover:text-gray-900">
             <ArrowLeft className="mr-2 h-5 w-5" />
@@ -552,12 +555,12 @@ export function BillRequest() {
             Bill Delivery
           </h3>
           <p className="mt-2 text-sm text-gray-600">
-            Provide an email address if you want the generated bill sent there as well.
+            {sessionEmail ? "Using the email captured when this dining session was created." : "Provide an email address if you want the generated bill sent there as well."}
           </p>
           {isTaxInclusive ? <p className="mt-2 text-xs text-amber-600">
               Listed item prices already include tax for this restaurant.
             </p> : null}
-          <input type="email" value={email} onChange={event => setEmail(event.target.value)} placeholder="Enter your email address" className="mt-4 w-full rounded-xl border border-slate-300 px-4 py-3 text-sm focus:border-primary-500 focus:outline-none" />
+          <input type="email" value={sessionEmail || email} onChange={event => setEmail(event.target.value)} placeholder="Enter your email address" readOnly={Boolean(sessionEmail)} className={`mt-4 w-full rounded-xl border border-slate-300 px-4 py-3 text-sm focus:border-primary-500 focus:outline-none ${sessionEmail ? "cursor-not-allowed bg-slate-100 text-slate-600" : ""}`} />
         </div>
 
         <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
@@ -595,7 +598,14 @@ export function BillRequest() {
                 <label className="block text-xs font-medium uppercase tracking-[0.16em] text-emerald-700">
                   People
                 </label>
-                <input type="number" min="2" max="12" value={normalizedSplitCount} onChange={event => setSplitCount(event.target.value)} className="mt-2 w-full rounded-xl border border-emerald-300 bg-white px-3 py-2 text-sm font-semibold text-emerald-950 focus:border-emerald-500 focus:outline-none" />
+                <input type="number" min="2" max="12" inputMode="numeric" value={splitCountInput} onChange={event => {
+              const nextValue = String(event.target.value || "").replace(/[^\d]/g, "");
+              if (!nextValue) {
+                setSplitCountInput("");
+                return;
+              }
+              setSplitCountInput(nextValue);
+            }} onBlur={() => setSplitCountInput(String(normalizedSplitCount))} className="mt-2 w-full rounded-xl border border-emerald-300 bg-white px-3 py-2 text-sm font-semibold text-emerald-950 focus:border-emerald-500 focus:outline-none" />
               </div>
             </div>
 
