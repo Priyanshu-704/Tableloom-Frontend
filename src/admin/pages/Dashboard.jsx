@@ -28,6 +28,7 @@ import { StatsCard } from "../components/layout/StatsCard";
 import { AdminPageSkeleton } from "../components/common/AdminSkeleton";
 import { buildAdminPath } from "../../common/utils/routes";
 import { useSettings } from "../../common/context/SettingsContext";
+import { formatElapsedTime } from "../../common/utils/time.js";
 const defaultDashboardPayload = {
   stats: {
     todayOrders: 0,
@@ -79,27 +80,6 @@ const formatCurrency = (value, currency = "INR") =>
     currency,
     maximumFractionDigits: 2,
   }).format(Number(value || 0));
-const formatRelativeTime = (timestamp) => {
-  if (!timestamp) {
-    return "Just now";
-  }
-  const diffSeconds = Math.max(
-    0,
-    Math.floor((Date.now() - new Date(timestamp).getTime()) / 1000),
-  );
-  if (diffSeconds < 60) {
-    return `${diffSeconds || 1}s ago`;
-  }
-  const diffMinutes = Math.floor(diffSeconds / 60);
-  if (diffMinutes < 60) {
-    return `${diffMinutes}m ago`;
-  }
-  const diffHours = Math.floor(diffMinutes / 60);
-  if (diffHours < 24) {
-    return `${diffHours}h ago`;
-  }
-  return `${Math.floor(diffHours / 24)}d ago`;
-};
 const getReadableActivityMessage = (activity) => {
   const message = activity?.message;
   if (typeof message === "string" && message.trim()) {
@@ -521,7 +501,7 @@ export function Dashboard() {
                         {getReadableActivityMessage(activity)}
                       </p>
                       <p className="text-xs text-gray-500">
-                        {formatRelativeTime(activity?.timestamp)}
+                        {formatElapsedTime(activity?.timestamp)}
                       </p>
                     </div>
                   </div>

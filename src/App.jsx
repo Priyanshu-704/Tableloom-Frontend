@@ -1,4 +1,4 @@
-import React, { lazy, Suspense, useEffect } from "react";
+import React, { lazy, Suspense, useEffect, useLayoutEffect } from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AppProvider } from "../src/user/context/AppContext";
 import { NotificationProvider } from "../src/common/NotificationContext";
@@ -25,6 +25,34 @@ const MainLoader = () => (
     <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-primary-500"></div>
   </div>
 );
+function RouteScrollReset() {
+  const location = useLocation();
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !("scrollRestoration" in window.history)) {
+      return;
+    }
+
+    const previousValue = window.history.scrollRestoration;
+    window.history.scrollRestoration = "manual";
+
+    return () => {
+      window.history.scrollRestoration = previousValue;
+    };
+  }, []);
+
+  useLayoutEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    window.scrollTo(0, 0);
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  }, [location.pathname, location.search]);
+
+  return null;
+}
 function NumberInputGuard() {
   useEffect(() => {
     const handleWheel = (event) => {
@@ -97,6 +125,7 @@ function AppProviders() {
   const isSuperAdminRoute = isSuperAdminPath(location.pathname);
   return (
     <NetworkProvider>
+      <RouteScrollReset />
       <NumberInputGuard />
       <NetworkStatusBanner />
       {isAdminRoute || isSuperAdminRoute ? (

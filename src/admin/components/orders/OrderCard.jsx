@@ -8,6 +8,7 @@ import {
   MoreVertical,
   User,
 } from "lucide-react";
+import { formatElapsedTime } from "../../../common/utils/time.js";
 const ORDER_STATUS = {
   PENDING: "pending",
   CONFIRMED: "confirmed",
@@ -109,17 +110,6 @@ const formatCurrency = (value, currency = "INR") =>
     currency,
     maximumFractionDigits: 2,
   }).format(Number(value || 0));
-const formatRelativeTime = (value) => {
-  if (!value) return "Unknown";
-  const diffMins = Math.max(
-    0,
-    Math.floor((new Date().getTime() - new Date(value).getTime()) / 60000),
-  );
-  if (diffMins < 1) return "Just now";
-  if (diffMins < 60) return `${diffMins}m ago`;
-  const diffHours = Math.floor(diffMins / 60);
-  return `${diffHours}h ago`;
-};
 export function OrderCard({
   order,
   onStatusUpdate,
@@ -161,7 +151,10 @@ export function OrderCard({
                 </span>
                 <span>&bull;</span>
                 <span>
-                  {formatRelativeTime(order.createdAt || order.orderPlacedAt)}
+                  {formatElapsedTime(
+                    order.createdAt || order.orderPlacedAt,
+                    "Unknown",
+                  )}
                 </span>
               </div>
             </div>

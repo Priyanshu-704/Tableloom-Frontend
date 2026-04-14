@@ -56,7 +56,7 @@ export function KitchenStationManagement() {
       setPageError("");
       const [stationsResponse, categoriesResponse] = await Promise.all([
         kitchenStationService.getKitchenStations(),
-        menuService.getCategories(true, undefined),
+        menuService.getCategories(true, false),
       ]);
       setStations(stationsResponse.data || []);
       setCategories(categoriesResponse.data || []);
