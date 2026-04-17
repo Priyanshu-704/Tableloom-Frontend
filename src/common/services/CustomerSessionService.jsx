@@ -120,6 +120,38 @@ export const customerSessionService = {
       handleApiError(error, "Failed to request bill");
     }
   },
+  createRazorpayOrder: async (sessionId, paymentData = {}) => {
+    try {
+      const response = await axiosInstance.post(
+        `/customers/session/${sessionId}/razorpay-order`,
+        {
+          email: paymentData?.email || "",
+          forceNew: Boolean(paymentData?.forceNew),
+          paymentMethod: paymentData?.paymentMethod || "online",
+        },
+      );
+      return normalizeResponse(response);
+    } catch (error) {
+      handleApiError(error, "Failed to create Razorpay order");
+    }
+  },
+  verifyRazorpayPayment: async (sessionId, paymentData = {}) => {
+    try {
+      const response = await axiosInstance.post(
+        `/customers/session/${sessionId}/razorpay-verify`,
+        {
+          billId: paymentData?.billId || "",
+          paymentMethod: paymentData?.paymentMethod || "online",
+          razorpayOrderId: paymentData?.razorpayOrderId || "",
+          razorpayPaymentId: paymentData?.razorpayPaymentId || "",
+          razorpaySignature: paymentData?.razorpaySignature || "",
+        },
+      );
+      return normalizeResponse(response);
+    } catch (error) {
+      handleApiError(error, "Failed to verify Razorpay payment");
+    }
+  },
   completeSessionOffline: async (sessionId, notes = "") => {
     try {
       const response = await axiosInstance.put(

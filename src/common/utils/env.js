@@ -20,3 +20,4 @@ const resolveConfiguredApiUrl = () => {
 };
 export const API_BASE_URL = resolveConfiguredApiUrl();
 export const SOCKET_BASE_URL = API_BASE_URL.replace(/\/api\/?$/, "");
+export const RAZORPAY_KEY_ID = import.meta.env.VITE_RAZORPAY_KEY_ID || "";

@@ -6,11 +6,9 @@ import {
   Download,
   Eye,
   Mail,
-  QrCode,
   Receipt,
   RefreshCw,
   User,
-  X,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useApp } from "../context/AppContext";
@@ -19,6 +17,8 @@ import { useNotification } from "../../common/NotificationContext";
 import { useSettings } from "../../common/context/SettingsContext";
 import billService from "../../common/services/billService";
 import { buildCustomerPath } from "../../common/utils/routes";
+import { RAZORPAY_KEY_ID } from "../../common/utils/env";
+import loadRazorpayCheckout from "../../common/utils/loadRazorpayCheckout";
 const PAYMENT_LABELS = {
   online: "Online Payment",
   card: "Credit or Debit Card",
@@ -89,15 +89,6 @@ export function BillRequest() {
   const [selectedPayment, setSelectedPayment] = useState("online");
   const [splitCountInput, setSplitCountInput] = useState("2");
   const [lastPaymentSummary, setLastPaymentSummary] = useState(null);
-  const [paymentQrState, setPaymentQrState] = useState({
-    isOpen: false,
-    loading: false,
-    qrCode: "",
-    upiId: "",
-    amount: 0,
-    billId: "",
-    billNumber: "",
-  });
   const paymentOptions = useMemo(() => {
     const configuredMethods = settings?.paymentMethods || {};
     const options = [
@@ -168,6 +159,38 @@ export function BillRequest() {
   useEffect(() => {
     loadBillData();
   }, [loadBillData]);
+  const applyPaidState = useCallback(
+    (paymentResponse, fallbackMethod = selectedPayment) => {
+      const paidBill = paymentResponse?.bill || null;
+      const paidSession =
+        paymentResponse?.session || paymentResponse?.customer || null;
+
+      setLastPaymentSummary(paymentResponse || null);
+      setBillData((current) => ({
+        ...(current || {}),
+        session: {
+          ...(current?.session || {}),
+          ...(paidSession || {}),
+          sessionStatus:
+            paidSession?.status || paidSession?.sessionStatus || "completed",
+          paymentMethod:
+            paidSession?.paymentMethod || fallbackMethod || "online",
+          paymentStatus: paidSession?.paymentStatus || "paid",
+        },
+        bill: paidBill
+          ? {
+              ...(current?.bill || {}),
+              _id: paidBill.id || paidBill._id || current?.bill?._id,
+              billNumber: paidBill.billNumber || current?.bill?.billNumber,
+              totalAmount: paidBill.totalAmount || current?.bill?.totalAmount,
+              paymentStatus: paidBill.paymentStatus || "paid",
+              pdfUrl: paidBill.pdfUrl || current?.bill?.pdfUrl || "",
+            }
+          : current?.bill,
+      }));
+    },
+    [selectedPayment],
+  );
   const sessionEmail = String(
     billData?.session?.email || customerInfo?.email || "",
   ).trim();
@@ -222,135 +245,126 @@ export function BillRequest() {
     }
     window.open(targetUrl, "_blank", "noopener,noreferrer");
   };
-  const completeOnlinePayment = async () => {
+  const launchRazorpayCheckout = async () => {
     if (!sessionId || !billData?.summary?.totalAmount) {
       notify("Unable to process payment right now", "error");
       return;
     }
-    setIsPaying(true);
-    const response = await customerSessionService.completeSessionOnline(
-      sessionId,
-      {
-        paymentMethod: selectedPayment,
-        transactionId: `txn_${Date.now()}`,
-        amount: Number(billData?.summary?.totalAmount || 0),
-        gateway: selectedPayment,
-      },
-    );
-    setIsPaying(false);
-    if (response?.success) {
-      const paidBill = response?.data?.bill || null;
-      const paidSession = response?.data?.session || null;
-      setLastPaymentSummary(response?.data || null);
-      setBillData((current) => ({
-        ...(current || {}),
-        session: {
-          ...(current?.session || {}),
-          ...(paidSession || {}),
-          sessionStatus: paidSession?.status || "completed",
-          paymentMethod: paidSession?.paymentMethod || selectedPayment,
-          paymentStatus: paidSession?.paymentStatus || "paid",
+    try {
+      setIsPaying(true);
+      const orderResponse = await customerSessionService.createRazorpayOrder(
+        sessionId,
+        {
+          email: billDeliveryEmail,
+          forceNew: false,
+          paymentMethod: selectedPayment,
         },
-        bill: paidBill
-          ? {
-              ...(current?.bill || {}),
-              _id: paidBill.id || paidBill._id || current?.bill?._id,
-              billNumber: paidBill.billNumber || current?.bill?.billNumber,
-              totalAmount: paidBill.totalAmount || current?.bill?.totalAmount,
-              paymentStatus: paidBill.paymentStatus || "paid",
-              pdfUrl: paidBill.pdfUrl || current?.bill?.pdfUrl || "",
-            }
-          : current?.bill,
-      }));
-      notify(
-        "Payment successful! Your bill is ready to view and download.",
-        "success",
       );
-      setPaymentQrState({
-        isOpen: false,
-        loading: false,
-        qrCode: "",
-        upiId: "",
-        amount: 0,
-        billId: "",
-        billNumber: "",
-      });
-      await loadBillData(true);
-      return;
-    }
-    notify(response?.message || "Failed to complete payment", "error");
-  };
-  const openPaymentQr = async () => {
-    if (!sessionId || !billData?.summary?.totalAmount) {
-      notify("Unable to process payment right now", "error");
-      return;
-    }
-    if (selectedPayment === "cash") {
-      notify(
-        "Cash payment is handled by the staff from the admin panel.",
-        "info",
-      );
-      return;
-    }
-    let activeBillId = billData?.bill?._id || "";
-    let activeBillNumber = billData?.bill?.billNumber || "";
-    if (!activeBillId) {
-      setIsRequestingBill(true);
-      const billResponse = await customerSessionService.requestBill(sessionId, {
-        email: billDeliveryEmail,
-        forceNew: false,
-        paymentMethod: selectedPayment,
-      });
-      setIsRequestingBill(false);
-      if (!billResponse?.success) {
-        notify(billResponse?.message || "Failed to request bill", "error");
+
+      if (!orderResponse?.success) {
+        notify(orderResponse?.message || "Failed to create payment order", "error");
+        setIsPaying(false);
         return;
       }
-      notify(billResponse?.message || "Bill requested successfully", "success");
-      await loadBillData(true);
-      activeBillId =
-        billResponse?.data?.bill?._id ||
-        billResponse?.data?.bill?.id ||
-        billData?.bill?._id ||
-        "";
-      activeBillNumber =
-        billResponse?.data?.bill?.billNumber ||
-        billData?.bill?.billNumber ||
-        "";
+
+      const orderPayload = orderResponse?.data?.order || null;
+      const activeBill = orderResponse?.data?.bill || null;
+      const activeSession = orderResponse?.data?.session || {};
+      const razorpayKey =
+        orderResponse?.data?.keyId || RAZORPAY_KEY_ID || "";
+
+      if (!orderPayload?.id || !activeBill?._id) {
+        notify("Payment order is incomplete. Please try again.", "error");
+        setIsPaying(false);
+        return;
+      }
+
+      if (!razorpayKey) {
+        notify(
+          "Razorpay key is missing. Please add the Razorpay test key before retrying.",
+          "error",
+        );
+        setIsPaying(false);
+        return;
+      }
+
+      const RazorpayCheckout = await loadRazorpayCheckout();
+      const checkout = new RazorpayCheckout({
+        key: razorpayKey,
+        amount: Number(orderPayload.amount || 0),
+        currency: orderPayload.currency || currency,
+        name:
+          settings?.restaurantName ||
+          settings?.restaurantInfo?.name ||
+          "Quick Bite",
+        description: `Payment for Bill ${activeBill.billNumber || activeBill._id}`,
+        order_id: orderPayload.id,
+        prefill: {
+          name: activeSession?.name || billData?.session?.name || "",
+          email: activeSession?.email || billDeliveryEmail || "",
+          contact:
+            activeSession?.phone || billData?.session?.phone || customerInfo?.phone || "",
+        },
+        notes: {
+          billId: activeBill._id,
+          billNumber: activeBill.billNumber || "",
+          sessionId,
+          preferredPaymentMethod: selectedPayment,
+        },
+        theme: {
+          color: "#2563eb",
+        },
+        modal: {
+          ondismiss: () => {
+            setIsPaying(false);
+          },
+        },
+        handler: async (paymentResult) => {
+          const verificationResponse =
+            await customerSessionService.verifyRazorpayPayment(sessionId, {
+              billId: activeBill._id,
+              paymentMethod: selectedPayment,
+              razorpayOrderId:
+                paymentResult?.razorpay_order_id || orderPayload.id,
+              razorpayPaymentId: paymentResult?.razorpay_payment_id || "",
+              razorpaySignature: paymentResult?.razorpay_signature || "",
+            });
+
+          setIsPaying(false);
+
+          if (!verificationResponse?.success) {
+            notify(
+              verificationResponse?.message || "Payment verification failed",
+              "error",
+            );
+            return;
+          }
+
+          applyPaidState(
+            verificationResponse?.data || null,
+            selectedPayment,
+          );
+          notify(
+            "Payment successful! Your bill is ready to view and download.",
+            "success",
+          );
+          await loadBillData(true);
+        },
+      });
+
+      checkout.on("payment.failed", (event) => {
+        setIsPaying(false);
+        notify(
+          event?.error?.description || "Payment failed. Please try again.",
+          "error",
+        );
+      });
+
+      checkout.open();
+    } catch (error) {
+      setIsPaying(false);
+      notify(error?.message || "Unable to start Razorpay checkout", "error");
     }
-    if (!activeBillId) {
-      notify("Bill is not ready yet. Please try again.", "warning");
-      return;
-    }
-    setPaymentQrState({
-      isOpen: true,
-      loading: true,
-      qrCode: "",
-      upiId: "",
-      amount: Number(billData?.summary?.totalAmount || 0),
-      billId: activeBillId,
-      billNumber: activeBillNumber,
-    });
-    const qrResponse = await billService.getPaymentQr(activeBillId);
-    if (!qrResponse?.success) {
-      setPaymentQrState((current) => ({
-        ...current,
-        loading: false,
-      }));
-      notify(qrResponse?.message || "Failed to generate payment QR", "error");
-      return;
-    }
-    setPaymentQrState({
-      isOpen: true,
-      loading: false,
-      qrCode: qrResponse?.data?.qrCode || "",
-      upiId: qrResponse?.data?.upiId || "",
-      amount: Number(
-        qrResponse?.data?.amount || billData?.summary?.totalAmount || 0,
-      ),
-      billId: activeBillId,
-      billNumber: qrResponse?.data?.billNumber || activeBillNumber,
-    });
   };
   const handlePayment = async () => {
     if (selectedPayment === "cash") {
@@ -367,7 +381,7 @@ export function BillRequest() {
       );
       return;
     }
-    await openPaymentQr();
+    await launchRazorpayCheckout();
   };
   if (isLoading) {
     return (
@@ -428,112 +442,6 @@ export function BillRequest() {
     normalizedSplitCount > 0 ? totalAmount / normalizedSplitCount : totalAmount;
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
-      {paymentQrState.isOpen ? (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4">
-          <div className="w-full max-w-md rounded-t-3xl bg-white p-6 shadow-2xl sm:rounded-2xl">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold text-gray-900">Scan To Pay</h2>
-              <button
-                type="button"
-                onClick={() =>
-                  setPaymentQrState({
-                    isOpen: false,
-                    loading: false,
-                    qrCode: "",
-                    upiId: "",
-                    amount: 0,
-                    billId: "",
-                    billNumber: "",
-                  })
-                }
-                className="cursor-pointer rounded-full p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-800"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-
-            <p className="mt-2 text-sm text-gray-600">
-              Scan this QR with your payment app to pay{" "}
-              <span className="font-semibold text-gray-900">
-                {formatCurrency(
-                  paymentQrState.amount,
-                  settings?.taxSettings?.currency || "INR",
-                )}
-              </span>
-              .
-            </p>
-
-            <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-5 text-center">
-              {paymentQrState.loading ? (
-                <div className="py-10">
-                  <RefreshCw className="mx-auto h-8 w-8 animate-spin text-primary-600" />
-                  <p className="mt-3 text-sm text-gray-600">
-                    Generating payment QR...
-                  </p>
-                </div>
-              ) : paymentQrState.qrCode ? (
-                <>
-                  <img
-                    src={paymentQrState.qrCode}
-                    alt="Payment QR"
-                    className="mx-auto h-64 w-64 rounded-2xl border border-white bg-white p-3 shadow-sm"
-                  />
-                  <p className="mt-4 text-sm text-gray-500">
-                    UPI ID:{" "}
-                    <span className="font-medium text-gray-900">
-                      {paymentQrState.upiId}
-                    </span>
-                  </p>
-                  <p className="mt-1 text-sm text-gray-500">
-                    Bill:{" "}
-                    <span className="font-medium text-gray-900">
-                      {paymentQrState.billNumber || "Current bill"}
-                    </span>
-                  </p>
-                </>
-              ) : (
-                <div className="py-10">
-                  <QrCode className="mx-auto h-10 w-10 text-gray-400" />
-                  <p className="mt-3 text-sm text-gray-600">
-                    Payment QR is not available.
-                  </p>
-                </div>
-              )}
-            </div>
-
-            <div className="mt-5 space-y-3">
-              <button
-                type="button"
-                onClick={completeOnlinePayment}
-                disabled={
-                  isPaying || paymentQrState.loading || !paymentQrState.qrCode
-                }
-                className="w-full cursor-pointer rounded-xl bg-primary-600 px-4 py-3 font-semibold text-white hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {isPaying ? "Confirming Payment..." : "I Have Paid, Verify Now"}
-              </button>
-              <button
-                type="button"
-                onClick={() =>
-                  setPaymentQrState({
-                    isOpen: false,
-                    loading: false,
-                    qrCode: "",
-                    upiId: "",
-                    amount: 0,
-                    billId: "",
-                    billNumber: "",
-                  })
-                }
-                className="w-full cursor-pointer rounded-xl border border-gray-300 px-4 py-3 font-medium text-gray-700 hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
-
       <div className="sticky top-0 z-30 border-b border-gray-200 bg-white shadow-sm">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-4">
           <button
@@ -879,14 +787,14 @@ export function BillRequest() {
             ? "Processing..."
             : selectedPayment === "cash"
               ? "Request Cash Payment & Finish Visit"
-              : `Show QR To Pay ${formatCurrency(totalAmount, currency)}`}
+              : `Pay ${formatCurrency(totalAmount, currency)} with ${PAYMENT_LABELS[selectedPayment] || "Razorpay"}`}
         </button>
 
         {selectedPayment !== "cash" ? (
           <div className="rounded-2xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800">
-            Choose an online method to open a payment QR, scan it from your UPI
-            or payment app, and then confirm payment here. The final paid bill
-            stays available for view and download.
+            Choose an online method to open Razorpay Checkout. Once the payment
+            is verified, the bill, order, and session are marked paid
+            automatically and the final PDF stays available for download.
           </div>
         ) : (
           <div className="rounded-2xl border border-sky-200 bg-sky-50 p-4 text-sm text-sky-800">
