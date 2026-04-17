@@ -4,6 +4,16 @@ import { useNavigate, useParams } from "react-router-dom";
 import { tenantService } from "../../common/services";
 import { buildPlatformAdminPath } from "../../common/utils/routes";
 import { useAdmin } from "../context/AdminContext";
+const formatCurrency = (value, currency = "INR") =>
+  new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency,
+    maximumFractionDigits: 2,
+  }).format(Number(value || 0));
+const isPaymentApprovalReady = (tenant = {}) =>
+  ["paid", "approval_requested", "approved"].includes(
+    String(tenant?.payment?.status || "").toLowerCase(),
+  );
 const renderRows = (items = [], columns = []) => {
   if (!items.length) {
     return (
@@ -98,7 +108,7 @@ export function TenantOverview() {
     try {
       await tenantService.verifyTenant(tenantId);
       await loadOverview();
-      addNotification("Tenant verified successfully", "success");
+      addNotification("Tenant approved successfully", "success");
     } catch (verifyError) {
       const message = verifyError?.message || "Failed to verify tenant";
       setError(message);
@@ -123,6 +133,9 @@ export function TenantOverview() {
   const canVerify =
     tenant?.onboarding?.verificationStatus === "pending" ||
     tenant?.status === "pending";
+  const canApproveWithPayment =
+    tenant?.onboarding?.source !== "self_service" ||
+    isPaymentApprovalReady(tenant);
   return (
     <div className="space-y-6 p-4 sm:p-6">
       <div className="flex flex-col gap-4 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm lg:flex-row lg:items-center lg:justify-between sm:p-6">
@@ -149,7 +162,7 @@ export function TenantOverview() {
         {canVerify ? (
           <button
             className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-60 lg:w-auto"
-            disabled={verifying}
+            disabled={verifying || !canApproveWithPayment}
             onClick={handleVerify}
             type="button"
           >
@@ -158,7 +171,7 @@ export function TenantOverview() {
             ) : (
               <CheckCircle2 className="h-4 w-4" />
             )}
-            Verify Tenant
+            Approve & Send Credentials
           </button>
         ) : null}
       </div>
@@ -224,7 +237,33 @@ export function TenantOverview() {
                 : "-"}
             </div>
           </div>
+          <div className="rounded-2xl bg-slate-50 p-4">
+            <div className="text-sm text-slate-500">Registration Payment</div>
+            <div className="mt-2 font-semibold capitalize text-slate-900">
+              {tenant.payment?.status || "not_required"}
+            </div>
+            <div className="mt-1 text-sm text-slate-600">
+              Method: {tenant.payment?.method || "-"}
+            </div>
+            <div className="mt-1 text-sm text-slate-600">
+              Amount:{" "}
+              {formatCurrency(
+                tenant.payment?.amount || 10000,
+                tenant.payment?.currency || "INR",
+              )}
+            </div>
+            <div className="mt-1 text-sm text-slate-600">
+              Reference: {tenant.payment?.transactionId || tenant.payment?.reference || "-"}
+            </div>
+          </div>
         </div>
+        {tenant.onboarding?.source === "self_service" &&
+        !canApproveWithPayment ? (
+          <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            This tenant cannot be approved yet because the registration payment
+            is still pending.
+          </div>
+        ) : null}
       </section>
 
       <section className="grid gap-6 xl:grid-cols-2">

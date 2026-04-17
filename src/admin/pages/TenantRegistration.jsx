@@ -1,5 +1,11 @@
 import React, { useState } from "react";
-import { Building2, Loader2 } from "lucide-react";
+import {
+  Building2,
+  CreditCard,
+  IndianRupee,
+  Loader2,
+  ShieldCheck,
+} from "lucide-react";
 import { Link } from "react-router-dom";
 import { useSettings } from "../../common/context/SettingsContext";
 import { tenantService } from "../../common/services";
@@ -9,7 +15,10 @@ import {
   normalizeTenantKeyInput,
   normalizeTenantSlugInput,
 } from "../../common/utils/tenantWorkspace";
+import loadRazorpayCheckout from "../../common/utils/loadRazorpayCheckout";
 import { AdminAuthShell } from "../components/layout/AdminAuthShell";
+
+const REGISTRATION_AMOUNT = 10000;
 const initialForm = {
   restaurantName: "",
   slug: "",
@@ -18,17 +27,30 @@ const initialForm = {
   adminEmail: "",
   phone: "",
   subscriptionPlan: "starter",
+  paymentMethod: "online",
+  paymentReference: "",
 };
+
+const formatCurrency = (value, currency = "INR") =>
+  new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency,
+    maximumFractionDigits: 2,
+  }).format(Number(value || 0));
+
 export function TenantRegistration() {
   const { settings } = useSettings();
   const [form, setForm] = useState(initialForm);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [paymentContext, setPaymentContext] = useState(null);
+
   const inputClassName =
     "mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-sky-400 focus:ring-4 focus:ring-sky-100";
   const labelClassName = "block text-sm font-semibold text-slate-800";
   const hintClassName = "mt-2 text-xs leading-5 text-slate-500";
+
   const routePreview =
     form.slug && form.key
       ? buildTenantWorkspacePath({
@@ -36,6 +58,7 @@ export function TenantRegistration() {
           key: normalizeTenantKeyInput(form.key),
         })
       : "/your-slug/yourkey";
+
   const handleChange = (field, value) => {
     setForm((current) => ({
       ...current,
@@ -47,23 +70,146 @@ export function TenantRegistration() {
             : value,
     }));
   };
+
+  const launchOnlinePayment = async (registrationContext) => {
+    try {
+      setSubmitting(true);
+      setError("");
+      const orderResponse = await tenantService.createRegistrationPaymentOrder(
+        registrationContext.tenantId,
+      );
+      const orderPayload = orderResponse?.data?.order || null;
+      const tenantPayload = orderResponse?.data?.tenant || null;
+      const paymentPayload = orderResponse?.data?.payment || null;
+      const razorpayKey = orderResponse?.data?.keyId || "";
+
+      if (!orderPayload?.id || !razorpayKey) {
+        throw new Error(
+          "Razorpay is not configured yet. Add the Razorpay test key before retrying.",
+        );
+      }
+
+      const RazorpayCheckout = await loadRazorpayCheckout();
+      const checkout = new RazorpayCheckout({
+        key: razorpayKey,
+        amount: Number(orderPayload.amount || 0),
+        currency: orderPayload.currency || "INR",
+        name:
+          settings?.restaurantName ||
+          settings?.restaurantInfo?.name ||
+          "Quick Bite Platform",
+        description: `Tenant registration for ${tenantPayload?.name || registrationContext.restaurantName}`,
+        order_id: orderPayload.id,
+        prefill: {
+          name: tenantPayload?.adminName || registrationContext.adminName || "",
+          email:
+            tenantPayload?.adminEmail || registrationContext.adminEmail || "",
+          contact: tenantPayload?.phone || registrationContext.phone || "",
+        },
+        notes: {
+          tenantId: registrationContext.tenantId,
+          tenantName: tenantPayload?.name || registrationContext.restaurantName,
+        },
+        theme: {
+          color: "#0f172a",
+        },
+        modal: {
+          ondismiss: () => {
+            setSubmitting(false);
+            setSuccess(
+              "Registration request was saved, but the online payment is still pending. You can retry the payment below.",
+            );
+          },
+        },
+        handler: async (paymentResult) => {
+          const verificationResponse =
+            await tenantService.verifyRegistrationPayment(
+              registrationContext.tenantId,
+              {
+                razorpayOrderId:
+                  paymentResult?.razorpay_order_id || orderPayload.id,
+                razorpayPaymentId: paymentResult?.razorpay_payment_id || "",
+                razorpaySignature: paymentResult?.razorpay_signature || "",
+              },
+            );
+
+          if (!verificationResponse?.success) {
+            setSubmitting(false);
+            setError(
+              verificationResponse?.message ||
+                "Payment verification failed. Please retry.",
+            );
+            return;
+          }
+
+          setSubmitting(false);
+          setPaymentContext(null);
+          setForm(initialForm);
+          setSuccess(
+            `Registration submitted and ${formatCurrency(paymentPayload?.amount || REGISTRATION_AMOUNT)} payment received. Super admin approval is now pending, and credentials will be emailed to ${registrationContext.adminEmail} after approval.`,
+          );
+        },
+      });
+
+      checkout.on("payment.failed", (event) => {
+        setSubmitting(false);
+        setError(
+          event?.error?.description ||
+            "Payment failed. The registration request is saved and you can retry the payment.",
+        );
+      });
+
+      checkout.open();
+    } catch (submitError) {
+      setSubmitting(false);
+      setError(
+        submitError?.message ||
+          "Registration was saved but the payment step could not be started.",
+      );
+    }
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     setSubmitting(true);
     setError("");
     setSuccess("");
+
     try {
       const response = await tenantService.registerTenant(form);
-      setSuccess(
-        response?.message || "Tenant registration submitted successfully",
-      );
-      setForm(initialForm);
+      const tenantId = response?.data?.tenantId || "";
+
+      if (!tenantId) {
+        throw new Error("Tenant registration was created without an ID");
+      }
+
+      const nextPaymentContext = {
+        tenantId,
+        restaurantName: form.restaurantName,
+        adminName: form.adminName,
+        adminEmail: form.adminEmail,
+        phone: form.phone,
+      };
+      setPaymentContext(nextPaymentContext);
+
+      if (form.paymentMethod === "manual") {
+        setSubmitting(false);
+        setPaymentContext(null);
+        setForm(initialForm);
+        setSuccess(
+          response?.message ||
+            `Registration submitted successfully. The ${formatCurrency(REGISTRATION_AMOUNT)} manual/testing payment request is now waiting for super admin approval.`,
+        );
+        return;
+      }
+
+      await launchOnlinePayment(nextPaymentContext);
     } catch (submitError) {
-      setError(submitError?.message || "Failed to submit registration");
-    } finally {
       setSubmitting(false);
+      setError(submitError?.message || "Failed to submit registration");
     }
   };
+
   return (
     <AdminAuthShell
       contentScrollable
@@ -71,19 +217,19 @@ export function TenantRegistration() {
       settings={settings}
       eyebrow="Platform Onboarding"
       title="Register Your Restaurant Workspace"
-      description="Submit your restaurant details and the platform team will verify your workspace before admin access is activated."
-      sideTitle="Launch your workspace with a verified setup."
-      sideDescription="Once approved, your tenant admin credentials will be provisioned and you can sign in from the same admin portal."
+      description="Submit your restaurant details, choose a ₹10,000 registration payment mode, and then wait for super admin approval before admin access is activated."
+      sideTitle="Launch your workspace with payment-first onboarding."
+      sideDescription="Online payments are captured through Razorpay, while manual/testing requests stay pending for super admin review. Credentials are emailed only after approval."
       highlights={[
         {
-          title: "One admin experience",
+          title: "₹10,000 registration fee",
           description:
-            "Tenant admins and platform admins use the same admin panel, with different capabilities.",
+            "Every self-service tenant request now includes a fixed onboarding payment amount.",
         },
         {
-          title: "Verification first",
+          title: "Approval before credentials",
           description:
-            "New self-registrations stay pending until the platform team reviews them.",
+            "The platform team approves the registration and then the admin email receives a random temporary password.",
         },
       ]}
     >
@@ -96,6 +242,29 @@ export function TenantRegistration() {
         {success ? (
           <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
             {success}
+          </div>
+        ) : null}
+        {paymentContext ? (
+          <div className="rounded-2xl border border-sky-200 bg-sky-50 px-4 py-4 text-sm text-sky-800">
+            Registration reference: <strong>{paymentContext.tenantId}</strong>
+            <br />
+            If the online payment was interrupted, you can retry it below
+            without creating another registration request.
+            <div className="mt-3">
+              <button
+                type="button"
+                onClick={() => launchOnlinePayment(paymentContext)}
+                disabled={submitting}
+                className="inline-flex items-center gap-2 rounded-2xl bg-slate-900 px-4 py-2.5 font-semibold text-white transition hover:bg-slate-800 disabled:opacity-60"
+              >
+                {submitting ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <CreditCard className="h-4 w-4" />
+                )}
+                Retry Online Payment
+              </button>
+            </div>
           </div>
         ) : null}
 
@@ -129,10 +298,7 @@ export function TenantRegistration() {
               <p className="text-sm font-semibold text-slate-900">
                 Tenant Route Setup
               </p>
-              <p className="text-xs leading-5 text-slate-500">
-                These values become the workspace path used for admin login,
-                customer links, and table QR scans.
-              </p>
+           
             </div>
             <div className="w-full rounded-2xl bg-slate-900 px-3 py-3 text-left text-xs font-medium text-white">
               <span className="block text-[10px] uppercase tracking-[0.2em] text-sky-200">
@@ -166,10 +332,7 @@ export function TenantRegistration() {
                 value={form.key}
                 onChange={(event) => handleChange("key", event.target.value)}
               />
-              <p className={hintClassName}>
-                Short unique key without spaces. This pairs with the slug in the
-                QR URL.
-              </p>
+             
             </label>
           </div>
         </div>
@@ -205,17 +368,14 @@ export function TenantRegistration() {
           <p className="text-sm font-semibold text-slate-900">
             Future Admin Contact
           </p>
-          <p className="mt-1 text-sm text-slate-600">
-            These details will be used for the first admin account after
-            approval.
-          </p>
+        
 
           <div className="mt-4 rounded-2xl border border-white bg-white/80 px-4 py-3 text-sm text-slate-700">
-            Approved QR links will open under{" "}
+            Approved QR links will open under
             <span className="font-mono font-semibold text-slate-900">
               {routePreview}/table/:tableNumber
             </span>
-            .
+            
           </div>
         </div>
 
@@ -238,16 +398,106 @@ export function TenantRegistration() {
               Enterprise - advanced or multi-location operations
             </option>
           </select>
-          <p className={hintClassName}>
-            Choose the plan you expect to start with. It can be reviewed later
-            during onboarding.
-          </p>
         </label>
 
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-900">
-          After submission, the platform team reviews your request. Once
-          approved, your admin credentials are created and you can sign in from
-          the same admin portal.
+        <div className="rounded-[1.75rem] border border-emerald-200 bg-emerald-50 p-4 sm:p-5">
+          <div className="flex items-start gap-3">
+            <IndianRupee className="mt-0.5 h-5 w-5 text-emerald-700" />
+            <div>
+              <p className="text-sm font-semibold text-emerald-950">
+                Registration Payment
+              </p>
+              <p className="mt-1 text-sm text-emerald-800">
+                Self-service tenant onboarding currently requires a fixed{" "}
+                <strong>{formatCurrency(REGISTRATION_AMOUNT)}</strong> payment.
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <label
+              className={`cursor-pointer rounded-2xl border px-4 py-4 ${form.paymentMethod === "online" ? "border-slate-900 bg-white" : "border-emerald-200 bg-white/70"}`}
+            >
+              <div className="flex items-start gap-3">
+                <input
+                  type="radio"
+                  name="tenant-payment-method"
+                  value="online"
+                  checked={form.paymentMethod === "online"}
+                  onChange={(event) =>
+                    handleChange("paymentMethod", event.target.value)
+                  }
+                  className="mt-1"
+                />
+                <div>
+                  <p className="font-semibold text-slate-900">Online Payment</p>
+                 
+                </div>
+              </div>
+            </label>
+
+            <label
+              className={`cursor-pointer rounded-2xl border px-4 py-4 ${form.paymentMethod === "manual" ? "border-slate-900 bg-white" : "border-emerald-200 bg-white/70"}`}
+            >
+              <div className="flex items-start gap-3">
+                <input
+                  type="radio"
+                  name="tenant-payment-method"
+                  value="manual"
+                  checked={form.paymentMethod === "manual"}
+                  onChange={(event) =>
+                    handleChange("paymentMethod", event.target.value)
+                  }
+                  className="mt-1"
+                />
+                <div>
+                  <p className="font-semibold text-slate-900">
+                    Manual / Testing Approval
+                  </p>
+                
+                </div>
+              </div>
+            </label>
+          </div>
+
+          {form.paymentMethod === "manual" ? (
+            <label className={`${labelClassName} mt-4`}>
+              Manual Payment Reference
+              <input
+                className={inputClassName}
+                placeholder="Optional: bank transfer ref, cash note, testing note"
+                value={form.paymentReference}
+                onChange={(event) =>
+                  handleChange("paymentReference", event.target.value)
+                }
+              />
+              <p className={hintClassName}>
+                This note is visible to the super admin during approval.
+              </p>
+            </label>
+          ) : null}
+        </div>
+
+        <div className="rounded-2xl border border-sky-200 bg-sky-50 px-4 py-4 text-sm text-sky-900">
+          <div className="flex items-start gap-3">
+            <ShieldCheck className="mt-0.5 h-5 w-5 text-sky-700" />
+            <div>
+              <p className="font-semibold">Approval Flow</p>
+              <p className="mt-1">
+                1. Submit tenant request.
+                <br />
+                2. Collect or mark the {formatCurrency(
+                  REGISTRATION_AMOUNT,
+                )}{" "}
+                payment.
+                <br />
+                3. Super admin approves the tenant.
+                <br />
+                4. Admin credentials are emailed to{" "}
+                {form.adminEmail || "the provided admin email"}.
+              </p>
+            </div>
+          </div>
         </div>
 
         <button
@@ -257,10 +507,16 @@ export function TenantRegistration() {
         >
           {submitting ? (
             <Loader2 className="h-4 w-4 animate-spin" />
+          ) : form.paymentMethod === "online" ? (
+            <CreditCard className="h-4 w-4" />
           ) : (
             <Building2 className="h-4 w-4" />
           )}
-          {submitting ? "Submitting..." : "Submit Registration Request"}
+          {submitting
+            ? "Processing..."
+            : form.paymentMethod === "online"
+              ? "Submit & Pay Registration Fee"
+              : "Submit & Request Manual Approval"}
         </button>
 
         <div className="pb-1 text-center text-sm text-slate-500">

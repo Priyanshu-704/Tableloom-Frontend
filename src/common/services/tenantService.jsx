@@ -88,5 +88,37 @@ export const tenantService = {
       handleApiError(error, "Failed to submit tenant registration");
     }
   },
+  createRegistrationPaymentOrder: async (tenantId) => {
+    try {
+      const response = await axios.post(
+        `${apiBaseUrl}/tenants/${tenantId}/registration-payment-order`,
+        {},
+        {
+          withCredentials: true,
+        },
+      );
+      return toServiceResponse(response, {
+        data: null,
+      });
+    } catch (error) {
+      handleApiError(error, "Failed to create tenant registration payment order");
+    }
+  },
+  verifyRegistrationPayment: async (tenantId, payload) => {
+    try {
+      const response = await axios.post(
+        `${apiBaseUrl}/tenants/${tenantId}/registration-payment-verify`,
+        payload,
+        {
+          withCredentials: true,
+        },
+      );
+      return toServiceResponse(response, {
+        data: null,
+      });
+    } catch (error) {
+      handleApiError(error, "Failed to verify tenant registration payment");
+    }
+  },
 };
 export default tenantService;

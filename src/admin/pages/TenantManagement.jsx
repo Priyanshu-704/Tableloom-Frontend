@@ -56,10 +56,20 @@ const requestCategoryLabel = {
   account: "Account",
   other: "Other",
 };
+const formatCurrency = (value, currency = "INR") =>
+  new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency,
+    maximumFractionDigits: 2,
+  }).format(Number(value || 0));
 const formatRequestStatus = (status = "open") =>
   String(status || "open").replace(/_/g, " ");
 const isSupportRequestLocked = (status = "open") =>
   ["resolved", "closed"].includes(String(status || "open").toLowerCase());
+const isPaymentApprovalReady = (tenant = {}) =>
+  ["paid", "approval_requested", "approved"].includes(
+    String(tenant?.payment?.status || "").toLowerCase(),
+  );
 export function TenantManagement() {
   const isMonitoringMode = useMonitoringMode();
   const navigate = useNavigate();
@@ -206,7 +216,9 @@ export function TenantManagement() {
     try {
       const response = await tenantService.verifyTenant(tenantId);
       setCredentials(response?.data?.credentials || null);
-      const message = response?.message || "Tenant verified successfully";
+      const message =
+        response?.message ||
+        "Tenant approved successfully and credentials sent";
       setSuccess(message);
       addNotification(message, "success");
       await loadTenants();
@@ -536,6 +548,35 @@ export function TenantManagement() {
                           </span>
                         </div>
                         <div className="mt-1">
+                          Payment:{" "}
+                          <span className="font-medium capitalize text-slate-900">
+                            {tenant.payment?.status || "not_required"}
+                          </span>
+                          {tenant.payment?.method ? (
+                            <span className="text-slate-500">
+                              {" "}
+                              via {tenant.payment.method}
+                            </span>
+                          ) : null}
+                        </div>
+                        <div className="mt-1">
+                          Amount:{" "}
+                          <span className="font-medium text-slate-900">
+                            {formatCurrency(
+                              tenant.payment?.amount || 10000,
+                              tenant.payment?.currency || "INR",
+                            )}
+                          </span>
+                        </div>
+                        {tenant.payment?.reference ? (
+                          <div className="mt-1">
+                            Reference:{" "}
+                            <span className="font-medium text-slate-900">
+                              {tenant.payment.reference}
+                            </span>
+                          </div>
+                        ) : null}
+                        <div className="mt-1">
                           Route:{" "}
                           <span className="font-mono text-xs text-slate-700">
                             {getTenantWorkspacePath(tenant)}
@@ -547,6 +588,7 @@ export function TenantManagement() {
                           <button
                             className="inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-60"
                             disabled={
+                              !isPaymentApprovalReady(tenant) ||
                               verifyingTenantId === tenant._id ||
                               rejectingTenantId === tenant._id
                             }
@@ -558,7 +600,7 @@ export function TenantManagement() {
                             ) : (
                               <CheckCircle2 className="h-4 w-4" />
                             )}
-                            Verify
+                            Approve & Send Credentials
                           </button>
                         ) : null}
                         {!isMonitoringMode ? (
@@ -580,6 +622,14 @@ export function TenantManagement() {
                           </button>
                         ) : null}
                       </div>
+                      {!isPaymentApprovalReady(tenant) ? (
+                        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-3 py-3 text-xs text-amber-800">
+                          Online registrations must reach at least{" "}
+                          <strong>paid</strong>, and manual/testing requests
+                          must be marked as <strong>approval requested</strong>,
+                          before the tenant can be approved.
+                        </div>
+                      ) : null}
                     </div>
                   ))}
                 </div>
@@ -637,6 +687,21 @@ export function TenantManagement() {
                               tenant.status}
                           </span>
                         </div>
+                        <div className="rounded-xl bg-slate-50 px-3 py-2">
+                          Payment:{" "}
+                          <span className="font-medium capitalize text-slate-900">
+                            {tenant.payment?.status || "not_required"}
+                          </span>
+                        </div>
+                        <div className="rounded-xl bg-slate-50 px-3 py-2">
+                          Amount:{" "}
+                          <span className="font-medium text-slate-900">
+                            {formatCurrency(
+                              tenant.payment?.amount || 10000,
+                              tenant.payment?.currency || "INR",
+                            )}
+                          </span>
+                        </div>
                       </div>
                       <div className="mt-3 flex flex-wrap gap-2">
                         {isTenantVerified(tenant) ? (
@@ -685,13 +750,14 @@ export function TenantManagement() {
                     <th className="pb-3 pr-4">Route</th>
                     <th className="pb-3 pr-4">Plan</th>
                     <th className="pb-3 pr-4">Status</th>
+                    <th className="pb-3 pr-4">Payment</th>
                     <th className="pb-3 pr-4">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {loading ? (
                     <tr>
-                      <td className="py-6 text-slate-500" colSpan="5">
+                      <td className="py-6 text-slate-500" colSpan="6">
                         Loading tenants...
                       </td>
                     </tr>
@@ -730,6 +796,20 @@ export function TenantManagement() {
                           <td className="py-4 pr-4 capitalize">
                             {tenant.onboarding?.verificationStatus ||
                               tenant.status}
+                          </td>
+                          <td className="py-4 pr-4">
+                            <div className="capitalize text-slate-700">
+                              {tenant.payment?.status || "not_required"}
+                            </div>
+                            {tenant.payment?.method ? (
+                              <div className="text-xs text-slate-500">
+                                {tenant.payment.method} ·{" "}
+                                {formatCurrency(
+                                  tenant.payment?.amount || 10000,
+                                  tenant.payment?.currency || "INR",
+                                )}
+                              </div>
+                            ) : null}
                           </td>
                           <td className="py-4 pr-4">
                             <div className="flex flex-wrap gap-2">
