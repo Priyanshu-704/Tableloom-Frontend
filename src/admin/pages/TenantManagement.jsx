@@ -21,6 +21,7 @@ import {
 } from "../../common/utils/tenantWorkspace";
 import { useAdmin } from "../context/AdminContext";
 import { AdminModal } from "../components/common/AdminModal";
+import { AdminPagination } from "../components/common/AdminPagination";
 import { useMonitoringMode } from "../hooks/useMonitoringMode";
 const initialForm = {
   restaurantName: "",
@@ -31,11 +32,23 @@ const initialForm = {
   phone: "",
   subscriptionPlan: "starter",
 };
+const TENANT_PAGE_SIZE = 10;
+const defaultTenantPagination = {
+  page: 1,
+  pages: 1,
+  total: 0,
+  limit: TENANT_PAGE_SIZE,
+};
 const superAdminTabs = [
   {
-    id: "tenants",
-    label: "Tenant Workspaces",
-    description: "Create and verify restaurant tenants",
+    id: "registered",
+    label: "Registered Tenants",
+    description: "Active and verified restaurant workspaces",
+  },
+  {
+    id: "pending",
+    label: "Pending Approvals",
+    description: "Registrations waiting for review or approval",
   },
   {
     id: "requests",
@@ -75,7 +88,16 @@ export function TenantManagement() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { addNotification, confirmAction } = useAdmin();
-  const [tenants, setTenants] = useState([]);
+  const [registeredTenants, setRegisteredTenants] = useState([]);
+  const [pendingTenants, setPendingTenants] = useState([]);
+  const [registeredPagination, setRegisteredPagination] = useState(
+    defaultTenantPagination,
+  );
+  const [pendingPagination, setPendingPagination] = useState(
+    defaultTenantPagination,
+  );
+  const [registeredPage, setRegisteredPage] = useState(1);
+  const [pendingPage, setPendingPage] = useState(1);
   const [supportRequests, setSupportRequests] = useState([]);
   const [responseDrafts, setResponseDrafts] = useState({});
   const [form, setForm] = useState(initialForm);
@@ -89,17 +111,44 @@ export function TenantManagement() {
   const [rejectingTenantId, setRejectingTenantId] = useState("");
   const [updatingTenantId, setUpdatingTenantId] = useState("");
   const [updatingSupportId, setUpdatingSupportId] = useState("");
-  const activeTab =
-    searchParams.get("tab") === "requests" ? "requests" : "tenants";
-  const loadTenants = async () => {
-    setLoading(true);
+  const requestedTab = String(searchParams.get("tab") || "").trim().toLowerCase();
+  const activeTab = ["pending", "requests"].includes(requestedTab)
+    ? requestedTab
+    : "registered";
+  const loadTenantSection = async (section, page) => {
     try {
-      const response = await tenantService.getTenants();
-      setTenants(Array.isArray(response?.data) ? response.data : []);
+      const response = await tenantService.getTenants({
+        section,
+        page,
+        limit: TENANT_PAGE_SIZE,
+      });
+      const items = Array.isArray(response?.data) ? response.data : [];
+      const pagination = {
+        page: response?.pagination?.page || page,
+        pages: response?.pagination?.pages || 1,
+        total: response?.pagination?.total || 0,
+        limit: response?.pagination?.limit || TENANT_PAGE_SIZE,
+      };
+      if (section === "pending") {
+        setPendingTenants(items);
+        setPendingPagination(pagination);
+        return;
+      }
+      setRegisteredTenants(items);
+      setRegisteredPagination(pagination);
     } catch (loadError) {
       const message = loadError?.message || "Failed to load tenants";
       setError(message);
       addNotification(message, "error");
+    }
+  };
+  const loadTenants = async () => {
+    setLoading(true);
+    try {
+      await Promise.all([
+        loadTenantSection("registered", registeredPage),
+        loadTenantSection("pending", pendingPage),
+      ]);
     } finally {
       setLoading(false);
     }
@@ -115,7 +164,11 @@ export function TenantManagement() {
     }
   };
   useEffect(() => {
-    Promise.all([loadTenants(), loadSupportRequests()]);
+    loadTenants();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [registeredPage, pendingPage]);
+  useEffect(() => {
+    loadSupportRequests();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   useEffect(() => {
@@ -127,15 +180,6 @@ export function TenantManagement() {
       }, {}),
     );
   }, [supportRequests]);
-  const pendingTenants = useMemo(
-    () =>
-      tenants.filter(
-        (tenant) =>
-          tenant?.onboarding?.verificationStatus === "pending" ||
-          tenant?.status === "pending",
-      ),
-    [tenants],
-  );
   const openSupportRequests = useMemo(
     () =>
       supportRequests.filter(
@@ -143,6 +187,8 @@ export function TenantManagement() {
       ).length,
     [supportRequests],
   );
+  const getPreviousPage = (items, currentPage) =>
+    items.length === 1 && currentPage > 1 ? currentPage - 1 : currentPage;
   const handleChange = (field, value) => {
     setForm((current) => ({
       ...current,
@@ -194,7 +240,11 @@ export function TenantManagement() {
       closeTenantModal({
         force: true,
       });
-      await loadTenants();
+      const shouldReloadRegisteredImmediately = registeredPage === 1;
+      setRegisteredPage(1);
+      if (shouldReloadRegisteredImmediately) {
+        await loadTenantSection("registered", 1);
+      }
     } catch (createError) {
       const message = createError?.message || "Failed to create tenant";
       setError(message);
@@ -221,7 +271,14 @@ export function TenantManagement() {
         "Tenant approved successfully and credentials sent";
       setSuccess(message);
       addNotification(message, "success");
-      await loadTenants();
+      const nextPendingPage = getPreviousPage(pendingTenants, pendingPage);
+      setPendingPage(nextPendingPage);
+      if (nextPendingPage === pendingPage) {
+        await Promise.all([
+          loadTenantSection("registered", registeredPage),
+          loadTenantSection("pending", pendingPage),
+        ]);
+      }
     } catch (verifyError) {
       const message = verifyError?.message || "Failed to verify tenant";
       setError(message);
@@ -254,7 +311,11 @@ export function TenantManagement() {
       const message = response?.message || "Tenant rejected successfully";
       setSuccess(message);
       addNotification(message, "success");
-      await loadTenants();
+      const nextPendingPage = getPreviousPage(pendingTenants, pendingPage);
+      setPendingPage(nextPendingPage);
+      if (nextPendingPage === pendingPage) {
+        await loadTenantSection("pending", pendingPage);
+      }
     } catch (rejectError) {
       const message = rejectError?.message || "Failed to reject tenant";
       setError(message);
@@ -303,7 +364,7 @@ export function TenantManagement() {
         `Tenant ${nextStatus === "active" ? "activated" : "deactivated"} successfully`;
       setSuccess(message);
       addNotification(message, "success");
-      await loadTenants();
+      await loadTenantSection("registered", registeredPage);
     } catch (statusError) {
       const message = statusError?.message || "Failed to update tenant status";
       setError(message);
@@ -408,10 +469,12 @@ export function TenantManagement() {
   };
   const switchTab = (tabId) => {
     const nextParams = new URLSearchParams(searchParams);
-    if (tabId === "requests") {
+    if (tabId === "registered") {
+      nextParams.delete("tab");
+    } else if (tabId === "requests") {
       nextParams.set("tab", "requests");
     } else {
-      nextParams.delete("tab");
+      nextParams.set("tab", tabId);
     }
     setSearchParams(nextParams, {
       replace: true,
@@ -436,7 +499,7 @@ export function TenantManagement() {
             </p>
           </div>
 
-          {activeTab === "tenants" && !isMonitoringMode ? (
+          {activeTab !== "requests" && !isMonitoringMode ? (
             <button
               className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
               onClick={openCreateTenantModal}
@@ -448,7 +511,7 @@ export function TenantManagement() {
           ) : null}
         </div>
 
-        <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className="mt-5 grid grid-cols-1 gap-3 md:grid-cols-3">
           {superAdminTabs.map((tab) => (
             <button
               key={tab.id}
@@ -456,7 +519,16 @@ export function TenantManagement() {
               onClick={() => switchTab(tab.id)}
               className={`rounded-2xl border px-4 py-4 text-left transition-colors ${activeTab === tab.id ? "border-sky-500 bg-sky-50 text-sky-700" : "border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100"}`}
             >
-              <div className="text-sm font-semibold">{tab.label}</div>
+              <div className="flex items-center justify-between gap-3 text-sm font-semibold">
+                <span>{tab.label}</span>
+                <span className="rounded-full bg-white/80 px-2.5 py-1 text-[11px] uppercase tracking-[0.18em] text-current">
+                  {tab.id === "registered"
+                    ? registeredPagination.total
+                    : tab.id === "pending"
+                      ? pendingPagination.total
+                      : openSupportRequests}
+                </span>
+              </div>
               <div className="mt-1 text-xs leading-5 opacity-80">
                 {tab.description}
               </div>
@@ -483,29 +555,37 @@ export function TenantManagement() {
         </div>
       ) : null}
 
-      {activeTab === "tenants" ? (
+      {activeTab !== "requests" ? (
         <div className="space-y-6">
-          <section className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <h2 className="text-xl font-semibold text-slate-900">
-                  Pending Verification
-                </h2>
-                <p className="mt-1 text-sm text-slate-500">
-                  Self-registered workspaces waiting for platform approval.
-                </p>
+          {activeTab === "pending" ? (
+            <section className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h2 className="text-xl font-semibold text-slate-900">
+                    Pending Approvals
+                  </h2>
+                  <p className="mt-1 text-sm text-slate-500">
+                    Review registrations, payment state, and approve admin
+                    access from one place.
+                  </p>
+                </div>
+                <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-amber-700">
+                  {pendingPagination.total} Pending
+                </span>
               </div>
-              <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-amber-700">
-                {pendingTenants.length} Pending
-              </span>
-            </div>
 
-            <div className="mt-4 max-h-128 overflow-y-auto overscroll-contain pr-1">
-              {pendingTenants.length === 0 ? (
+              <div className="mt-4 max-h-128 overflow-y-auto overscroll-contain pr-1">
+                {loading ? (
+                  <div className="rounded-2xl border border-slate-200 px-4 py-6 text-sm text-slate-500">
+                    Loading pending approvals...
+                  </div>
+                ) : null}
+                {!loading && pendingTenants.length === 0 ? (
                 <div className="rounded-2xl border border-dashed border-slate-200 px-4 py-6 text-sm text-slate-500">
                   No pending tenant registrations.
                 </div>
-              ) : (
+                ) : null}
+                {!loading && pendingTenants.length > 0 ? (
                 <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                   {pendingTenants.map((tenant) => (
                     <div
@@ -588,7 +668,6 @@ export function TenantManagement() {
                           <button
                             className="inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-60"
                             disabled={
-                              !isPaymentApprovalReady(tenant) ||
                               verifyingTenantId === tenant._id ||
                               rejectingTenantId === tenant._id
                             }
@@ -624,35 +703,52 @@ export function TenantManagement() {
                       </div>
                       {!isPaymentApprovalReady(tenant) ? (
                         <div className="rounded-2xl border border-amber-200 bg-amber-50 px-3 py-3 text-xs text-amber-800">
-                          Online registrations must reach at least{" "}
-                          <strong>paid</strong>, and manual/testing requests
-                          must be marked as <strong>approval requested</strong>,
-                          before the tenant can be approved.
+                          Payment is still marked as{" "}
+                          <strong>{tenant.payment?.status || "unpaid"}</strong>.
+                          Super admin can still approve this tenant manually.
                         </div>
                       ) : null}
                     </div>
                   ))}
                 </div>
-              )}
-            </div>
-          </section>
+                ) : null}
+              </div>
 
-          <section className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-            <div className="flex items-center gap-3">
-              <Building2 className="h-5 w-5 text-sky-600" />
-              <h2 className="text-xl font-semibold text-slate-900">
-                All Tenants
-              </h2>
-            </div>
+              <div className="mt-4">
+                <AdminPagination
+                  page={pendingPagination.page}
+                  totalPages={pendingPagination.pages}
+                  totalItems={pendingPagination.total}
+                  pageSize={pendingPagination.limit || TENANT_PAGE_SIZE}
+                  itemLabel="pending approvals"
+                  onPageChange={setPendingPage}
+                />
+              </div>
+            </section>
+          ) : null}
 
-            <div className="mt-4 max-h-128 space-y-3 overflow-y-auto overscroll-contain pr-1 lg:hidden">
-              {loading ? (
-                <div className="rounded-2xl border border-slate-200 px-4 py-6 text-sm text-slate-500">
-                  Loading tenants...
+          {activeTab === "registered" ? (
+            <section className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+              <div className="flex items-center gap-3">
+                <Building2 className="h-5 w-5 text-sky-600" />
+                <div>
+                  <h2 className="text-xl font-semibold text-slate-900">
+                    Registered Tenants
+                  </h2>
+                  <p className="mt-1 text-sm text-slate-500">
+                    Active and verified restaurant workspaces.
+                  </p>
                 </div>
-              ) : null}
-              {!loading
-                ? tenants.map((tenant) => (
+              </div>
+
+              <div className="mt-4 max-h-128 space-y-3 overflow-y-auto overscroll-contain pr-1 lg:hidden">
+                {loading ? (
+                  <div className="rounded-2xl border border-slate-200 px-4 py-6 text-sm text-slate-500">
+                    Loading tenants...
+                  </div>
+                ) : null}
+                {!loading
+                ? registeredTenants.map((tenant) => (
                     <div
                       key={tenant._id}
                       className="rounded-2xl border border-slate-200 px-4 py-4 text-left transition hover:border-slate-300 hover:bg-slate-50"
@@ -735,35 +831,35 @@ export function TenantManagement() {
                     </div>
                   ))
                 : null}
-              {!loading && tenants.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-slate-200 px-4 py-6 text-sm text-slate-500">
-                  No tenants found.
-                </div>
-              ) : null}
-            </div>
+                {!loading && registeredTenants.length === 0 ? (
+                  <div className="rounded-2xl border border-dashed border-slate-200 px-4 py-6 text-sm text-slate-500">
+                    No registered tenants found.
+                  </div>
+                ) : null}
+              </div>
 
-            <div className="mt-4 hidden max-h-128 overflow-auto lg:block">
-              <table className="min-w-full divide-y divide-slate-200 text-sm">
-                <thead className="sticky top-0 bg-white">
-                  <tr className="text-left text-slate-500">
-                    <th className="pb-3 pr-4">Restaurant</th>
-                    <th className="pb-3 pr-4">Route</th>
-                    <th className="pb-3 pr-4">Plan</th>
-                    <th className="pb-3 pr-4">Status</th>
-                    <th className="pb-3 pr-4">Payment</th>
-                    <th className="pb-3 pr-4">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {loading ? (
-                    <tr>
-                      <td className="py-6 text-slate-500" colSpan="6">
-                        Loading tenants...
-                      </td>
+              <div className="mt-4 hidden max-h-128 overflow-auto lg:block">
+                <table className="min-w-full divide-y divide-slate-200 text-sm">
+                  <thead className="sticky top-0 bg-white">
+                    <tr className="text-left text-slate-500">
+                      <th className="pb-3 pr-4">Restaurant</th>
+                      <th className="pb-3 pr-4">Route</th>
+                      <th className="pb-3 pr-4">Plan</th>
+                      <th className="pb-3 pr-4">Status</th>
+                      <th className="pb-3 pr-4">Payment</th>
+                      <th className="pb-3 pr-4">Action</th>
                     </tr>
-                  ) : null}
-                  {!loading
-                    ? tenants.map((tenant) => (
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {loading ? (
+                      <tr>
+                        <td className="py-6 text-slate-500" colSpan="6">
+                          Loading tenants...
+                        </td>
+                      </tr>
+                    ) : null}
+                    {!loading
+                    ? registeredTenants.map((tenant) => (
                         <tr
                           key={tenant._id}
                           className={
@@ -851,17 +947,29 @@ export function TenantManagement() {
                         </tr>
                       ))
                     : null}
-                  {!loading && tenants.length === 0 ? (
-                    <tr>
-                      <td className="py-6 text-slate-500" colSpan="5">
-                        No tenants found.
-                      </td>
-                    </tr>
-                  ) : null}
-                </tbody>
-              </table>
-            </div>
-          </section>
+                    {!loading && registeredTenants.length === 0 ? (
+                      <tr>
+                        <td className="py-6 text-slate-500" colSpan="6">
+                          No registered tenants found.
+                        </td>
+                      </tr>
+                    ) : null}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="mt-4">
+                <AdminPagination
+                  page={registeredPagination.page}
+                  totalPages={registeredPagination.pages}
+                  totalItems={registeredPagination.total}
+                  pageSize={registeredPagination.limit || TENANT_PAGE_SIZE}
+                  itemLabel="registered tenants"
+                  onPageChange={setRegisteredPage}
+                />
+              </div>
+            </section>
+          ) : null}
         </div>
       ) : (
         <section className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
@@ -1125,10 +1233,14 @@ export function TenantManagement() {
                 Workspace Key
                 <input
                   className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
-                  placeholder="Example: main01"
+                  placeholder="Example: main-01"
                   value={form.key}
                   onChange={(event) => handleChange("key", event.target.value)}
                 />
+                <p className="mt-2 text-xs leading-5 text-slate-500">
+                  Lowercase letters, numbers, and hyphens are allowed. Keys are
+                  checked inside the selected slug only.
+                </p>
               </label>
             </div>
 

@@ -328,11 +328,14 @@ export function TenantRegistration() {
               Preferred Workspace Key
               <input
                 className={inputClassName}
-                placeholder="Example: main01"
+                placeholder="Example: main-01"
                 value={form.key}
                 onChange={(event) => handleChange("key", event.target.value)}
               />
-             
+              <p className={hintClassName}>
+                Lowercase letters, numbers, and hyphens are allowed. The same
+                key can be reused for a different restaurant slug.
+              </p>
             </label>
           </div>
         </div>

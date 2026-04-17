@@ -162,7 +162,7 @@ export function TenantOverview() {
         {canVerify ? (
           <button
             className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-60 lg:w-auto"
-            disabled={verifying || !canApproveWithPayment}
+            disabled={verifying}
             onClick={handleVerify}
             type="button"
           >

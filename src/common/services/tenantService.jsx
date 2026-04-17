@@ -4,11 +4,19 @@ import handleApiError from "../utils/handleApiError";
 import toServiceResponse from "./serviceResponse";
 const apiBaseUrl = import.meta.env.VITE_APP_API_URL;
 export const tenantService = {
-  getTenants: async () => {
+  getTenants: async (params = {}) => {
     try {
-      const response = await axiosInstance.get("/tenants");
+      const response = await axiosInstance.get("/tenants", {
+        params,
+      });
       return toServiceResponse(response, {
         data: [],
+        pagination: {
+          page: 1,
+          pages: 1,
+          total: 0,
+          limit: Number(params?.limit || 10),
+        },
       });
     } catch (error) {
       handleApiError(error, "Failed to fetch tenants");
