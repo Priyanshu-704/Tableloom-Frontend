@@ -111,7 +111,9 @@ export function TenantManagement() {
   const [rejectingTenantId, setRejectingTenantId] = useState("");
   const [updatingTenantId, setUpdatingTenantId] = useState("");
   const [updatingSupportId, setUpdatingSupportId] = useState("");
-  const requestedTab = String(searchParams.get("tab") || "").trim().toLowerCase();
+  const requestedTab = String(searchParams.get("tab") || "")
+    .trim()
+    .toLowerCase();
   const activeTab = ["pending", "requests"].includes(requestedTab)
     ? requestedTab
     : "registered";
@@ -165,11 +167,11 @@ export function TenantManagement() {
   };
   useEffect(() => {
     loadTenants();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [registeredPage, pendingPage]);
   useEffect(() => {
     loadSupportRequests();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   useEffect(() => {
     setResponseDrafts((current) =>
@@ -581,136 +583,139 @@ export function TenantManagement() {
                   </div>
                 ) : null}
                 {!loading && pendingTenants.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-slate-200 px-4 py-6 text-sm text-slate-500">
-                  No pending tenant registrations.
-                </div>
+                  <div className="rounded-2xl border border-dashed border-slate-200 px-4 py-6 text-sm text-slate-500">
+                    No pending tenant registrations.
+                  </div>
                 ) : null}
                 {!loading && pendingTenants.length > 0 ? (
-                <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                  {pendingTenants.map((tenant) => (
-                    <div
-                      key={tenant._id}
-                      className="flex h-full flex-col gap-4 rounded-2xl border border-slate-200 px-4 py-4"
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <div className="font-semibold text-slate-900">
-                            {tenant.name}
-                          </div>
-                          <div className="text-sm text-slate-500">
-                            {tenant.requestedAdmin?.name ||
-                              tenant.adminUser?.name ||
-                              "Pending admin"}
-                          </div>
-                        </div>
-                        <span className="rounded-full bg-amber-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-amber-700">
-                          Pending
-                        </span>
-                      </div>
-                      <div className="grid gap-2 text-sm text-slate-500">
-                        <div>
-                          {tenant.requestedAdmin?.email ||
-                            tenant.contact?.email}
-                        </div>
-                        {tenant.requestedAdmin?.phone ||
-                        tenant.contact?.phone ? (
+                  <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                    {pendingTenants.map((tenant) => (
+                      <div
+                        key={tenant._id}
+                        className="flex h-full flex-col gap-4 rounded-2xl border border-slate-200 px-4 py-4"
+                      >
+                        <div className="flex items-start justify-between gap-3">
                           <div>
-                            {tenant.requestedAdmin?.phone ||
-                              tenant.contact?.phone}
+                            <div className="font-semibold text-slate-900">
+                              {tenant.name}
+                            </div>
+                            <div className="text-sm text-slate-500">
+                              {tenant.requestedAdmin?.name ||
+                                tenant.adminUser?.name ||
+                                "Pending admin"}
+                            </div>
                           </div>
-                        ) : null}
-                      </div>
-                      <div className="rounded-2xl bg-slate-50 px-3 py-3 text-sm text-slate-600">
-                        <div>
-                          Plan:{" "}
-                          <span className="font-medium capitalize text-slate-900">
-                            {tenant.subscription?.plan || "starter"}
+                          <span className="rounded-full bg-amber-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-amber-700">
+                            Pending
                           </span>
                         </div>
-                        <div className="mt-1">
-                          Payment:{" "}
-                          <span className="font-medium capitalize text-slate-900">
-                            {tenant.payment?.status || "not_required"}
-                          </span>
-                          {tenant.payment?.method ? (
-                            <span className="text-slate-500">
-                              {" "}
-                              via {tenant.payment.method}
-                            </span>
+                        <div className="grid gap-2 text-sm text-slate-500">
+                          <div>
+                            {tenant.requestedAdmin?.email ||
+                              tenant.contact?.email}
+                          </div>
+                          {tenant.requestedAdmin?.phone ||
+                          tenant.contact?.phone ? (
+                            <div>
+                              {tenant.requestedAdmin?.phone ||
+                                tenant.contact?.phone}
+                            </div>
                           ) : null}
                         </div>
-                        <div className="mt-1">
-                          Amount:{" "}
-                          <span className="font-medium text-slate-900">
-                            {formatCurrency(
-                              tenant.payment?.amount || 10000,
-                              tenant.payment?.currency || "INR",
-                            )}
-                          </span>
-                        </div>
-                        {tenant.payment?.reference ? (
-                          <div className="mt-1">
-                            Reference:{" "}
-                            <span className="font-medium text-slate-900">
-                              {tenant.payment.reference}
+                        <div className="rounded-2xl bg-slate-50 px-3 py-3 text-sm text-slate-600">
+                          <div>
+                            Plan:{" "}
+                            <span className="font-medium capitalize text-slate-900">
+                              {tenant.subscription?.plan || "starter"}
                             </span>
                           </div>
-                        ) : null}
-                        <div className="mt-1">
-                          Route:{" "}
-                          <span className="font-mono text-xs text-slate-700">
-                            {getTenantWorkspacePath(tenant)}
-                          </span>
+                          <div className="mt-1">
+                            Payment:{" "}
+                            <span className="font-medium capitalize text-slate-900">
+                              {tenant.payment?.status || "not_required"}
+                            </span>
+                            {tenant.payment?.method ? (
+                              <span className="text-slate-500">
+                                {" "}
+                                via {tenant.payment.method}
+                              </span>
+                            ) : null}
+                          </div>
+                          <div className="mt-1">
+                            Amount:{" "}
+                            <span className="font-medium text-slate-900">
+                              {formatCurrency(
+                                tenant.payment?.amount || 10000,
+                                tenant.payment?.currency || "INR",
+                              )}
+                            </span>
+                          </div>
+                          {tenant.payment?.reference ? (
+                            <div className="mt-1">
+                              Reference:{" "}
+                              <span className="font-medium text-slate-900">
+                                {tenant.payment.reference}
+                              </span>
+                            </div>
+                          ) : null}
+                          <div className="mt-1">
+                            Route:{" "}
+                            <span className="font-mono text-xs text-slate-700">
+                              {getTenantWorkspacePath(tenant)}
+                            </span>
+                          </div>
                         </div>
-                      </div>
-                      <div className="mt-auto grid gap-2 sm:grid-cols-2">
-                        {!isMonitoringMode ? (
-                          <button
-                            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-60"
-                            disabled={
-                              verifyingTenantId === tenant._id ||
-                              rejectingTenantId === tenant._id
-                            }
-                            onClick={() => handleVerifyTenant(tenant._id)}
-                            type="button"
-                          >
-                            {verifyingTenantId === tenant._id ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <CheckCircle2 className="h-4 w-4" />
-                            )}
-                            Approve & Send Credentials
-                          </button>
-                        ) : null}
-                        {!isMonitoringMode ? (
-                          <button
-                            className="inline-flex items-center justify-center gap-2 rounded-2xl border border-rose-200 px-4 py-2.5 text-sm font-semibold text-rose-700 hover:bg-rose-50 disabled:opacity-60"
-                            disabled={
-                              rejectingTenantId === tenant._id ||
-                              verifyingTenantId === tenant._id
-                            }
-                            onClick={() => handleRejectTenant(tenant)}
-                            type="button"
-                          >
-                            {rejectingTenantId === tenant._id ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <XCircle className="h-4 w-4" />
-                            )}
-                            Reject
-                          </button>
-                        ) : null}
-                      </div>
-                      {!isPaymentApprovalReady(tenant) ? (
-                        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-3 py-3 text-xs text-amber-800">
-                          Payment is still marked as{" "}
-                          <strong>{tenant.payment?.status || "unpaid"}</strong>.
-                          Super admin can still approve this tenant manually.
+                        <div className="mt-auto grid gap-2 sm:grid-cols-2">
+                          {!isMonitoringMode ? (
+                            <button
+                              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-60"
+                              disabled={
+                                verifyingTenantId === tenant._id ||
+                                rejectingTenantId === tenant._id
+                              }
+                              onClick={() => handleVerifyTenant(tenant._id)}
+                              type="button"
+                            >
+                              {verifyingTenantId === tenant._id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <CheckCircle2 className="h-4 w-4" />
+                              )}
+                              Approve & Send Credentials
+                            </button>
+                          ) : null}
+                          {!isMonitoringMode ? (
+                            <button
+                              className="inline-flex items-center justify-center gap-2 rounded-2xl border border-rose-200 px-4 py-2.5 text-sm font-semibold text-rose-700 hover:bg-rose-50 disabled:opacity-60"
+                              disabled={
+                                rejectingTenantId === tenant._id ||
+                                verifyingTenantId === tenant._id
+                              }
+                              onClick={() => handleRejectTenant(tenant)}
+                              type="button"
+                            >
+                              {rejectingTenantId === tenant._id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <XCircle className="h-4 w-4" />
+                              )}
+                              Reject
+                            </button>
+                          ) : null}
                         </div>
-                      ) : null}
-                    </div>
-                  ))}
-                </div>
+                        {!isPaymentApprovalReady(tenant) ? (
+                          <div className="rounded-2xl border border-amber-200 bg-amber-50 px-3 py-3 text-xs text-amber-800">
+                            Payment is still marked as{" "}
+                            <strong>
+                              {tenant.payment?.status || "unpaid"}
+                            </strong>
+                            . Super admin can still approve this tenant
+                            manually.
+                          </div>
+                        ) : null}
+                      </div>
+                    ))}
+                  </div>
                 ) : null}
               </div>
 
@@ -748,89 +753,89 @@ export function TenantManagement() {
                   </div>
                 ) : null}
                 {!loading
-                ? registeredTenants.map((tenant) => (
-                    <div
-                      key={tenant._id}
-                      className="rounded-2xl border border-slate-200 px-4 py-4 text-left transition hover:border-slate-300 hover:bg-slate-50"
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <div className="font-semibold text-slate-900">
-                            {tenant.name}
+                  ? registeredTenants.map((tenant) => (
+                      <div
+                        key={tenant._id}
+                        className="rounded-2xl border border-slate-200 px-4 py-4 text-left transition hover:border-slate-300 hover:bg-slate-50"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <div className="font-semibold text-slate-900">
+                              {tenant.name}
+                            </div>
+                            <div className="mt-1 text-sm text-slate-500">
+                              {tenant.contact?.email ||
+                                tenant.requestedAdmin?.email ||
+                                "No email"}
+                            </div>
                           </div>
-                          <div className="mt-1 text-sm text-slate-500">
-                            {tenant.contact?.email ||
-                              tenant.requestedAdmin?.email ||
-                              "No email"}
+                          <ExternalLink className="mt-1 h-4 w-4 text-slate-400" />
+                        </div>
+                        <div className="mt-3 inline-flex rounded-xl bg-slate-100 px-3 py-1.5 font-mono text-xs text-slate-700">
+                          {getTenantWorkspacePath(tenant)}
+                        </div>
+                        <div className="mt-3 grid grid-cols-2 gap-2 text-sm text-slate-600">
+                          <div className="rounded-xl bg-slate-50 px-3 py-2">
+                            Plan:{" "}
+                            <span className="font-medium capitalize text-slate-900">
+                              {tenant.subscription?.plan || "starter"}
+                            </span>
+                          </div>
+                          <div className="rounded-xl bg-slate-50 px-3 py-2">
+                            Status:{" "}
+                            <span className="font-medium capitalize text-slate-900">
+                              {tenant.onboarding?.verificationStatus ||
+                                tenant.status}
+                            </span>
+                          </div>
+                          <div className="rounded-xl bg-slate-50 px-3 py-2">
+                            Payment:{" "}
+                            <span className="font-medium capitalize text-slate-900">
+                              {tenant.payment?.status || "not_required"}
+                            </span>
+                          </div>
+                          <div className="rounded-xl bg-slate-50 px-3 py-2">
+                            Amount:{" "}
+                            <span className="font-medium text-slate-900">
+                              {formatCurrency(
+                                tenant.payment?.amount || 10000,
+                                tenant.payment?.currency || "INR",
+                              )}
+                            </span>
                           </div>
                         </div>
-                        <ExternalLink className="mt-1 h-4 w-4 text-slate-400" />
-                      </div>
-                      <div className="mt-3 inline-flex rounded-xl bg-slate-100 px-3 py-1.5 font-mono text-xs text-slate-700">
-                        {getTenantWorkspacePath(tenant)}
-                      </div>
-                      <div className="mt-3 grid grid-cols-2 gap-2 text-sm text-slate-600">
-                        <div className="rounded-xl bg-slate-50 px-3 py-2">
-                          Plan:{" "}
-                          <span className="font-medium capitalize text-slate-900">
-                            {tenant.subscription?.plan || "starter"}
-                          </span>
-                        </div>
-                        <div className="rounded-xl bg-slate-50 px-3 py-2">
-                          Status:{" "}
-                          <span className="font-medium capitalize text-slate-900">
-                            {tenant.onboarding?.verificationStatus ||
-                              tenant.status}
-                          </span>
-                        </div>
-                        <div className="rounded-xl bg-slate-50 px-3 py-2">
-                          Payment:{" "}
-                          <span className="font-medium capitalize text-slate-900">
-                            {tenant.payment?.status || "not_required"}
-                          </span>
-                        </div>
-                        <div className="rounded-xl bg-slate-50 px-3 py-2">
-                          Amount:{" "}
-                          <span className="font-medium text-slate-900">
-                            {formatCurrency(
-                              tenant.payment?.amount || 10000,
-                              tenant.payment?.currency || "INR",
-                            )}
-                          </span>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {isTenantVerified(tenant) ? (
+                            <button
+                              type="button"
+                              onClick={() => openTenantAdmin(tenant)}
+                              className="inline-flex items-center gap-2 rounded-2xl border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                            >
+                              <ExternalLink className="h-4 w-4" />
+                              Monitor
+                            </button>
+                          ) : null}
+                          {!isMonitoringMode && isTenantVerified(tenant) ? (
+                            <button
+                              type="button"
+                              onClick={() => handleTenantStatusChange(tenant)}
+                              disabled={updatingTenantId === tenant._id}
+                              className={`inline-flex items-center gap-2 rounded-2xl px-3 py-2 text-sm font-medium ${tenant.status === "active" ? "border border-rose-200 text-rose-700 hover:bg-rose-50" : "border border-emerald-200 text-emerald-700 hover:bg-emerald-50"}`}
+                            >
+                              {updatingTenantId === tenant._id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Power className="h-4 w-4" />
+                              )}
+                              {tenant.status === "active"
+                                ? "Deactivate Tenant"
+                                : "Activate Tenant"}
+                            </button>
+                          ) : null}
                         </div>
                       </div>
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        {isTenantVerified(tenant) ? (
-                          <button
-                            type="button"
-                            onClick={() => openTenantAdmin(tenant)}
-                            className="inline-flex items-center gap-2 rounded-2xl border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-                          >
-                            <ExternalLink className="h-4 w-4" />
-                            Monitor
-                          </button>
-                        ) : null}
-                        {!isMonitoringMode && isTenantVerified(tenant) ? (
-                          <button
-                            type="button"
-                            onClick={() => handleTenantStatusChange(tenant)}
-                            disabled={updatingTenantId === tenant._id}
-                            className={`inline-flex items-center gap-2 rounded-2xl px-3 py-2 text-sm font-medium ${tenant.status === "active" ? "border border-rose-200 text-rose-700 hover:bg-rose-50" : "border border-emerald-200 text-emerald-700 hover:bg-emerald-50"}`}
-                          >
-                            {updatingTenantId === tenant._id ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <Power className="h-4 w-4" />
-                            )}
-                            {tenant.status === "active"
-                              ? "Deactivate Tenant"
-                              : "Activate Tenant"}
-                          </button>
-                        ) : null}
-                      </div>
-                    </div>
-                  ))
-                : null}
+                    ))
+                  : null}
                 {!loading && registeredTenants.length === 0 ? (
                   <div className="rounded-2xl border border-dashed border-slate-200 px-4 py-6 text-sm text-slate-500">
                     No registered tenants found.
@@ -859,94 +864,95 @@ export function TenantManagement() {
                       </tr>
                     ) : null}
                     {!loading
-                    ? registeredTenants.map((tenant) => (
-                        <tr
-                          key={tenant._id}
-                          className={
-                            isTenantVerified(tenant)
-                              ? "cursor-pointer hover:bg-slate-50"
-                              : ""
-                          }
-                          onClick={() => {
-                            if (isTenantVerified(tenant)) {
-                              openTenantAdmin(tenant);
+                      ? registeredTenants.map((tenant) => (
+                          <tr
+                            key={tenant._id}
+                            className={
+                              isTenantVerified(tenant)
+                                ? "cursor-pointer hover:bg-slate-50"
+                                : ""
                             }
-                          }}
-                        >
-                          <td className="py-4 pr-4">
-                            <div className="font-medium text-slate-900">
-                              {tenant.name}
-                            </div>
-                            <div className="text-slate-500">
-                              {tenant.contact?.email ||
-                                tenant.requestedAdmin?.email ||
-                                "No email"}
-                            </div>
-                          </td>
-                          <td className="py-4 pr-4">
-                            {getTenantWorkspacePath(tenant)}
-                          </td>
-                          <td className="py-4 pr-4 capitalize">
-                            {tenant.subscription?.plan || "starter"}
-                          </td>
-                          <td className="py-4 pr-4 capitalize">
-                            {tenant.onboarding?.verificationStatus ||
-                              tenant.status}
-                          </td>
-                          <td className="py-4 pr-4">
-                            <div className="capitalize text-slate-700">
-                              {tenant.payment?.status || "not_required"}
-                            </div>
-                            {tenant.payment?.method ? (
-                              <div className="text-xs text-slate-500">
-                                {tenant.payment.method} ·{" "}
-                                {formatCurrency(
-                                  tenant.payment?.amount || 10000,
-                                  tenant.payment?.currency || "INR",
-                                )}
+                            onClick={() => {
+                              if (isTenantVerified(tenant)) {
+                                openTenantAdmin(tenant);
+                              }
+                            }}
+                          >
+                            <td className="py-4 pr-4">
+                              <div className="font-medium text-slate-900">
+                                {tenant.name}
                               </div>
-                            ) : null}
-                          </td>
-                          <td className="py-4 pr-4">
-                            <div className="flex flex-wrap gap-2">
-                              {isTenantVerified(tenant) ? (
-                                <button
-                                  className="inline-flex items-center gap-2 rounded-2xl border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-                                  onClick={(event) => {
-                                    event.stopPropagation();
-                                    openTenantAdmin(tenant);
-                                  }}
-                                  type="button"
-                                >
-                                  <ExternalLink className="h-4 w-4" />
-                                  Monitor
-                                </button>
-                              ) : null}
-                              {!isMonitoringMode && isTenantVerified(tenant) ? (
-                                <button
-                                  className={`inline-flex items-center gap-2 rounded-2xl px-3 py-2 text-sm font-medium ${tenant.status === "active" ? "border border-rose-200 text-rose-700 hover:bg-rose-50" : "border border-emerald-200 text-emerald-700 hover:bg-emerald-50"}`}
-                                  onClick={(event) => {
-                                    event.stopPropagation();
-                                    handleTenantStatusChange(tenant);
-                                  }}
-                                  disabled={updatingTenantId === tenant._id}
-                                  type="button"
-                                >
-                                  {updatingTenantId === tenant._id ? (
-                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                  ) : (
-                                    <Power className="h-4 w-4" />
+                              <div className="text-slate-500">
+                                {tenant.contact?.email ||
+                                  tenant.requestedAdmin?.email ||
+                                  "No email"}
+                              </div>
+                            </td>
+                            <td className="py-4 pr-4">
+                              {getTenantWorkspacePath(tenant)}
+                            </td>
+                            <td className="py-4 pr-4 capitalize">
+                              {tenant.subscription?.plan || "starter"}
+                            </td>
+                            <td className="py-4 pr-4 capitalize">
+                              {tenant.onboarding?.verificationStatus ||
+                                tenant.status}
+                            </td>
+                            <td className="py-4 pr-4">
+                              <div className="capitalize text-slate-700">
+                                {tenant.payment?.status || "not_required"}
+                              </div>
+                              {tenant.payment?.method ? (
+                                <div className="text-xs text-slate-500">
+                                  {tenant.payment.method} ·{" "}
+                                  {formatCurrency(
+                                    tenant.payment?.amount || 10000,
+                                    tenant.payment?.currency || "INR",
                                   )}
-                                  {tenant.status === "active"
-                                    ? "Deactivate"
-                                    : "Activate"}
-                                </button>
+                                </div>
                               ) : null}
-                            </div>
-                          </td>
-                        </tr>
-                      ))
-                    : null}
+                            </td>
+                            <td className="py-4 pr-4">
+                              <div className="flex flex-wrap gap-2">
+                                {isTenantVerified(tenant) ? (
+                                  <button
+                                    className="inline-flex items-center gap-2 rounded-2xl border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                                    onClick={(event) => {
+                                      event.stopPropagation();
+                                      openTenantAdmin(tenant);
+                                    }}
+                                    type="button"
+                                  >
+                                    <ExternalLink className="h-4 w-4" />
+                                    Monitor
+                                  </button>
+                                ) : null}
+                                {!isMonitoringMode &&
+                                isTenantVerified(tenant) ? (
+                                  <button
+                                    className={`inline-flex items-center gap-2 rounded-2xl px-3 py-2 text-sm font-medium ${tenant.status === "active" ? "border border-rose-200 text-rose-700 hover:bg-rose-50" : "border border-emerald-200 text-emerald-700 hover:bg-emerald-50"}`}
+                                    onClick={(event) => {
+                                      event.stopPropagation();
+                                      handleTenantStatusChange(tenant);
+                                    }}
+                                    disabled={updatingTenantId === tenant._id}
+                                    type="button"
+                                  >
+                                    {updatingTenantId === tenant._id ? (
+                                      <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                      <Power className="h-4 w-4" />
+                                    )}
+                                    {tenant.status === "active"
+                                      ? "Deactivate"
+                                      : "Activate"}
+                                  </button>
+                                ) : null}
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      : null}
                     {!loading && registeredTenants.length === 0 ? (
                       <tr>
                         <td className="py-6 text-slate-500" colSpan="6">
@@ -1224,9 +1230,6 @@ export function TenantManagement() {
                   value={form.slug}
                   onChange={(event) => handleChange("slug", event.target.value)}
                 />
-                <p className="mt-2 text-xs leading-5 text-slate-500">
-                  Lowercase letters, numbers, and hyphens are allowed.
-                </p>
               </label>
 
               <label className="block text-sm font-semibold text-slate-800">
@@ -1237,10 +1240,6 @@ export function TenantManagement() {
                   value={form.key}
                   onChange={(event) => handleChange("key", event.target.value)}
                 />
-                <p className="mt-2 text-xs leading-5 text-slate-500">
-                  Lowercase letters, numbers, and hyphens are allowed. Keys are
-                  checked inside the selected slug only.
-                </p>
               </label>
             </div>
 

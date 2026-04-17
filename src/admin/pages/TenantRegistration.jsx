@@ -49,7 +49,7 @@ export function TenantRegistration() {
   const inputClassName =
     "mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-sky-400 focus:ring-4 focus:ring-sky-100";
   const labelClassName = "block text-sm font-semibold text-slate-800";
-  const hintClassName = "mt-2 text-xs leading-5 text-slate-500";
+
 
   const routePreview =
     form.slug && form.key
@@ -97,7 +97,7 @@ export function TenantRegistration() {
         name:
           settings?.restaurantName ||
           settings?.restaurantInfo?.name ||
-          "Quick Bite Platform",
+          "TableLoom Platform",
         description: `Tenant registration for ${tenantPayload?.name || registrationContext.restaurantName}`,
         order_id: orderPayload.id,
         prefill: {
@@ -217,7 +217,7 @@ export function TenantRegistration() {
       settings={settings}
       eyebrow="Platform Onboarding"
       title="Register Your Restaurant Workspace"
-      description="Submit your restaurant details, choose a ₹10,000 registration payment mode, and then wait for super admin approval before admin access is activated."
+      description="Submit your restaurant details."
       sideTitle="Launch your workspace with payment-first onboarding."
       sideDescription="Online payments are captured through Razorpay, while manual/testing requests stay pending for super admin review. Credentials are emailed only after approval."
       highlights={[
@@ -298,7 +298,6 @@ export function TenantRegistration() {
               <p className="text-sm font-semibold text-slate-900">
                 Tenant Route Setup
               </p>
-           
             </div>
             <div className="w-full rounded-2xl bg-slate-900 px-3 py-3 text-left text-xs font-medium text-white">
               <span className="block text-[10px] uppercase tracking-[0.2em] text-sky-200">
@@ -319,9 +318,6 @@ export function TenantRegistration() {
                 value={form.slug}
                 onChange={(event) => handleChange("slug", event.target.value)}
               />
-              <p className={hintClassName}>
-                Lowercase letters, numbers, and hyphens only.
-              </p>
             </label>
 
             <label className={labelClassName}>
@@ -332,10 +328,6 @@ export function TenantRegistration() {
                 value={form.key}
                 onChange={(event) => handleChange("key", event.target.value)}
               />
-              <p className={hintClassName}>
-                Lowercase letters, numbers, and hyphens are allowed. The same
-                key can be reused for a different restaurant slug.
-              </p>
             </label>
           </div>
         </div>
@@ -367,21 +359,6 @@ export function TenantRegistration() {
           </label>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 sm:px-5">
-          <p className="text-sm font-semibold text-slate-900">
-            Future Admin Contact
-          </p>
-        
-
-          <div className="mt-4 rounded-2xl border border-white bg-white/80 px-4 py-3 text-sm text-slate-700">
-            Approved QR links will open under
-            <span className="font-mono font-semibold text-slate-900">
-              {routePreview}/table/:tableNumber
-            </span>
-            
-          </div>
-        </div>
-
         <label className={labelClassName}>
           Subscription Plan
           <select
@@ -410,10 +387,7 @@ export function TenantRegistration() {
               <p className="text-sm font-semibold text-emerald-950">
                 Registration Payment
               </p>
-              <p className="mt-1 text-sm text-emerald-800">
-                Self-service tenant onboarding currently requires a fixed{" "}
-                <strong>{formatCurrency(REGISTRATION_AMOUNT)}</strong> payment.
-              </p>
+             
             </div>
           </div>
 
@@ -434,7 +408,6 @@ export function TenantRegistration() {
                 />
                 <div>
                   <p className="font-semibold text-slate-900">Online Payment</p>
-                 
                 </div>
               </div>
             </label>
@@ -457,7 +430,6 @@ export function TenantRegistration() {
                   <p className="font-semibold text-slate-900">
                     Manual / Testing Approval
                   </p>
-                
                 </div>
               </div>
             </label>
@@ -474,34 +446,11 @@ export function TenantRegistration() {
                   handleChange("paymentReference", event.target.value)
                 }
               />
-              <p className={hintClassName}>
-                This note is visible to the super admin during approval.
-              </p>
             </label>
           ) : null}
         </div>
 
-        <div className="rounded-2xl border border-sky-200 bg-sky-50 px-4 py-4 text-sm text-sky-900">
-          <div className="flex items-start gap-3">
-            <ShieldCheck className="mt-0.5 h-5 w-5 text-sky-700" />
-            <div>
-              <p className="font-semibold">Approval Flow</p>
-              <p className="mt-1">
-                1. Submit tenant request.
-                <br />
-                2. Collect or mark the {formatCurrency(
-                  REGISTRATION_AMOUNT,
-                )}{" "}
-                payment.
-                <br />
-                3. Super admin approves the tenant.
-                <br />
-                4. Admin credentials are emailed to{" "}
-                {form.adminEmail || "the provided admin email"}.
-              </p>
-            </div>
-          </div>
-        </div>
+        
 
         <button
           className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-900 px-4 py-3 font-semibold text-white transition hover:bg-slate-800 disabled:opacity-60"

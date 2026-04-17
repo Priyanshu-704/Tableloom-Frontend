@@ -262,7 +262,10 @@ export function BillRequest() {
       );
 
       if (!orderResponse?.success) {
-        notify(orderResponse?.message || "Failed to create payment order", "error");
+        notify(
+          orderResponse?.message || "Failed to create payment order",
+          "error",
+        );
         setIsPaying(false);
         return;
       }
@@ -270,8 +273,7 @@ export function BillRequest() {
       const orderPayload = orderResponse?.data?.order || null;
       const activeBill = orderResponse?.data?.bill || null;
       const activeSession = orderResponse?.data?.session || {};
-      const razorpayKey =
-        orderResponse?.data?.keyId || RAZORPAY_KEY_ID || "";
+      const razorpayKey = orderResponse?.data?.keyId || RAZORPAY_KEY_ID || "";
 
       if (!orderPayload?.id || !activeBill?._id) {
         notify("Payment order is incomplete. Please try again.", "error");
@@ -296,14 +298,17 @@ export function BillRequest() {
         name:
           settings?.restaurantName ||
           settings?.restaurantInfo?.name ||
-          "Quick Bite",
+          "TableLoom",
         description: `Payment for Bill ${activeBill.billNumber || activeBill._id}`,
         order_id: orderPayload.id,
         prefill: {
           name: activeSession?.name || billData?.session?.name || "",
           email: activeSession?.email || billDeliveryEmail || "",
           contact:
-            activeSession?.phone || billData?.session?.phone || customerInfo?.phone || "",
+            activeSession?.phone ||
+            billData?.session?.phone ||
+            customerInfo?.phone ||
+            "",
         },
         notes: {
           billId: activeBill._id,
@@ -340,10 +345,7 @@ export function BillRequest() {
             return;
           }
 
-          applyPaidState(
-            verificationResponse?.data || null,
-            selectedPayment,
-          );
+          applyPaidState(verificationResponse?.data || null, selectedPayment);
           notify(
             "Payment successful! Your bill is ready to view and download.",
             "success",
@@ -790,41 +792,11 @@ export function BillRequest() {
               : `Pay ${formatCurrency(totalAmount, currency)} with ${PAYMENT_LABELS[selectedPayment] || "Razorpay"}`}
         </button>
 
-        {selectedPayment !== "cash" ? (
-          <div className="rounded-2xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800">
-            Choose an online method to open Razorpay Checkout. Once the payment
-            is verified, the bill, order, and session are marked paid
-            automatically and the final PDF stays available for download.
-          </div>
-        ) : (
-          <div className="rounded-2xl border border-sky-200 bg-sky-50 p-4 text-sm text-sky-800">
-            If cash is selected, the bill remains pending until an admin,
-            manager, or waiter marks it paid from the admin billing panel.
-          </div>
-        )}
-
         {!billData?.canCompleteSession ? (
           <div className="rounded-2xl border border-sky-200 bg-sky-50 p-4 text-sm text-sky-800">
             No billable orders were found for this session yet.
           </div>
         ) : null}
-
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="flex items-start gap-3">
-            <User className="mt-1 h-5 w-5 text-primary-600" />
-            <div>
-              <h4 className="font-semibold text-slate-900">
-                Admin and User Flow
-              </h4>
-              <p className="mt-1 text-sm text-slate-600">
-                Customers can preview the bill, request the final bill, and
-                complete online payment here. Staff can still manage pending
-                bills, mark cash payments, send bill emails, and download PDFs
-                from the admin bill panel.
-              </p>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );
