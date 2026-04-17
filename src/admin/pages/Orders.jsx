@@ -23,6 +23,7 @@ import ResponsiveFilterSection from "../components/common/ResponsiveFilterSectio
 import { orderService } from "../../common/services";
 import { useSettings } from "../../common/context/SettingsContext";
 import { useMonitoringMode } from "../hooks/useMonitoringMode";
+import { useAdminLiveSync } from "../hooks/useAdminLiveSync";
 const ORDER_STATUS = [
   {
     value: "all",
@@ -133,9 +134,11 @@ export function Orders() {
   useEffect(() => {
     addNotificationRef.current = addNotification;
   }, [addNotification]);
-  const loadOrders = useCallback(async () => {
+  const loadOrders = useCallback(async ({ silent = false } = {}) => {
     try {
-      setLoading(true);
+      if (!silent) {
+        setLoading(true);
+      }
       const params = {
         page: currentPage,
         limit: PAGE_SIZE,
@@ -149,7 +152,12 @@ export function Orders() {
       }
       const [ordersResponse, statsResponse] = await Promise.all([
         orderService.getOrders(params),
-        orderService.getOrderStatistics(),
+        orderService.getOrderStatistics(
+          {},
+          {
+            force: silent,
+          },
+        ),
       ]);
       const nextOrders = (ordersResponse.data || []).map(normalizeOrder);
       setOrders(nextOrders);
@@ -170,7 +178,9 @@ export function Orders() {
         "error",
       );
     } finally {
-      setLoading(false);
+      if (!silent) {
+        setLoading(false);
+      }
     }
   }, [
     currentPage,
@@ -182,6 +192,22 @@ export function Orders() {
   useEffect(() => {
     loadOrders();
   }, [loadOrders]);
+  useAdminLiveSync({
+    enabled: !kitchenView,
+    events: ["order:status-updated", "order-status-updated"],
+    joinRooms: (socket, user) => {
+      socket.emit("join-role-room", user.role);
+      socket.emit("join-staff-room");
+      if (["admin", "manager"].includes(user.role)) {
+        socket.emit("join-management-room");
+      }
+    },
+    onEvent: () => {
+      loadOrders({
+        silent: true,
+      });
+    },
+  });
   useEffect(() => {
     setCurrentPage(1);
   }, [filters.paymentStatus, filters.search, filters.status]);

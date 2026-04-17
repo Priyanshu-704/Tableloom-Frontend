@@ -70,7 +70,7 @@ export const orderService = {
       handleApiError(error, "Failed to fetch orders");
     }
   },
-  getOrderStatistics: async (filters = {}) => {
+  getOrderStatistics: async (filters = {}, options = {}) => {
     try {
       return await orderRequestCache.run(
         {
@@ -87,6 +87,9 @@ export const orderService = {
               data: {},
             }
           );
+        },
+        {
+          force: options.force === true,
         },
       );
     } catch (error) {

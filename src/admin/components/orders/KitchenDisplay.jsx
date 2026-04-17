@@ -15,6 +15,7 @@ import {
 } from "../../../common/services";
 import { useAuth } from "../../../common/context/AuthContext";
 import { useMonitoringMode } from "../../hooks/useMonitoringMode";
+import { useAdminLiveSync } from "../../hooks/useAdminLiveSync";
 const ORDER_STATUS_OPTIONS = [
   {
     value: "pending",
@@ -144,19 +145,27 @@ export function KitchenDisplay({ onRefreshOrders, isReadOnly = false }) {
   useEffect(() => {
     addNotificationRef.current = addNotification;
   }, [addNotification]);
+  const applyStationsSnapshot = useCallback((stationList = []) => {
+    const activeStations = (stationList || []).filter(
+      (station) => station.status === "active",
+    );
+    setStations(activeStations);
+    setSelectedStation((current) => {
+      if (activeStations.some((station) => station._id === current)) {
+        return current;
+      }
+      return activeStations[0]?._id || "";
+    });
+  }, []);
   const loadStations = useCallback(async () => {
     try {
       const response = await kitchenStationService.getKitchenStations();
-      const activeStations = (response.data || []).filter(
-        (station) => station.status === "active",
-      );
-      setStations(activeStations);
-      setSelectedStation((current) => current || activeStations[0]?._id || "");
+      applyStationsSnapshot(response.data || []);
     } catch (error) {
       logger.error("Failed to load kitchen stations:", error);
       addNotificationRef.current("Failed to load kitchen stations", "error");
     }
-  }, []);
+  }, [applyStationsSnapshot]);
   useEffect(() => {
     loadStations();
   }, [loadStations]);
@@ -169,14 +178,16 @@ export function KitchenDisplay({ onRefreshOrders, isReadOnly = false }) {
       setDelayMonitorStatus(null);
     }
   }, []);
-  const loadKitchenData = useCallback(async () => {
+  const loadKitchenData = useCallback(async ({ silent = false } = {}) => {
     if (!selectedStation) {
       setOrders([]);
       setStationStats(null);
       return;
     }
     try {
-      setLoading(true);
+      if (!silent) {
+        setLoading(true);
+      }
       const [ordersResponse, statsResponse] = await Promise.allSettled([
         kitchenService.getStationOrders(selectedStation, {
           status: filters.status,
@@ -201,7 +212,9 @@ export function KitchenDisplay({ onRefreshOrders, isReadOnly = false }) {
         "error",
       );
     } finally {
-      setLoading(false);
+      if (!silent) {
+        setLoading(false);
+      }
     }
   }, [filters.sortBy, filters.status, selectedStation]);
   useEffect(() => {
@@ -210,6 +223,36 @@ export function KitchenDisplay({ onRefreshOrders, isReadOnly = false }) {
   useEffect(() => {
     loadDelayMonitorStatus();
   }, [loadDelayMonitorStatus]);
+  useAdminLiveSync({
+    events: [
+      "order:new",
+      "new-order",
+      "order:updated",
+      "order-updated",
+      "order:delayed",
+      "order_delayed",
+      "new_order",
+      "item_preparing",
+      "item_ready",
+      "item_served",
+      "items_updated",
+      "stations_updated",
+      "order_priority_updated",
+      "delay_acknowledged",
+    ],
+    joinRooms: (socket) => {
+      socket.emit("join-kitchen-room");
+    },
+    onEvent: ({ eventName, payload }) => {
+      if (eventName === "stations_updated" && Array.isArray(payload)) {
+        applyStationsSnapshot(payload);
+      }
+      loadKitchenData({
+        silent: true,
+      });
+      loadDelayMonitorStatus();
+    },
+  });
   const activeStation = useMemo(
     () => stations.find((station) => station._id === selectedStation),
     [selectedStation, stations],
