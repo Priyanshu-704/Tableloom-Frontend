@@ -16,7 +16,9 @@ import {
 } from "../../common/firebase/pushNotifications.js";
 import pushNotificationService from "../../common/services/pushNotificationService";
 import { axiosInstance } from "../../common/services/api";
+import { buildCustomerPath } from "../../common/utils/routes";
 import { useApp } from "./AppContext";
+import { storeCompletedVisit } from "../utils/completedVisit";
 const UserLiveUpdatesContext = createContext({
   isConnected: false,
 });
@@ -179,6 +181,21 @@ export function UserLiveUpdatesProvider({ children }) {
               : getWaiterMessage(payload);
       notify(nextMessage, "waiter");
     };
+    const handleSessionCompleted = (payload = {}) => {
+      const thankYouMessage =
+        payload?.thankYouMessage ||
+        "Payment completed successfully. Thank you for dining with us.";
+      storeCompletedVisit({
+        sessionId: payload?.sessionId || activeSessionId,
+        billId: payload?.billId || "",
+        billNumber: payload?.billNumber || "",
+        message: thankYouMessage,
+      });
+      dispatch({
+        type: "CLEAR_SESSION",
+      });
+      window.location.replace(buildCustomerPath("/thank-you"));
+    };
     socket.on("connect", () => {
       setIsConnected(true);
       joinSessionRoom(activeSessionId);
@@ -196,6 +213,8 @@ export function UserLiveUpdatesProvider({ children }) {
     socket.on("waiter-call:completed", handleWaiterUpdate);
     socket.on("waiter-call:status-updated", handleWaiterUpdate);
     socket.on("waiter-call:cancelled", handleWaiterUpdate);
+    socket.on("session:completed", handleSessionCompleted);
+    socket.on("customer-session:completed", handleSessionCompleted);
     return () => {
       socket.disconnect();
       socketRef.current = null;

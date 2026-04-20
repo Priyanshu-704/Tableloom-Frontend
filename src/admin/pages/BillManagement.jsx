@@ -103,6 +103,9 @@ const PAYMENT_METHOD_OPTIONS = [
     label: "Pending",
   },
 ];
+const MANUAL_PAYMENT_METHOD_OPTIONS = PAYMENT_METHOD_OPTIONS.filter((option) =>
+  ["cash", "card", "upi", "wallet"].includes(option.value),
+);
 const paymentBadgeClasses = {
   pending: "bg-sky-100 text-sky-700",
   paid: "bg-emerald-100 text-emerald-700",
@@ -328,7 +331,7 @@ export function BillManagement() {
       paymentMethod:
         bill.paymentMethod === "pending" ? "cash" : bill.paymentMethod,
       transactionId: "",
-      gateway: bill.paymentMethod === "online" ? "payment_gateway" : "offline",
+      gateway: "offline",
     });
   };
   const closePaymentModal = () => {
@@ -356,11 +359,6 @@ export function BillManagement() {
       await billService.processPayment(paymentModal.bill._id, {
         paymentMethod: paymentModal.paymentMethod,
         transactionId: paymentModal.transactionId || undefined,
-        gateway:
-          paymentModal.gateway ||
-          (paymentModal.paymentMethod === "online"
-            ? "payment_gateway"
-            : "offline"),
       });
       addNotification("Bill marked as paid successfully", "success");
       closePaymentModal();
@@ -727,17 +725,12 @@ export function BillManagement() {
                 setPaymentModal((current) => ({
                   ...current,
                   paymentMethod: event.target.value,
-                  gateway:
-                    event.target.value === "online"
-                      ? "payment_gateway"
-                      : "offline",
+                  gateway: "offline",
                 }))
               }
               className="w-full rounded-lg border border-gray-300 px-3 py-2"
             >
-              {PAYMENT_METHOD_OPTIONS.filter(
-                (option) => option.value !== "all",
-              ).map((option) => (
+              {MANUAL_PAYMENT_METHOD_OPTIONS.map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label}
                 </option>

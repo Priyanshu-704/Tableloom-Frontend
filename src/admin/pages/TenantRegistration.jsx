@@ -77,6 +77,7 @@ export function TenantRegistration() {
       setError("");
       const orderResponse = await tenantService.createRegistrationPaymentOrder(
         registrationContext.tenantId,
+        registrationContext.paymentAccessToken,
       );
       const orderPayload = orderResponse?.data?.order || null;
       const tenantPayload = orderResponse?.data?.tenant || null;
@@ -126,6 +127,7 @@ export function TenantRegistration() {
             await tenantService.verifyRegistrationPayment(
               registrationContext.tenantId,
               {
+                paymentAccessToken: registrationContext.paymentAccessToken,
                 razorpayOrderId:
                   paymentResult?.razorpay_order_id || orderPayload.id,
                 razorpayPaymentId: paymentResult?.razorpay_payment_id || "",
@@ -178,13 +180,17 @@ export function TenantRegistration() {
     try {
       const response = await tenantService.registerTenant(form);
       const tenantId = response?.data?.tenantId || "";
+      const paymentAccessToken = response?.data?.paymentAccessToken || "";
 
-      if (!tenantId) {
-        throw new Error("Tenant registration was created without an ID");
+      if (!tenantId || !paymentAccessToken) {
+        throw new Error(
+          "Tenant registration was created without secure payment access details",
+        );
       }
 
       const nextPaymentContext = {
         tenantId,
+        paymentAccessToken,
         restaurantName: form.restaurantName,
         adminName: form.adminName,
         adminEmail: form.adminEmail,

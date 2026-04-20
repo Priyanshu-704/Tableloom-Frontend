@@ -177,7 +177,9 @@ export function AppProvider({ children }) {
       if (state?.sessionId) {
         window.sessionStorage.setItem("sessionId", state.sessionId);
       } else {
+        cartService.clearCachedCart();
         window.sessionStorage.removeItem("sessionId");
+        window.localStorage.removeItem("sessionId");
       }
     }
   }, [state]);

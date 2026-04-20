@@ -1,8 +1,12 @@
 import { logger } from "../utils/logger.js";
 import { axiosInstance } from "./api";
-const TEST_SESSION_ID = "sess_634cc306334465fde6a5011813d95e1a_1773924197354";
 let cachedCartData = null;
 let cartRequestPromise = null;
+const TEST_SESSION_ID =
+  import.meta.env.DEV &&
+  import.meta.env.VITE_TEST_CUSTOMER_SESSION_ID
+    ? String(import.meta.env.VITE_TEST_CUSTOMER_SESSION_ID).trim()
+    : "";
 const buildFailure = (error, fallbackMessage) => ({
   success: false,
   message:
@@ -18,7 +22,7 @@ const getValidSessionId = () => {
     cartService.sessionId ||
     sessionStorage.getItem("sessionId") ||
     localStorage.getItem("sessionId") ||
-    TEST_SESSION_ID;
+    "";
   if (sessionId === TEST_SESSION_ID) {
     sessionStorage.setItem("sessionId", TEST_SESSION_ID);
   }

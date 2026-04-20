@@ -1,7 +1,11 @@
 import { axiosInstance } from "./api";
 import handleApiError from "../utils/handleApiError";
 import { createRequestCache } from "../utils/requestCache";
-const TEST_SESSION_ID = "sess_634cc306334465fde6a5011813d95e1a_1773924197354";
+const TEST_SESSION_ID =
+  import.meta.env.DEV &&
+  import.meta.env.VITE_TEST_CUSTOMER_SESSION_ID
+    ? String(import.meta.env.VITE_TEST_CUSTOMER_SESSION_ID).trim()
+    : "";
 const activeCallCache = new Map();
 const activeCallRequestCache = new Map();
 const waiterCallRequestCache = createRequestCache(10000);
@@ -10,7 +14,7 @@ const getResolvedSessionId = (sessionId = "") => {
     sessionId ||
     sessionStorage.getItem("sessionId") ||
     localStorage.getItem("sessionId") ||
-    TEST_SESSION_ID;
+    "";
   if (resolvedSessionId === TEST_SESSION_ID) {
     sessionStorage.setItem("sessionId", TEST_SESSION_ID);
   }

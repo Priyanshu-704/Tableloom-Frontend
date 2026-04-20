@@ -1,18 +1,22 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import waiterCallService from "../../common/services/waiterCallService";
 import { useApp } from "../context/AppContext";
-const TEST_SESSION_ID = "sess_634cc306334465fde6a5011813d95e1a_1773924197354";
+const TEST_SESSION_ID =
+  import.meta.env.DEV &&
+  import.meta.env.VITE_TEST_CUSTOMER_SESSION_ID
+    ? String(import.meta.env.VITE_TEST_CUSTOMER_SESSION_ID).trim()
+    : "";
 const getResolvedSessionId = (sessionId = "") => {
   if (sessionId) {
     return sessionId;
   }
   if (typeof window === "undefined") {
-    return TEST_SESSION_ID;
+    return "";
   }
   const storedSessionId =
     window.sessionStorage.getItem("sessionId") ||
     window.localStorage.getItem("sessionId") ||
-    TEST_SESSION_ID;
+    "";
   if (storedSessionId === TEST_SESSION_ID) {
     window.sessionStorage.setItem("sessionId", TEST_SESSION_ID);
   }

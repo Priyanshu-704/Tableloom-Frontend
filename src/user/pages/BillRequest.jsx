@@ -19,6 +19,7 @@ import billService from "../../common/services/billService";
 import { buildCustomerPath } from "../../common/utils/routes";
 import { RAZORPAY_KEY_ID } from "../../common/utils/env";
 import loadRazorpayCheckout from "../../common/utils/loadRazorpayCheckout";
+import { storeCompletedVisit } from "../utils/completedVisit";
 const PAYMENT_LABELS = {
   online: "Online Payment",
   card: "Credit or Debit Card",
@@ -77,8 +78,8 @@ const normalizeBillItems = (payload = {}) => {
 };
 export function BillRequest() {
   const navigate = useNavigate();
-  const { sessionId, tableNumber, customerInfo } = useApp();
-  const { notify } = useNotification();
+  const { sessionId, tableNumber, customerInfo, dispatch } = useApp();
+  const { notify, clearNotifications } = useNotification();
   const { settings } = useSettings();
   const [billData, setBillData] = useState(null);
   const [email, setEmail] = useState("");
@@ -346,11 +347,39 @@ export function BillRequest() {
           }
 
           applyPaidState(verificationResponse?.data || null, selectedPayment);
+          const thankYouMessage =
+            verificationResponse?.data?.thankYouMessage ||
+            "Payment successful. Thank you for dining with us.";
+          storeCompletedVisit({
+            sessionId,
+            billId:
+              verificationResponse?.data?.bill?.id ||
+              verificationResponse?.data?.bill?._id ||
+              activeBill._id,
+            billNumber:
+              verificationResponse?.data?.bill?.billNumber ||
+              activeBill.billNumber ||
+              "",
+            message: thankYouMessage,
+          });
+          dispatch({
+            type: "CLEAR_SESSION",
+          });
+          try {
+            await clearNotifications();
+          } catch {
+            // Keep the happy path moving even if notification cleanup fails.
+          }
           notify(
             "Payment successful! Your bill is ready to view and download.",
             "success",
           );
-          await loadBillData(true);
+          navigate(buildCustomerPath("/thank-you"), {
+            replace: true,
+            state: {
+              message: thankYouMessage,
+            },
+          });
         },
       });
 

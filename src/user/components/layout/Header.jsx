@@ -11,6 +11,7 @@ import { useSettings } from "../../../common/context/SettingsContext";
 import customerSessionService from "../../../common/services/CustomerSessionService";
 import { BrandBadge } from "../../../common/components/BrandBadge";
 import { buildCustomerPath } from "../../../common/utils/routes";
+import { storeCompletedVisit } from "../../utils/completedVisit";
 export function Header() {
   const { tableNumber, sessionId, dispatch } = useApp();
   const navigate = useNavigate();
@@ -71,6 +72,12 @@ export function Header() {
       dispatch({
         type: "CLEAR_SESSION",
       });
+      if (shouldRedirectToThankYou) {
+        storeCompletedVisit({
+          sessionId,
+          message: thankYouMessage,
+        });
+      }
       navigate(
         buildCustomerPath(shouldRedirectToThankYou ? "/thank-you" : "/"),
         {
