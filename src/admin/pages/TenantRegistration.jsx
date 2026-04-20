@@ -229,7 +229,7 @@ export function TenantRegistration() {
         {
           title: "Approval before credentials",
           description:
-            "The platform team approves the registration and then the admin email receives a random temporary password.",
+            "The platform team approves the registration and then the admin email receives a secure password setup link.",
         },
       ]}
     >

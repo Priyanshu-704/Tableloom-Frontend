@@ -1,4 +1,3 @@
-import { logger } from "../../common/utils/logger.js";
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Mail, CheckCircle } from "lucide-react";
@@ -29,9 +28,7 @@ export function ForgotPassword() {
     setSuccess(false);
     setSuccessMessage("");
     try {
-      logger.info("Sending forgot password request for:", email);
       const response = await userService.forgotPassword(email);
-      logger.info("Forgot password response:", response);
       if (response.success) {
         setSuccess(true);
         setSuccessMessage("Password reset link has been sent to your email.");
@@ -42,7 +39,6 @@ export function ForgotPassword() {
         setError(response.message || "Failed to send reset link");
       }
     } catch (error) {
-      logger.error("Forgot password error:", error);
       setError(error.message || "An error occurred. Please try again.");
     } finally {
       setIsLoading(false);

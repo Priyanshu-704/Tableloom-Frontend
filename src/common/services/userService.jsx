@@ -43,10 +43,8 @@ const getCurrentUser = () => {
     return null;
   }
 };
-const getToken = () => sessionStorage.getItem("token");
 const clearLocalAuth = () => {
   sessionStorage.removeItem("user");
-  sessionStorage.removeItem("token");
   clearStoredTenantId();
   authRequestCache.clear();
 };
@@ -71,9 +69,6 @@ export const userService = {
         if (response?.data) {
           sessionStorage.setItem("user", JSON.stringify(response.data));
           syncStoredTenantId(response.data);
-        }
-        if (response?.accessToken) {
-          sessionStorage.setItem("token", response.accessToken);
         }
       }
       return response;
@@ -161,9 +156,6 @@ export const userService = {
     try {
       const response = await axiosInstance.post("/users/refresh-token");
       authRequestCache.invalidate("auth:profile");
-      if (response?.data?.success && response?.data?.accessToken) {
-        sessionStorage.setItem("token", response.data.accessToken);
-      }
       if (response?.data?.success && response?.data?.data) {
         syncStoredUser(response.data.data);
       }
@@ -284,19 +276,9 @@ export const userService = {
     }
   },
   getCurrentUser,
-  getToken,
   isAuthenticated: () => {
-    const token = getToken();
     const user = getCurrentUser();
-    if (!token || !user) {
-      return false;
-    }
-    try {
-      const payload = JSON.parse(atob(token.split(".")?.[1] || ""));
-      return (payload?.exp || 0) * 1000 > Date.now();
-    } catch {
-      return true;
-    }
+    return Boolean(user?._id);
   },
   hasRole: (role) => getCurrentUser()?.role === role,
   hasAnyRole: (roles = []) => roles.includes(getCurrentUser()?.role),

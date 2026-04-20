@@ -70,8 +70,8 @@ export const getTenantHeaders = () => {
 let isRefreshing = false;
 let refreshSubscribers = [];
 const subscribeTokenRefresh = (cb) => refreshSubscribers.push(cb);
-const onRefreshed = (token) => {
-  refreshSubscribers.forEach((cb) => cb(token));
+const onRefreshed = () => {
+  refreshSubscribers.forEach((cb) => cb());
   refreshSubscribers = [];
 };
 api.interceptors.request.use(
@@ -82,10 +82,6 @@ api.interceptors.request.use(
         "warning",
       );
       return Promise.reject(new Error("Monitoring mode is read-only"));
-    }
-    const token = sessionStorage.getItem("token");
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
     }
     Object.assign(config.headers, getTenantHeaders());
     return config;
@@ -102,8 +98,7 @@ api.interceptors.response.use(
     if (error.response?.status === 401 && !originalRequest._retry) {
       if (isRefreshing) {
         return new Promise((resolve) => {
-          subscribeTokenRefresh((token) => {
-            originalRequest.headers.Authorization = `Bearer ${token}`;
+          subscribeTokenRefresh(() => {
             resolve(api(originalRequest));
           });
         });
@@ -119,8 +114,6 @@ api.interceptors.response.use(
           },
         );
         if (refreshResponse.data.success) {
-          const newToken = refreshResponse.data.accessToken;
-          sessionStorage.setItem("token", newToken);
           if (refreshResponse.data.data) {
             sessionStorage.setItem(
               "user",
@@ -128,8 +121,7 @@ api.interceptors.response.use(
             );
             syncStoredTenantId(refreshResponse.data.data);
           }
-          onRefreshed(newToken);
-          originalRequest.headers.Authorization = `Bearer ${newToken}`;
+          onRefreshed();
           return api(originalRequest);
         }
       } catch (refreshErr) {
@@ -183,7 +175,6 @@ api.interceptors.response.use(
 const handleUnauthorized = () => {
   const user = getStoredUser();
   sessionStorage.removeItem("user");
-  sessionStorage.removeItem("token");
   clearStoredTenantId();
   window.location.href =
     String(user?.role || "").toLowerCase() === "super_admin"

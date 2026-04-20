@@ -23,8 +23,8 @@ export const AuthProvider = ({ children }) => {
   const hasLoadedProfileRef = useRef(false);
   const loadProfile = async () => {
     try {
-      const token = sessionStorage.getItem("token");
-      if (!token) {
+      const storedUser = sessionStorage.getItem("user");
+      if (!storedUser) {
         setIsAuthenticated(false);
         setUser(null);
         setPermissions([]);

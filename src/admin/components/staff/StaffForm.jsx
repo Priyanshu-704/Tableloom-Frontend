@@ -573,7 +573,7 @@ export function StaffForm({ onSubmit, onClose, editingUser = null }) {
               <p className="text-sm text-blue-700">
                 {editingUser
                   ? "Review permissions and submit when you're ready."
-                  : "An email with login credentials will be sent after registration. The staff member will be prompted to change their password on first login."}
+                  : "A secure password setup email will be sent after registration so the staff member can choose their own password."}
               </p>
             </div>
           </div>

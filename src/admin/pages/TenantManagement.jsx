@@ -270,7 +270,7 @@ export function TenantManagement() {
       setCredentials(response?.data?.credentials || null);
       const message =
         response?.message ||
-        "Tenant approved successfully and credentials sent";
+        "Tenant approved successfully and setup email sent";
       setSuccess(message);
       addNotification(message, "success");
       const nextPendingPage = getPreviousPage(pendingTenants, pendingPage);
@@ -553,7 +553,9 @@ export function TenantManagement() {
         <div className="rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-800">
           Admin email: <strong>{credentials.email}</strong>
           <br />
-          Temporary password: <strong>{credentials.temporaryPassword}</strong>
+          {credentials.emailSent
+            ? "Credentials were sent by email. Temporary passwords are no longer displayed in the admin panel."
+            : "Credential email could not be delivered. Use the password reset flow for this admin email instead of sharing a temporary password."}
         </div>
       ) : null}
 
