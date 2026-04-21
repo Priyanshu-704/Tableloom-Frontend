@@ -1,5 +1,6 @@
 import { logger } from "../utils/logger.js";
 import axios from "axios";
+import { API_BASE_URL } from "../utils/env.js";
 import {
   buildAdminPath,
   buildPlatformAdminPath,
@@ -17,7 +18,9 @@ import {
   getOfflineApiResponse,
   saveOfflineApiResponse,
 } from "../utils/offlineCache.js";
-const API_URL = import.meta.env.VITE_APP_API_URL;
+const API_URL = API_BASE_URL;
+const ACCESS_TOKEN_STORAGE_KEY = "auth.accessToken";
+const REFRESH_TOKEN_STORAGE_KEY = "auth.refreshToken";
 const api = axios.create({
   baseURL: API_URL,
   headers: {
@@ -26,6 +29,44 @@ const api = axios.create({
   withCredentials: true,
 });
 export const axiosInstance = api;
+const canUseSessionStorage = () =>
+  typeof window !== "undefined" && typeof window.sessionStorage !== "undefined";
+const readStoredToken = (storageKey) => {
+  if (!canUseSessionStorage()) {
+    return "";
+  }
+
+  return String(window.sessionStorage.getItem(storageKey) || "").trim();
+};
+export const getStoredAuthTokens = () => ({
+  accessToken: readStoredToken(ACCESS_TOKEN_STORAGE_KEY),
+  refreshToken: readStoredToken(REFRESH_TOKEN_STORAGE_KEY),
+});
+export const setStoredAuthTokens = ({
+  accessToken,
+  refreshToken,
+} = {}) => {
+  if (!canUseSessionStorage()) {
+    return;
+  }
+
+  if (accessToken) {
+    window.sessionStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, accessToken);
+  } else if (accessToken === null) {
+    window.sessionStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY);
+  }
+
+  if (refreshToken) {
+    window.sessionStorage.setItem(REFRESH_TOKEN_STORAGE_KEY, refreshToken);
+  } else if (refreshToken === null) {
+    window.sessionStorage.removeItem(REFRESH_TOKEN_STORAGE_KEY);
+  }
+};
+export const clearStoredAuthTokens = () =>
+  setStoredAuthTokens({
+    accessToken: null,
+    refreshToken: null,
+  });
 const getStoredUser = () => {
   try {
     const raw = sessionStorage.getItem("user");
@@ -91,6 +132,11 @@ api.interceptors.request.use(
       );
       return Promise.reject(new Error("Monitoring mode is read-only"));
     }
+    config.headers = config.headers || {};
+    const { accessToken } = getStoredAuthTokens();
+    if (accessToken && !config.headers.Authorization) {
+      config.headers.Authorization = `Bearer ${accessToken}`;
+    }
     Object.assign(config.headers, getTenantHeaders());
     return config;
   },
@@ -119,15 +165,24 @@ api.interceptors.response.use(
       originalRequest._retry = true;
       isRefreshing = true;
       try {
+        const { refreshToken } = getStoredAuthTokens();
         const refreshResponse = await axios.post(
           `${API_URL}/users/refresh-token`,
-          {},
+          refreshToken
+            ? {
+                refreshToken,
+              }
+            : {},
           {
             headers: getTenantHeaders(),
             withCredentials: true,
           },
         );
         if (refreshResponse.data.success) {
+          setStoredAuthTokens({
+            accessToken: refreshResponse.data.accessToken || null,
+            refreshToken: refreshResponse.data.refreshToken || null,
+          });
           if (refreshResponse.data.data) {
             sessionStorage.setItem(
               "user",
@@ -190,6 +245,7 @@ const handleUnauthorized = () => {
   const user = getStoredUser();
   sessionStorage.removeItem("user");
   clearStoredTenantId();
+  clearStoredAuthTokens();
   window.location.href =
     String(user?.role || "").toLowerCase() === "super_admin"
       ? buildPlatformAdminPath("/login")

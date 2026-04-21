@@ -925,36 +925,42 @@ function TableCard({
 
         <div className="pt-4 mt-4 border-t border-gray-200 space-y-3">
           <div className="flex items-center justify-between gap-3">
-            <div className="relative flex-1">
-              <Select
-                value={table.status}
-                onChange={(newStatus) => onStatusChange(table.id, newStatus)}
-                options={Object.entries(STATUS_CONFIG).map(
-                  ([value, config]) => ({
-                    value,
-                    label: config.label,
-                  }),
-                )}
-                size="sm"
-                variant="filled"
-                className="flex-1"
-                disabled={isReadOnly || !canUpdateStatus}
-              />
+            {canUpdateStatus && !isReadOnly ? (
+              <div className="relative flex-1">
+                <Select
+                  value={table.status}
+                  onChange={(newStatus) => onStatusChange(table.id, newStatus)}
+                  options={Object.entries(STATUS_CONFIG).map(
+                    ([value, config]) => ({
+                      value,
+                      label: config.label,
+                    }),
+                  )}
+                  size="sm"
+                  variant="filled"
+                  className="flex-1"
+                  disabled={isReadOnly || !canUpdateStatus}
+                />
 
-              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
-                <svg
-                  className="h-4 w-4"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-                    clipRule="evenodd"
-                  />
-                </svg>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
+                  <svg
+                    className="h-4 w-4"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="flex-1 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm font-medium text-gray-700">
+                Status: {statusConfig.label}
+              </div>
+            )}
 
             {table.qrCode && !isReadOnly && canManageQr && (
               <button

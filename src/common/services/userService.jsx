@@ -1,6 +1,11 @@
 import { logger } from "../utils/logger.js";
 import axios from "axios";
-import { axiosInstance, getTenantHeaders } from "./api";
+import {
+  axiosInstance,
+  clearStoredAuthTokens,
+  getTenantHeaders,
+  setStoredAuthTokens,
+} from "./api";
 import handleApiError from "../utils/handleApiError";
 import pushNotificationService from "./pushNotificationService";
 import {
@@ -8,6 +13,7 @@ import {
   syncStoredTenantId,
 } from "../utils/tenantStorage.js";
 import { createRequestCache } from "../utils/requestCache";
+import { API_BASE_URL } from "../utils/env.js";
 import {
   buildAdminPath,
   buildPlatformAdminPath,
@@ -15,7 +21,7 @@ import {
   isSuperAdminPath,
 } from "../utils/routes.js";
 import toServiceResponse from "./serviceResponse";
-const apiBaseUrl = import.meta.env.VITE_APP_API_URL;
+const apiBaseUrl = API_BASE_URL;
 const authRequestCache = createRequestCache(5000);
 const externalRequest = async (method, path, data, config = {}) => {
   const response = await axios({
@@ -46,6 +52,7 @@ const getCurrentUser = () => {
 const clearLocalAuth = () => {
   sessionStorage.removeItem("user");
   clearStoredTenantId();
+  clearStoredAuthTokens();
   authRequestCache.clear();
 };
 const syncStoredUser = (partialUser = {}) => {
@@ -66,6 +73,10 @@ export const userService = {
       });
       if (response?.success) {
         authRequestCache.invalidate("auth:profile");
+        setStoredAuthTokens({
+          accessToken: response.accessToken || null,
+          refreshToken: response.refreshToken || null,
+        });
         if (response?.data) {
           sessionStorage.setItem("user", JSON.stringify(response.data));
           syncStoredTenantId(response.data);
@@ -156,6 +167,10 @@ export const userService = {
     try {
       const response = await axiosInstance.post("/users/refresh-token");
       authRequestCache.invalidate("auth:profile");
+      setStoredAuthTokens({
+        accessToken: response?.data?.accessToken || null,
+        refreshToken: response?.data?.refreshToken || null,
+      });
       if (response?.data?.success && response?.data?.data) {
         syncStoredUser(response.data.data);
       }

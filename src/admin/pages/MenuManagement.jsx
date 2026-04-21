@@ -23,6 +23,7 @@ import { AdminPageSkeleton } from "../components/common/AdminSkeleton";
 import { menuService } from "../../common/services";
 import { buildAdminPath } from "../../common/utils/routes";
 import { useMonitoringMode } from "../hooks/useMonitoringMode";
+import { useAuth } from "../../common/context/AuthContext";
 const renderPriceList = (item) => {
   const prices = item?.prices || [];
   if (!prices.length) {
@@ -43,7 +44,35 @@ export function MenuManagement() {
   const PAGE_SIZE = 10;
   const navigate = useNavigate();
   const { menuItems, dispatch, confirmAction, addNotification } = useAdmin();
+  const { hasPermission, hasAnyPermission } = useAuth();
   const isMonitoringMode = useMonitoringMode();
+  const canCreateMenuItems = !isMonitoringMode && hasPermission("menu_create");
+  const canEditMenuItems = !isMonitoringMode && hasPermission("menu_edit");
+  const canDeleteMenuItems = !isMonitoringMode && hasPermission("menu_delete");
+  const canToggleAvailability =
+    !isMonitoringMode && hasPermission("menu_toggle_availability");
+  const canManageMenuItems =
+    canToggleAvailability || canEditMenuItems || canDeleteMenuItems;
+  const canViewMenuStats = hasPermission("menu_stats");
+  const canUseImportExport =
+    !isMonitoringMode && hasPermission("menu_import_export");
+  const canAccessCategories = hasAnyPermission(
+    "menu_view_all",
+    "menu_create",
+    "menu_edit",
+    "menu_delete",
+    "category_toggle_status",
+  );
+  const canAccessSizes = hasAnyPermission("menu_view_all", "menu_edit");
+  const canAccessDiscounts = hasPermission("menu_edit");
+  const canAccessSeasonal = hasAnyPermission(
+    "menu_view_all",
+    "menu_create",
+    "menu_edit",
+    "menu_delete",
+    "menu_toggle_availability",
+  );
+  const canAccessPriceHistory = hasAnyPermission("price_stats", "menu_stats");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [availabilityFilter, setAvailabilityFilter] = useState("all");
@@ -83,8 +112,16 @@ export function MenuManagement() {
                 : availabilityFilter === "available",
           }),
           menuService.getCategories(true, true),
-          menuService.getMenuStatistics(),
-          menuService.getSizes(true),
+          canViewMenuStats
+            ? menuService.getMenuStatistics()
+            : Promise.resolve({
+                data: null,
+              }),
+          canCreateMenuItems || canEditMenuItems
+            ? menuService.getSizes(true)
+            : Promise.resolve({
+                data: [],
+              }),
         ]);
       dispatch({
         type: "SET_MENU_ITEMS",
@@ -108,7 +145,16 @@ export function MenuManagement() {
       setLoading(false);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [availabilityFilter, currentPage, dispatch, searchTerm, selectedCategory]);
+  }, [
+    availabilityFilter,
+    canCreateMenuItems,
+    canEditMenuItems,
+    canViewMenuStats,
+    currentPage,
+    dispatch,
+    searchTerm,
+    selectedCategory,
+  ]);
   useEffect(() => {
     loadMenuData();
   }, [loadMenuData]);
@@ -116,21 +162,21 @@ export function MenuManagement() {
     setCurrentPage(1);
   }, [availabilityFilter, searchTerm, selectedCategory]);
   const handleAddItem = () => {
-    if (isMonitoringMode) {
+    if (!canCreateMenuItems) {
       return;
     }
     setEditingItem(null);
     setShowItemForm(true);
   };
   const handleEditItem = (item) => {
-    if (isMonitoringMode) {
+    if (!canEditMenuItems) {
       return;
     }
     setEditingItem(item);
     setShowItemForm(true);
   };
   const handleDeleteItem = async (itemId) => {
-    if (isMonitoringMode) {
+    if (!canDeleteMenuItems) {
       return;
     }
     const confirmed = await confirmAction({
@@ -155,7 +201,7 @@ export function MenuManagement() {
     }
   };
   const handleToggleAvailability = async (itemId) => {
-    if (isMonitoringMode) {
+    if (!canToggleAvailability) {
       return;
     }
     const item = menuItems.find((menuItem) => menuItem._id === itemId);
@@ -186,7 +232,7 @@ export function MenuManagement() {
     }
   };
   const handleSaveItem = async (itemData, imageFile) => {
-    if (isMonitoringMode) {
+    if (!(canCreateMenuItems || canEditMenuItems)) {
       return;
     }
     try {
@@ -216,6 +262,9 @@ export function MenuManagement() {
     }
   };
   const handleExportMenu = async () => {
+    if (!canUseImportExport) {
+      return;
+    }
     try {
       await menuService.exportMenuItems({
         category: selectedCategory !== "all" ? selectedCategory : undefined,
@@ -231,6 +280,9 @@ export function MenuManagement() {
     }
   };
   const handleImportMenu = async (file) => {
+    if (!canUseImportExport) {
+      return;
+    }
     try {
       const response = await menuService.importMenuItems(file);
       if (response.success) {
@@ -260,42 +312,52 @@ export function MenuManagement() {
           </p>
         </div>
         <div className="flex flex-wrap gap-3">
-          <button
-            onClick={() => navigate(buildAdminPath("/menu/categories"))}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 transition-colors hover:bg-gray-50 sm:w-auto"
-          >
-            <Tag className="h-4 w-4" />
-            <span>Categories</span>
-          </button>
-          <button
-            onClick={() => navigate(buildAdminPath("/menu/discounts"))}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 transition-colors hover:bg-gray-50 sm:w-auto"
-          >
-            <Percent className="h-4 w-4" />
-            <span>Discounts</span>
-          </button>
-          <button
-            onClick={() => navigate(buildAdminPath("/menu/sizes"))}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 transition-colors hover:bg-gray-50 sm:w-auto"
-          >
-            <Ruler className="h-4 w-4" />
-            <span>Sizes</span>
-          </button>
-          <button
-            onClick={() => navigate(buildAdminPath("/menu/seasonal"))}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-gray-300 bg-white px-4 py-2 transition-colors hover:bg-gray-50 sm:w-auto"
-          >
-            <CalendarRange className="h-4 w-4" />
-            <span>Seasonal</span>
-          </button>
-          <button
-            onClick={() => navigate(buildAdminPath("/menu/prices"))}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-gray-300 bg-white px-4 py-2 transition-colors hover:bg-gray-50 sm:w-auto"
-          >
-            <LineChart className="h-4 w-4" />
-            <span>Price History</span>
-          </button>
-          {!isMonitoringMode && (
+          {canAccessCategories && (
+            <button
+              onClick={() => navigate(buildAdminPath("/menu/categories"))}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 transition-colors hover:bg-gray-50 sm:w-auto"
+            >
+              <Tag className="h-4 w-4" />
+              <span>Categories</span>
+            </button>
+          )}
+          {canAccessDiscounts && (
+            <button
+              onClick={() => navigate(buildAdminPath("/menu/discounts"))}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 transition-colors hover:bg-gray-50 sm:w-auto"
+            >
+              <Percent className="h-4 w-4" />
+              <span>Discounts</span>
+            </button>
+          )}
+          {canAccessSizes && (
+            <button
+              onClick={() => navigate(buildAdminPath("/menu/sizes"))}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 transition-colors hover:bg-gray-50 sm:w-auto"
+            >
+              <Ruler className="h-4 w-4" />
+              <span>Sizes</span>
+            </button>
+          )}
+          {canAccessSeasonal && (
+            <button
+              onClick={() => navigate(buildAdminPath("/menu/seasonal"))}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-gray-300 bg-white px-4 py-2 transition-colors hover:bg-gray-50 sm:w-auto"
+            >
+              <CalendarRange className="h-4 w-4" />
+              <span>Seasonal</span>
+            </button>
+          )}
+          {canAccessPriceHistory && (
+            <button
+              onClick={() => navigate(buildAdminPath("/menu/prices"))}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-gray-300 bg-white px-4 py-2 transition-colors hover:bg-gray-50 sm:w-auto"
+            >
+              <LineChart className="h-4 w-4" />
+              <span>Price History</span>
+            </button>
+          )}
+          {canCreateMenuItems && (
             <button
               onClick={handleAddItem}
               className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary-600 px-4 py-2 text-white transition-colors hover:bg-primary-700 sm:w-auto"
@@ -404,13 +466,15 @@ export function MenuManagement() {
           </select>
 
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-            <button
-              onClick={handleExportMenu}
-              className="flex-1 rounded-xl border border-gray-300 px-4 py-2 hover:bg-gray-50"
-            >
-              Export
-            </button>
-            {!isMonitoringMode && (
+            {canUseImportExport && (
+              <button
+                onClick={handleExportMenu}
+                className="flex-1 rounded-xl border border-gray-300 px-4 py-2 hover:bg-gray-50"
+              >
+                Export
+              </button>
+            )}
+            {canUseImportExport && (
               <label className="flex-1 cursor-pointer rounded-xl border border-gray-300 bg-white px-4 py-2 text-center hover:bg-gray-50">
                 Import
                 <input
@@ -477,31 +541,37 @@ export function MenuManagement() {
               <div className="mt-2 text-gray-700">{renderPriceList(item)}</div>
             </div>
 
-            {!isMonitoringMode ? (
+            {canManageMenuItems ? (
               <div className="mt-4 grid grid-cols-3 gap-2">
-                <button
-                  onClick={() => handleToggleAvailability(item._id)}
-                  className="rounded-xl border border-orange-200 px-3 py-2 text-sm text-orange-700 hover:bg-orange-50"
-                  title={
-                    item.isAvailable ? "Mark unavailable" : "Mark available"
-                  }
-                >
-                  {item.isAvailable ? "Hide" : "Show"}
-                </button>
-                <button
-                  onClick={() => handleEditItem(item)}
-                  className="rounded-xl border border-blue-200 px-3 py-2 text-sm text-blue-700 hover:bg-blue-50"
-                  title="Edit item"
-                >
-                  Edit
-                </button>
-                <button
-                  onClick={() => handleDeleteItem(item._id)}
-                  className="rounded-xl border border-red-200 px-3 py-2 text-sm text-red-700 hover:bg-red-50"
-                  title="Delete item"
-                >
-                  Delete
-                </button>
+                {canToggleAvailability && (
+                  <button
+                    onClick={() => handleToggleAvailability(item._id)}
+                    className="rounded-xl border border-orange-200 px-3 py-2 text-sm text-orange-700 hover:bg-orange-50"
+                    title={
+                      item.isAvailable ? "Mark unavailable" : "Mark available"
+                    }
+                  >
+                    {item.isAvailable ? "Hide" : "Show"}
+                  </button>
+                )}
+                {canEditMenuItems && (
+                  <button
+                    onClick={() => handleEditItem(item)}
+                    className="rounded-xl border border-blue-200 px-3 py-2 text-sm text-blue-700 hover:bg-blue-50"
+                    title="Edit item"
+                  >
+                    Edit
+                  </button>
+                )}
+                {canDeleteMenuItems && (
+                  <button
+                    onClick={() => handleDeleteItem(item._id)}
+                    className="rounded-xl border border-red-200 px-3 py-2 text-sm text-red-700 hover:bg-red-50"
+                    title="Delete item"
+                  >
+                    Delete
+                  </button>
+                )}
               </div>
             ) : null}
           </div>
@@ -570,37 +640,43 @@ export function MenuManagement() {
                     </span>
                   </td>
                   <td className="p-4">
-                    {!isMonitoringMode && (
+                    {canManageMenuItems && (
                       <div className="flex items-center justify-end space-x-2">
-                        <button
-                          onClick={() => handleToggleAvailability(item._id)}
-                          className="p-2 text-orange-600 hover:bg-orange-50 rounded-lg"
-                          title={
-                            item.isAvailable
-                              ? "Mark unavailable"
-                              : "Mark available"
-                          }
-                        >
-                          {item.isAvailable ? (
-                            <EyeOff className="h-4 w-4" />
-                          ) : (
-                            <Eye className="h-4 w-4" />
-                          )}
-                        </button>
-                        <button
-                          onClick={() => handleEditItem(item)}
-                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
-                          title="Edit item"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteItem(item._id)}
-                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
-                          title="Delete item"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
+                        {canToggleAvailability && (
+                          <button
+                            onClick={() => handleToggleAvailability(item._id)}
+                            className="p-2 text-orange-600 hover:bg-orange-50 rounded-lg"
+                            title={
+                              item.isAvailable
+                                ? "Mark unavailable"
+                                : "Mark available"
+                            }
+                          >
+                            {item.isAvailable ? (
+                              <EyeOff className="h-4 w-4" />
+                            ) : (
+                              <Eye className="h-4 w-4" />
+                            )}
+                          </button>
+                        )}
+                        {canEditMenuItems && (
+                          <button
+                            onClick={() => handleEditItem(item)}
+                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
+                            title="Edit item"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </button>
+                        )}
+                        {canDeleteMenuItems && (
+                          <button
+                            onClick={() => handleDeleteItem(item._id)}
+                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
+                            title="Delete item"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        )}
                       </div>
                     )}
                   </td>
@@ -632,7 +708,7 @@ export function MenuManagement() {
         </div>
       )}
 
-      {!isMonitoringMode && showItemForm && (
+      {(canCreateMenuItems || canEditMenuItems) && showItemForm && (
         <ItemForm
           item={editingItem}
           onSave={handleSaveItem}

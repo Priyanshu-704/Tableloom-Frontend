@@ -19,6 +19,7 @@ export const toServiceResponse = (response, fallback = {}) => {
     meta: payload?.meta || fallback.meta,
     publicSettings: payload?.publicSettings || fallback.publicSettings,
     accessToken: payload?.accessToken || fallback.accessToken,
+    refreshToken: payload?.refreshToken || fallback.refreshToken,
     logoutRequired:
       payload?.logoutRequired !== undefined
         ? payload.logoutRequired

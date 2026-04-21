@@ -153,7 +153,7 @@ const navigationSections = [
         description: "Products and availability",
         icon: List,
         path: buildAdminPath("/menu/items"),
-        allowedRoles: ["manager", "admin", "super_admin"],
+        allowedRoles: ["chef", "manager", "admin", "super_admin"],
         requiredPermission: ACCESS_GROUPS.menu,
       },
       {
@@ -234,7 +234,7 @@ const navigationSections = [
         description: "Dining tables and status",
         icon: Table,
         path: buildAdminPath("/tables/list"),
-        allowedRoles: ["waiter", "manager", "admin", "super_admin"],
+        allowedRoles: ["waiter", "chef", "manager", "admin", "super_admin"],
         requiredPermission: ACCESS_GROUPS.tables,
       },
       {

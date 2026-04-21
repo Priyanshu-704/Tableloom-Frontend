@@ -454,7 +454,7 @@ function AdminContent() {
                 path="menu/items"
                 element={
                   <ProtectedRouteWithPermission
-                    allowedRoles={["manager", "admin", "super_admin"]}
+                    allowedRoles={["chef", "manager", "admin", "super_admin"]}
                     requiredPermission={ACCESS_GROUPS.menu}
                   >
                     <MenuManagement />
@@ -570,7 +570,7 @@ function AdminContent() {
                 path="tables/list"
                 element={
                   <ProtectedRouteWithPermission
-                    allowedRoles={["waiter", "manager", "admin", "super_admin"]}
+                    allowedRoles={["waiter", "chef", "manager", "admin", "super_admin"]}
                     requiredPermission={ACCESS_GROUPS.tables}
                   >
                     <TableManagement />
