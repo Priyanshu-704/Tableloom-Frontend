@@ -74,6 +74,14 @@ const onRefreshed = () => {
   refreshSubscribers.forEach((cb) => cb());
   refreshSubscribers = [];
 };
+const isAuthRoute = (url = "") => {
+  const normalizedUrl = String(url || "").trim();
+  return (
+    normalizedUrl.includes("/users/login") ||
+    normalizedUrl.includes("/users/refresh-token") ||
+    normalizedUrl.includes("/users/logout")
+  );
+};
 api.interceptors.request.use(
   (config) => {
     if (isReadOnlyMonitoringRequest(config)) {
@@ -95,7 +103,12 @@ api.interceptors.response.use(
   },
   async (error) => {
     const originalRequest = error.config;
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    if (
+      error.response?.status === 401 &&
+      originalRequest &&
+      !originalRequest._retry &&
+      !isAuthRoute(originalRequest.url)
+    ) {
       if (isRefreshing) {
         return new Promise((resolve) => {
           subscribeTokenRefresh(() => {
@@ -110,6 +123,7 @@ api.interceptors.response.use(
           `${API_URL}/users/refresh-token`,
           {},
           {
+            headers: getTenantHeaders(),
             withCredentials: true,
           },
         );
