@@ -15,6 +15,7 @@ import AdminPagination from "../components/common/AdminPagination";
 import { AdminListSkeleton } from "../components/common/AdminSkeleton";
 import ResponsiveFilterSection from "../components/common/ResponsiveFilterSection";
 import { useSettings } from "../../common/context/SettingsContext";
+import { useAuth } from "../../common/context/AuthContext";
 const MODE_OPTIONS = [
   {
     value: "active",
@@ -60,8 +61,13 @@ const formatCurrency = (value, currency = "INR") =>
 export function CustomerSessions() {
   const PAGE_SIZE = 10;
   const { settings } = useSettings();
+  const { hasPermission } = useAuth();
   const currency = settings?.taxSettings?.currency || "INR";
   const { addNotification } = useAdmin();
+  const canViewAnalytics = hasPermission("session_statistics");
+  const canExtendSession = hasPermission("session_update");
+  const canCompleteSession = hasPermission("session_complete_offline");
+  const canCancelSession = hasPermission("session_cancel");
   const [sessions, setSessions] = useState([]);
   const [analytics, setAnalytics] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -91,9 +97,13 @@ export function CustomerSessions() {
       }
       const [sessionsResponse, analyticsResponse] = await Promise.all([
         customerAdminService.getSessions(params),
-        customerAdminService.getAnalytics(
-          filters.mode === "active" ? "today" : "week",
-        ),
+        canViewAnalytics
+          ? customerAdminService.getAnalytics(
+              filters.mode === "active" ? "today" : "week",
+            )
+          : Promise.resolve({
+              data: null,
+            }),
       ]);
       setSessions(sessionsResponse.data || []);
       setPagination({
@@ -101,7 +111,7 @@ export function CustomerSessions() {
         pages: sessionsResponse.pagination?.pages || 1,
         total: sessionsResponse.pagination?.total || 0,
       });
-      setAnalytics(analyticsResponse.data || null);
+      setAnalytics(analyticsResponse?.data || null);
     } catch (error) {
       logger.error("Failed to load sessions:", error);
       addNotification(
@@ -111,7 +121,7 @@ export function CustomerSessions() {
     } finally {
       setLoading(false);
     }
-  }, [currentPage, filters.mode, filters.search, filters.status]);
+  }, [canViewAnalytics, currentPage, filters.mode, filters.search, filters.status]);
   useEffect(() => {
     loadSessions();
   }, [loadSessions]);
@@ -289,59 +299,65 @@ export function CustomerSessions() {
                   <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
                     {session.isActive ? (
                       <>
-                        <button
-                          type="button"
-                          disabled={activeId === session.sessionId}
-                          onClick={() =>
-                            runAction({
-                              sessionId: session.sessionId,
-                              task: () =>
-                                customerAdminService.extendSession(
-                                  session.sessionId,
-                                  30,
-                                ),
-                            })
-                          }
-                          className="rounded-lg border border-gray-300 px-4 py-2 text-sm transition-colors hover:bg-gray-50 disabled:opacity-60"
-                        >
-                          Extend 30m
-                        </button>
-                        <button
-                          type="button"
-                          disabled={activeId === session.sessionId}
-                          onClick={() =>
-                            runAction({
-                              sessionId: session.sessionId,
-                              task: () =>
-                                customerAdminService.completeSessionOffline(
-                                  session.sessionId,
-                                  "Completed from admin session control",
-                                ),
-                            })
-                          }
-                          className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-700 disabled:opacity-60"
-                        >
-                          <CheckCircle2 className="h-4 w-4" />
-                          Complete
-                        </button>
-                        <button
-                          type="button"
-                          disabled={activeId === session.sessionId}
-                          onClick={() =>
-                            runAction({
-                              sessionId: session.sessionId,
-                              task: () =>
-                                customerAdminService.cancelSession(
-                                  session.sessionId,
-                                  "Cancelled from admin session control",
-                                ),
-                            })
-                          }
-                          className="inline-flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700 disabled:opacity-60"
-                        >
-                          <XCircle className="h-4 w-4" />
-                          Cancel
-                        </button>
+                        {canExtendSession ? (
+                          <button
+                            type="button"
+                            disabled={activeId === session.sessionId}
+                            onClick={() =>
+                              runAction({
+                                sessionId: session.sessionId,
+                                task: () =>
+                                  customerAdminService.extendSession(
+                                    session.sessionId,
+                                    30,
+                                  ),
+                              })
+                            }
+                            className="rounded-lg border border-gray-300 px-4 py-2 text-sm transition-colors hover:bg-gray-50 disabled:opacity-60"
+                          >
+                            Extend 30m
+                          </button>
+                        ) : null}
+                        {canCompleteSession ? (
+                          <button
+                            type="button"
+                            disabled={activeId === session.sessionId}
+                            onClick={() =>
+                              runAction({
+                                sessionId: session.sessionId,
+                                task: () =>
+                                  customerAdminService.completeSessionOffline(
+                                    session.sessionId,
+                                    "Completed from admin session control",
+                                  ),
+                              })
+                            }
+                            className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-700 disabled:opacity-60"
+                          >
+                            <CheckCircle2 className="h-4 w-4" />
+                            Complete
+                          </button>
+                        ) : null}
+                        {canCancelSession ? (
+                          <button
+                            type="button"
+                            disabled={activeId === session.sessionId}
+                            onClick={() =>
+                              runAction({
+                                sessionId: session.sessionId,
+                                task: () =>
+                                  customerAdminService.cancelSession(
+                                    session.sessionId,
+                                    "Cancelled from admin session control",
+                                  ),
+                              })
+                            }
+                            className="inline-flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700 disabled:opacity-60"
+                          >
+                            <XCircle className="h-4 w-4" />
+                            Cancel
+                          </button>
+                        ) : null}
                       </>
                     ) : (
                       <span className="rounded-lg border border-gray-200 px-4 py-2 text-center text-sm text-gray-500 sm:col-span-3">

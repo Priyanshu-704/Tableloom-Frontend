@@ -2,11 +2,11 @@ import React from "react";
 import { ShieldAlert, ArrowLeft, LockKeyhole } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../common/context/AuthContext";
-import { resolveAdminHomePath } from "../../common/utils/routes";
+import { resolveAccessibleAdminHomePath } from "../utils/accessControl";
 export function AccessDenied() {
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const homePath = resolveAdminHomePath(user?.role);
+  const { permissions, user } = useAuth();
+  const homePath = resolveAccessibleAdminHomePath(user, permissions);
   return (
     <div className="relative flex min-h-[calc(100vh-4rem)] items-center justify-center overflow-hidden bg-slate-950 p-6">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(14,165,233,0.22),transparent_30%),radial-gradient(circle_at_bottom_right,rgba(6,182,212,0.18),transparent_35%),linear-gradient(160deg,#020617_0%,#0f172a_50%,#082f49_100%)]" />

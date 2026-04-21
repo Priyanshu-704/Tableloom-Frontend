@@ -49,40 +49,6 @@ const STATUS_OPTIONS = [
     label: "Acknowledged",
   },
 ];
-const TYPE_OPTIONS = [
-  {
-    value: "all",
-    label: "All types",
-  },
-  {
-    value: "waiter_call",
-    label: "Waiter calls",
-  },
-  {
-    value: "order_ready",
-    label: "Order ready",
-  },
-  {
-    value: "order_delayed",
-    label: "Order delayed",
-  },
-  {
-    value: "payment_request",
-    label: "Payment request",
-  },
-  {
-    value: "payment_received",
-    label: "Payment received",
-  },
-  {
-    value: "staff_announcement",
-    label: "Announcements",
-  },
-  {
-    value: "system_alert",
-    label: "System alerts",
-  },
-];
 const PRIORITY_OPTIONS = [
   {
     value: "all",
@@ -264,6 +230,7 @@ export function AdminNotificationDrawer() {
     isDrawerOpen,
     loading,
     markAllAsRead,
+    notificationTypeOptions,
     notifications,
     otherNotifications,
     refreshNotifications,
@@ -440,7 +407,7 @@ export function AdminNotificationDrawer() {
                       <SelectValue placeholder="Select type" />
                     </SelectTrigger>
                     <SelectContent>
-                      {TYPE_OPTIONS.map((option) => (
+                      {notificationTypeOptions.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
                           {option.label}
                         </SelectItem>

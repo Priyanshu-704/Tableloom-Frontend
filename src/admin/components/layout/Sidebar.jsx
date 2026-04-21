@@ -37,13 +37,10 @@ import {
   buildPlatformAdminPath,
   isSuperAdminMonitoringPath,
 } from "../../../common/utils/routes";
-const normalizePermission = (permission) =>
-  String(permission || "")
-    .trim()
-    .replace(/[\s-]+/g, "_")
-    .toUpperCase();
-const hasFullAdminAccess = (role) =>
-  ["super_admin", "admin"].includes(String(role || "").toLowerCase());
+import {
+  ACCESS_GROUPS,
+  hasAccessRequirement,
+} from "../../utils/accessControl";
 const isTenantManagementTabActive = (location, tab) => {
   if (location.pathname !== buildPlatformAdminPath("/tenant-management")) {
     return false;
@@ -90,7 +87,8 @@ const navigationSections = [
         description: "Live business snapshot",
         icon: LayoutDashboard,
         path: buildAdminPath("/dashboard"),
-        requiredPermission: "view_dashboard",
+        allowedRoles: ["manager", "admin", "super_admin"],
+        requiredPermission: ACCESS_GROUPS.dashboard,
       },
       {
         id: "analytics",
@@ -98,7 +96,8 @@ const navigationSections = [
         description: "Performance and trends",
         icon: BarChart3,
         path: buildAdminPath("/analytics"),
-        requiredPermission: "view_statistics",
+        allowedRoles: ["manager", "admin", "super_admin"],
+        requiredPermission: ACCESS_GROUPS.analytics,
       },
     ],
   },
@@ -112,7 +111,8 @@ const navigationSections = [
         description: "Track live order workflow",
         icon: ClipboardList,
         path: buildAdminPath("/orders"),
-        requiredPermission: "order_view_all",
+        allowedRoles: ["waiter", "chef", "manager", "admin", "super_admin"],
+        requiredPermission: ACCESS_GROUPS.orders,
       },
       {
         id: "kitchen-dashboard",
@@ -120,7 +120,8 @@ const navigationSections = [
         description: "Orders and kitchen flow",
         icon: ChefHat,
         path: buildAdminPath("/kitchen/dashboard"),
-        requiredPermission: "kitchen_view_dashboard",
+        allowedRoles: ["chef", "manager", "admin", "super_admin"],
+        requiredPermission: ACCESS_GROUPS.kitchenDashboard,
       },
       {
         id: "kitchen-stations",
@@ -128,7 +129,8 @@ const navigationSections = [
         description: "Manage station setup",
         icon: CookingPot,
         path: buildAdminPath("/kitchen/stations"),
-        requiredPermission: "kitchen_manage_stations",
+        allowedRoles: ["manager", "admin", "super_admin"],
+        requiredPermission: ACCESS_GROUPS.kitchenStations,
       },
       {
         id: "staff",
@@ -136,7 +138,8 @@ const navigationSections = [
         description: "Roles, accounts, access",
         icon: Users,
         path: buildAdminPath("/staff"),
-        requiredPermission: "user_view_all",
+        allowedRoles: ["manager", "admin", "super_admin"],
+        requiredPermission: ACCESS_GROUPS.staff,
       },
     ],
   },
@@ -150,13 +153,8 @@ const navigationSections = [
         description: "Products and availability",
         icon: List,
         path: buildAdminPath("/menu/items"),
-        requiredPermission: [
-          "menu_view_all",
-          "menu_create",
-          "menu_edit",
-          "menu_delete",
-          "menu_toggle_availability",
-        ],
+        allowedRoles: ["manager", "admin", "super_admin"],
+        requiredPermission: ACCESS_GROUPS.menu,
       },
       {
         id: "menu-categories",
@@ -164,13 +162,8 @@ const navigationSections = [
         description: "Organize menu structure",
         icon: Tags,
         path: buildAdminPath("/menu/categories"),
-        requiredPermission: [
-          "menu_view_all",
-          "menu_create",
-          "menu_edit",
-          "menu_delete",
-          "category_toggle_status",
-        ],
+        allowedRoles: ["manager", "admin", "super_admin"],
+        requiredPermission: ACCESS_GROUPS.categories,
       },
       {
         id: "menu-sizes",
@@ -178,7 +171,8 @@ const navigationSections = [
         description: "Portions and pricing units",
         icon: Ruler,
         path: buildAdminPath("/menu/sizes"),
-        requiredPermission: ["menu_view_all", "menu_edit"],
+        allowedRoles: ["manager", "admin", "super_admin"],
+        requiredPermission: ACCESS_GROUPS.sizes,
       },
       {
         id: "menu-discounts",
@@ -186,7 +180,8 @@ const navigationSections = [
         description: "Coupons and item offers",
         icon: Percent,
         path: buildAdminPath("/menu/discounts"),
-        requiredPermission: "menu_edit",
+        allowedRoles: ["manager", "admin", "super_admin"],
+        requiredPermission: ACCESS_GROUPS.discounts,
       },
       {
         id: "menu-seasonal",
@@ -194,13 +189,8 @@ const navigationSections = [
         description: "Featured and limited items",
         icon: TrendingUp,
         path: buildAdminPath("/menu/seasonal"),
-        requiredPermission: [
-          "menu_view_all",
-          "menu_create",
-          "menu_edit",
-          "menu_delete",
-          "menu_toggle_availability",
-        ],
+        allowedRoles: ["manager", "admin", "super_admin"],
+        requiredPermission: ACCESS_GROUPS.seasonal,
       },
       {
         id: "menu-prices",
@@ -208,7 +198,8 @@ const navigationSections = [
         description: "Pricing trends and changes",
         icon: TrendingUp,
         path: buildAdminPath("/menu/prices"),
-        requiredPermission: "price_stats",
+        allowedRoles: ["manager", "admin", "super_admin"],
+        requiredPermission: ACCESS_GROUPS.priceHistory,
       },
       {
         id: "menu-bulk",
@@ -216,7 +207,8 @@ const navigationSections = [
         description: "Batch updates and actions",
         icon: RefreshCw,
         path: buildAdminPath("/menu/bulk"),
-        requiredPermission: "menu_bulk_operations",
+        allowedRoles: ["manager", "admin", "super_admin"],
+        requiredPermission: ACCESS_GROUPS.menuBulk,
       },
       {
         id: "menu-import-export",
@@ -224,7 +216,8 @@ const navigationSections = [
         description: "Move menu data safely",
         icon: Download,
         path: buildAdminPath("/menu/import-export"),
-        requiredPermission: "menu_import_export",
+        allowedRoles: ["manager", "admin"],
+        requiredPermission: ACCESS_GROUPS.menuImportExport,
       },
       {
         id: "inventory",
@@ -232,7 +225,8 @@ const navigationSections = [
         description: "Stock levels and replenishment",
         icon: Boxes,
         path: buildAdminPath("/inventory"),
-        requiredPermission: "inventory_view_all",
+        allowedRoles: ["chef", "manager", "admin", "super_admin"],
+        requiredPermission: ACCESS_GROUPS.inventory,
       },
       {
         id: "tables-list",
@@ -240,7 +234,8 @@ const navigationSections = [
         description: "Dining tables and status",
         icon: Table,
         path: buildAdminPath("/tables/list"),
-        requiredPermission: "table_view_all",
+        allowedRoles: ["waiter", "manager", "admin", "super_admin"],
+        requiredPermission: ACCESS_GROUPS.tables,
       },
       {
         id: "tables-qr",
@@ -248,7 +243,8 @@ const navigationSections = [
         description: "Table QR management",
         icon: QrCode,
         path: buildAdminPath("/tables/qr"),
-        requiredPermission: "table_edit",
+        allowedRoles: ["manager", "admin", "super_admin"],
+        requiredPermission: ACCESS_GROUPS.tableQr,
       },
     ],
   },
@@ -262,7 +258,8 @@ const navigationSections = [
         description: "Track active dining sessions",
         icon: Users,
         path: buildAdminPath("/customers/sessions"),
-        requiredPermission: "session_view_all",
+        allowedRoles: ["waiter", "manager", "admin", "super_admin"],
+        requiredPermission: ACCESS_GROUPS.sessions,
       },
       {
         id: "customer-bills",
@@ -270,7 +267,8 @@ const navigationSections = [
         description: "Bills, payments, and PDFs",
         icon: Receipt,
         path: buildAdminPath("/customers/bills"),
-        requiredPermission: "session_view_all",
+        allowedRoles: ["manager", "admin", "super_admin"],
+        requiredPermission: ACCESS_GROUPS.bills,
       },
       {
         id: "customer-feedback",
@@ -278,7 +276,8 @@ const navigationSections = [
         description: "Reviews and customer input",
         icon: MessageSquareText,
         path: buildAdminPath("/customers/feedback"),
-        requiredPermission: "feedback_view_all",
+        allowedRoles: ["manager", "admin", "super_admin"],
+        requiredPermission: ACCESS_GROUPS.feedback,
       },
       {
         id: "customer-waiter-calls",
@@ -286,7 +285,8 @@ const navigationSections = [
         description: "Live service requests",
         icon: ConciergeBell,
         path: buildAdminPath("/customers/waiter-calls"),
-        requiredPermission: "waiter_call_view_all",
+        allowedRoles: ["waiter", "manager", "admin", "super_admin"],
+        requiredPermission: ACCESS_GROUPS.waiterCalls,
       },
     ],
   },
@@ -308,7 +308,8 @@ const navigationSections = [
         description: "Business identity and defaults",
         icon: Utensils,
         path: buildAdminPath("/settings/restaurant"),
-        requiredPermission: "system_settings",
+        allowedRoles: ["manager", "admin", "super_admin"],
+        requiredPermission: ACCESS_GROUPS.settings,
       },
       {
         id: "settings-notifications",
@@ -316,7 +317,8 @@ const navigationSections = [
         description: "Alerts and notification rules",
         icon: Bell,
         path: buildAdminPath("/settings/notifications"),
-        requiredPermission: "system_settings",
+        allowedRoles: ["manager", "admin", "super_admin"],
+        requiredPermission: ACCESS_GROUPS.settings,
       },
       {
         id: "settings-backup",
@@ -324,7 +326,8 @@ const navigationSections = [
         description: "Export and safeguard data",
         icon: DatabaseBackup,
         path: buildAdminPath("/settings/backup"),
-        requiredPermission: "backup_restore",
+        allowedRoles: ["manager", "admin"],
+        requiredPermission: ACCESS_GROUPS.backup,
       },
     ],
   },
@@ -350,7 +353,10 @@ export function Sidebar({
     return navigationSections
       .map((section) => {
         const items = section.items.filter((item) => {
-          if (Array.isArray(item.roles) && !item.roles.includes(user.role)) {
+          if (
+            Array.isArray(item.roles) &&
+            !item.roles.includes(user.role)
+          ) {
             return false;
           }
           if (
@@ -360,19 +366,12 @@ export function Sidebar({
           ) {
             return false;
           }
-          if (hasFullAdminAccess(user.role) || !item.requiredPermission) {
-            return true;
-          }
-          const requiredPermissions = Array.isArray(item.requiredPermission)
-            ? item.requiredPermission
-            : [item.requiredPermission];
-          return requiredPermissions.some((requiredPermission) =>
-            (permissions || []).some(
-              (permission) =>
-                normalizePermission(permission) ===
-                normalizePermission(requiredPermission),
-            ),
-          );
+          return hasAccessRequirement({
+            role: user.role,
+            permissions,
+            allowedRoles: item.allowedRoles,
+            requiredPermissions: item.requiredPermission,
+          });
         });
         return {
           ...section,

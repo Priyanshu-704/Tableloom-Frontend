@@ -7,8 +7,8 @@ import { AdminAuthShell } from "../components/layout/AdminAuthShell";
 import {
   buildAdminPath,
   extractTenantFromPath,
-  resolveAdminHomePath,
 } from "../../common/utils/routes";
+import { resolveAccessibleAdminHomePath } from "../utils/accessControl";
 export function AdminLogin() {
   const [credentials, setCredentials] = useState({
     email: "",
@@ -54,7 +54,7 @@ export function AdminLogin() {
           );
           return;
         }
-        navigate(resolveAdminHomePath(role));
+        navigate(resolveAccessibleAdminHomePath({ role }));
       } else {
         setError(response.message || "Login failed");
       }

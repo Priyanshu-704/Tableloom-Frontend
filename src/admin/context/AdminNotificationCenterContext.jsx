@@ -20,6 +20,11 @@ import { notificationAdminService } from "../../common/services";
 import pushNotificationService from "../../common/services/pushNotificationService";
 import { isSuperAdminMonitoringPath } from "../../common/utils/routes";
 import { useAdmin } from "./AdminContext";
+import {
+  canAccessNotificationType,
+  getAllowedNotificationTypes,
+  getNotificationTypeOptions,
+} from "../utils/accessControl";
 const AdminNotificationCenterContext = createContext(null);
 const defaultFilters = {
   search: "",
@@ -85,8 +90,23 @@ export function AdminNotificationCenterProvider({ children }) {
     location.pathname,
     user?.role,
   );
+  const allowedNotificationTypes = useMemo(
+    () => getAllowedNotificationTypes(user?.role),
+    [user?.role],
+  );
+  const notificationTypeOptions = useMemo(
+    () => getNotificationTypeOptions(user?.role),
+    [user?.role],
+  );
+  const isAllowedNotification = useCallback(
+    (notification = {}) =>
+      canAccessNotificationType(user?.role, notification?.type || ""),
+    [user?.role],
+  );
   const canViewNotifications =
-    hasPermission("notification_view") && !isMonitoringMode;
+    hasPermission("notification_view") &&
+    allowedNotificationTypes.length > 0 &&
+    !isMonitoringMode;
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [stats, setStats] = useState(null);
@@ -123,6 +143,9 @@ export function AdminNotificationCenterProvider({ children }) {
   }, []);
   const appendLiveNotification = useCallback(
     (incoming = {}) => {
+      if (!isAllowedNotification(incoming)) {
+        return;
+      }
       if (!markLiveEventHandled(incoming)) {
         return;
       }
@@ -147,7 +170,7 @@ export function AdminNotificationCenterProvider({ children }) {
         return [notification, ...next].slice(0, 100);
       });
     },
-    [markLiveEventHandled],
+    [isAllowedNotification, markLiveEventHandled],
   );
   const loadStats = useCallback(async () => {
     if (!isAuthenticated || !canViewNotifications) {
@@ -198,18 +221,14 @@ export function AdminNotificationCenterProvider({ children }) {
           notificationAdminService.getNotifications(params),
           notificationAdminService.getStats("today"),
         ]);
-        setNotifications(notificationsResponse.data || []);
+        const nextNotifications = (notificationsResponse.data || []).filter(
+          (notification) => isAllowedNotification(notification),
+        );
+        setNotifications(nextNotifications);
         setStats({
           ...(statsResponse.data || {}),
-          unreadCount:
-            statsResponse.data?.unreadCount ??
-            notificationsResponse.unreadCount ??
-            0,
-          total:
-            statsResponse.data?.total ??
-            notificationsResponse.pagination?.total ??
-            notificationsResponse.data?.length ??
-            0,
+          unreadCount: nextNotifications.filter((item) => !item.isRead).length,
+          total: nextNotifications.length,
         });
       } catch (error) {
         logger.error("Failed to load notification center:", error);
@@ -233,6 +252,7 @@ export function AdminNotificationCenterProvider({ children }) {
       filters.status,
       filters.type,
       filters.unreadOnly,
+      isAllowedNotification,
       isDrawerOpen,
       isAuthenticated,
     ],
@@ -321,6 +341,9 @@ export function AdminNotificationCenterProvider({ children }) {
       }
     };
     const handleWaiterCall = (payload = {}) => {
+      if (!canAccessNotificationType(user?.role, "waiter_call")) {
+        return;
+      }
       const tableLabel =
         payload.tableName || `Table ${payload.tableNumber || ""}`.trim();
       addNotification(`${tableLabel} requested staff attention`, "warning");
@@ -432,6 +455,9 @@ export function AdminNotificationCenterProvider({ children }) {
         if (isCancelled) {
           return;
         }
+        if (!isAllowedNotification(payload)) {
+          return;
+        }
         appendLiveNotification({
           ...payload,
           isRead: false,
@@ -456,6 +482,7 @@ export function AdminNotificationCenterProvider({ children }) {
     appendLiveNotification,
     canViewNotifications,
     isAuthenticated,
+    isAllowedNotification,
     settings?.notifications?.pushNotifications,
     user?._id,
     user?.role,
@@ -517,7 +544,9 @@ export function AdminNotificationCenterProvider({ children }) {
       otherNotifications,
       stats,
       activityVersion,
+      allowedNotificationTypes,
       filters,
+      notificationTypeOptions,
       loading,
       activeAction,
       isConnected,
@@ -572,9 +601,11 @@ export function AdminNotificationCenterProvider({ children }) {
     [
       activeAction,
       activityVersion,
+      allowedNotificationTypes,
       canViewNotifications,
       filteredNotifications,
       filters,
+      notificationTypeOptions,
       importantNotifications,
       isConnected,
       isDrawerOpen,

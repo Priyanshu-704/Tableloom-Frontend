@@ -3,18 +3,21 @@ import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../../common/context/AuthContext";
 import {
   buildAdminPath,
-  resolveAdminHomePath,
   stripAdminRoutePrefix,
 } from "../../common/utils/routes";
 import { SkeletonBlock } from "./common/AdminSkeleton";
-export default function ProtectedRoute({ requiredPermission }) {
+import {
+  hasAccessRequirement,
+  resolveAccessibleAdminHomePath,
+} from "../utils/accessControl";
+
+export default function ProtectedRoute({ requiredPermission, allowedRoles }) {
   const {
     isAuthenticated,
     loading,
-    hasAnyPermission,
-    hasPermission,
     requiresPasswordChange,
     user,
+    permissions,
   } = useAuth();
   const location = useLocation();
   const strippedPath = stripAdminRoutePrefix(location.pathname);
@@ -73,13 +76,24 @@ export default function ProtectedRoute({ requiredPermission }) {
     return <Navigate to={buildAdminPath("/force-password-update")} replace />;
   }
   if (!requiresPasswordChange && strippedPath === "/force-password-update") {
-    return <Navigate to={resolveAdminHomePath(user?.role)} replace />;
+    return (
+      <Navigate
+        to={resolveAccessibleAdminHomePath(user, permissions)}
+        replace
+      />
+    );
   }
-  const hasRequiredPermission = Array.isArray(requiredPermission)
-    ? hasAnyPermission(...requiredPermission)
+  const requiredPermissions = Array.isArray(requiredPermission)
+    ? requiredPermission
     : requiredPermission
-      ? hasPermission(requiredPermission)
-      : true;
+      ? [requiredPermission]
+      : [];
+  const hasRequiredPermission = hasAccessRequirement({
+    role: user?.role,
+    permissions,
+    allowedRoles,
+    requiredPermissions,
+  });
   if (!hasRequiredPermission) {
     return <Navigate to={buildAdminPath("/unauthorized")} replace />;
   }

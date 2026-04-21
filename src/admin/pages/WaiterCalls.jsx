@@ -16,6 +16,7 @@ import AdminPagination from "../components/common/AdminPagination";
 import { AdminListSkeleton } from "../components/common/AdminSkeleton";
 import ResponsiveFilterSection from "../components/common/ResponsiveFilterSection";
 import { useMonitoringMode } from "../hooks/useMonitoringMode";
+import { useAuth } from "../../common/context/AuthContext";
 const STATUS_OPTIONS = [
   {
     value: "all",
@@ -136,7 +137,17 @@ const formatMinutes = (seconds) => {
 export function WaiterCalls() {
   const PAGE_SIZE = 10;
   const isMonitoringMode = useMonitoringMode();
+  const { hasPermission, user } = useAuth();
   const { addNotification } = useAdmin();
+  const normalizedRole = String(user?.role || "").toLowerCase();
+  const canAssignCalls =
+    !isMonitoringMode &&
+    ["admin", "manager"].includes(normalizedRole) &&
+    hasPermission("waiter_call_view_all");
+  const canAcknowledgeCalls =
+    !isMonitoringMode && hasPermission("waiter_call_acknowledge");
+  const canCompleteCalls =
+    !isMonitoringMode && hasPermission("waiter_call_complete");
   const [calls, setCalls] = useState([]);
   const [dashboard, setDashboard] = useState(null);
   const [availableStaff, setAvailableStaff] = useState([]);
@@ -456,6 +467,12 @@ export function WaiterCalls() {
                 "in_progress",
                 "assigned",
               ].includes(call.status);
+              const canCancel = [
+                "pending",
+                "assigned",
+                "acknowledged",
+                "in_progress",
+              ].includes(call.status);
               return (
                 <div
                   key={call._id}
@@ -519,7 +536,7 @@ export function WaiterCalls() {
                     </div>
 
                     <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
-                      {!isMonitoringMode && canAssign && (
+                      {canAssignCalls && canAssign && (
                         <button
                           type="button"
                           disabled={activeId === call.callId}
@@ -537,7 +554,7 @@ export function WaiterCalls() {
                         </button>
                       )}
 
-                      {!isMonitoringMode && canAcknowledge && (
+                      {canAcknowledgeCalls && canAcknowledge && (
                         <button
                           type="button"
                           disabled={activeId === call.callId}
@@ -558,7 +575,7 @@ export function WaiterCalls() {
                         </button>
                       )}
 
-                      {!isMonitoringMode && canStart && (
+                      {canAcknowledgeCalls && canStart && (
                         <button
                           type="button"
                           disabled={activeId === call.callId}
@@ -580,7 +597,7 @@ export function WaiterCalls() {
                         </button>
                       )}
 
-                      {!isMonitoringMode && canComplete && (
+                      {canCompleteCalls && canComplete && (
                         <button
                           type="button"
                           disabled={activeId === call.callId}
@@ -597,6 +614,28 @@ export function WaiterCalls() {
                           Complete
                         </button>
                       )}
+
+                      {canCompleteCalls && canCancel ? (
+                        <button
+                          type="button"
+                          disabled={activeId === call.callId}
+                          onClick={() =>
+                            runCallAction(
+                              call.callId,
+                              () =>
+                                waiterCallService.updateCallStatus(
+                                  call.callId,
+                                  "cancelled",
+                                  "Cancelled from waiter call dashboard",
+                                ),
+                              "Call cancelled successfully",
+                            )
+                          }
+                          className="w-full rounded-lg border border-rose-200 px-4 py-2 text-sm text-rose-700 transition-colors hover:bg-rose-50 disabled:opacity-60"
+                        >
+                          Cancel
+                        </button>
+                      ) : null}
                     </div>
                   </div>
                 </div>
@@ -614,7 +653,7 @@ export function WaiterCalls() {
         </>
       )}
 
-      {!isMonitoringMode ? (
+      {canAssignCalls ? (
         <AdminModal
           isOpen={assignModal.isOpen}
           title="Assign Waiter Call"
@@ -678,7 +717,7 @@ export function WaiterCalls() {
         </AdminModal>
       ) : null}
 
-      {!isMonitoringMode ? (
+      {canCompleteCalls ? (
         <AdminModal
           isOpen={completeModal.isOpen}
           title="Complete Waiter Call"

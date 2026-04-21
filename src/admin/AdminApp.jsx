@@ -4,7 +4,6 @@ import { useAuth } from "../common/context/AuthContext";
 import {
   buildAdminPath,
   buildPlatformAdminPath,
-  resolveAdminHomePath,
 } from "../common/utils/routes";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { AdminHeader } from "./components/layout/AdminHeader";
@@ -12,6 +11,11 @@ import { Sidebar } from "./components/layout/Sidebar";
 import { SkeletonBlock } from "./components/common/AdminSkeleton";
 import { AdminNotificationCenterProvider } from "./context/AdminNotificationCenterContext";
 import { AdminNotificationDrawer } from "./components/notifications/AdminNotificationDrawer";
+import {
+  ACCESS_GROUPS,
+  hasAccessRequirement,
+  resolveAccessibleAdminHomePath,
+} from "./utils/accessControl";
 const AdminLogin = lazy(() =>
   import("./pages/AdminLogin").then((m) => ({
     default: m.AdminLogin,
@@ -272,28 +276,37 @@ function AdminLayout() {
     </div>
   );
 }
-function ProtectedRouteWithPermission({ children, requiredPermission }) {
-  const { isAuthenticated, loading, hasAnyPermission, hasPermission } =
-    useAuth();
+function ProtectedRouteWithPermission({
+  children,
+  requiredPermission,
+  allowedRoles,
+}) {
+  const { isAuthenticated, loading, permissions, user } = useAuth();
   if (loading) {
     return <LoadingScreen />;
   }
   if (!isAuthenticated) {
     return <Navigate to={buildAdminPath("/login")} replace />;
   }
-  const hasRequiredPermission = Array.isArray(requiredPermission)
-    ? hasAnyPermission(...requiredPermission)
+  const requiredPermissions = Array.isArray(requiredPermission)
+    ? requiredPermission
     : requiredPermission
-      ? hasPermission(requiredPermission)
-      : true;
+      ? [requiredPermission]
+      : [];
+  const hasRequiredPermission = hasAccessRequirement({
+    role: user?.role,
+    permissions,
+    allowedRoles,
+    requiredPermissions,
+  });
   if (!hasRequiredPermission) {
     return <Navigate to={buildAdminPath("/unauthorized")} replace />;
   }
   return children;
 }
 function AdminContent() {
-  const { isAuthenticated, user } = useAuth();
-  const defaultAuthedPath = resolveAdminHomePath(user?.role);
+  const { isAuthenticated, permissions, user } = useAuth();
+  const defaultAuthedPath = resolveAccessibleAdminHomePath(user, permissions);
   return (
     <div className="admin-scope">
       <Suspense fallback={<LoadingScreen />}>
@@ -321,7 +334,10 @@ function AdminContent() {
               <Route
                 path="dashboard"
                 element={
-                  <ProtectedRouteWithPermission requiredPermission="view_dashboard">
+                  <ProtectedRouteWithPermission
+                    allowedRoles={["manager", "admin", "super_admin"]}
+                    requiredPermission={ACCESS_GROUPS.dashboard}
+                  >
                     <Dashboard />
                   </ProtectedRouteWithPermission>
                 }
@@ -329,7 +345,7 @@ function AdminContent() {
               <Route
                 path="tenant-management"
                 element={
-                  <ProtectedRouteWithPermission>
+                  <ProtectedRouteWithPermission allowedRoles={["super_admin"]}>
                     <TenantManagement />
                   </ProtectedRouteWithPermission>
                 }
@@ -348,7 +364,7 @@ function AdminContent() {
               <Route
                 path="tenant-management/:tenantId"
                 element={
-                  <ProtectedRouteWithPermission>
+                  <ProtectedRouteWithPermission allowedRoles={["super_admin"]}>
                     <TenantOverview />
                   </ProtectedRouteWithPermission>
                 }
@@ -356,7 +372,7 @@ function AdminContent() {
               <Route
                 path="support"
                 element={
-                  <ProtectedRouteWithPermission>
+                  <ProtectedRouteWithPermission allowedRoles={["admin"]}>
                     <ContactSuperAdmin />
                   </ProtectedRouteWithPermission>
                 }
@@ -364,7 +380,10 @@ function AdminContent() {
               <Route
                 path="analytics"
                 element={
-                  <ProtectedRouteWithPermission requiredPermission="view_statistics">
+                  <ProtectedRouteWithPermission
+                    allowedRoles={["manager", "admin", "super_admin"]}
+                    requiredPermission={ACCESS_GROUPS.analytics}
+                  >
                     <Analytics />
                   </ProtectedRouteWithPermission>
                 }
@@ -372,7 +391,16 @@ function AdminContent() {
               <Route
                 path="orders"
                 element={
-                  <ProtectedRouteWithPermission requiredPermission="order_view_all">
+                  <ProtectedRouteWithPermission
+                    allowedRoles={[
+                      "waiter",
+                      "chef",
+                      "manager",
+                      "admin",
+                      "super_admin",
+                    ]}
+                    requiredPermission={ACCESS_GROUPS.orders}
+                  >
                     <Orders />
                   </ProtectedRouteWithPermission>
                 }
@@ -386,7 +414,10 @@ function AdminContent() {
               <Route
                 path="kitchen/dashboard"
                 element={
-                  <ProtectedRouteWithPermission requiredPermission="kitchen_view_dashboard">
+                  <ProtectedRouteWithPermission
+                    allowedRoles={["chef", "manager", "admin", "super_admin"]}
+                    requiredPermission={ACCESS_GROUPS.kitchenDashboard}
+                  >
                     <KitchenDisplay />
                   </ProtectedRouteWithPermission>
                 }
@@ -394,7 +425,10 @@ function AdminContent() {
               <Route
                 path="kitchen/stations"
                 element={
-                  <ProtectedRouteWithPermission requiredPermission="kitchen_manage_stations">
+                  <ProtectedRouteWithPermission
+                    allowedRoles={["manager", "admin", "super_admin"]}
+                    requiredPermission={ACCESS_GROUPS.kitchenStations}
+                  >
                     <KitchenStationManagement />
                   </ProtectedRouteWithPermission>
                 }
@@ -402,7 +436,10 @@ function AdminContent() {
               <Route
                 path="staff"
                 element={
-                  <ProtectedRouteWithPermission requiredPermission="user_view_all">
+                  <ProtectedRouteWithPermission
+                    allowedRoles={["manager", "admin", "super_admin"]}
+                    requiredPermission={ACCESS_GROUPS.staff}
+                  >
                     <StaffManagement />
                   </ProtectedRouteWithPermission>
                 }
@@ -416,7 +453,10 @@ function AdminContent() {
               <Route
                 path="menu/items"
                 element={
-                  <ProtectedRouteWithPermission requiredPermission="menu_view_all">
+                  <ProtectedRouteWithPermission
+                    allowedRoles={["manager", "admin", "super_admin"]}
+                    requiredPermission={ACCESS_GROUPS.menu}
+                  >
                     <MenuManagement />
                   </ProtectedRouteWithPermission>
                 }
@@ -424,7 +464,10 @@ function AdminContent() {
               <Route
                 path="inventory"
                 element={
-                  <ProtectedRouteWithPermission requiredPermission="inventory_view_all">
+                  <ProtectedRouteWithPermission
+                    allowedRoles={["chef", "manager", "admin", "super_admin"]}
+                    requiredPermission={ACCESS_GROUPS.inventory}
+                  >
                     <InventoryManagement />
                   </ProtectedRouteWithPermission>
                 }
@@ -432,7 +475,10 @@ function AdminContent() {
               <Route
                 path="inventory/upload-results"
                 element={
-                  <ProtectedRouteWithPermission requiredPermission="inventory_view_all">
+                  <ProtectedRouteWithPermission
+                    allowedRoles={["manager", "admin", "super_admin"]}
+                    requiredPermission={ACCESS_GROUPS.inventory}
+                  >
                     <InventoryUploadResults />
                   </ProtectedRouteWithPermission>
                 }
@@ -441,13 +487,8 @@ function AdminContent() {
                 path="menu/categories"
                 element={
                   <ProtectedRouteWithPermission
-                    requiredPermission={[
-                      "menu_view_all",
-                      "menu_create",
-                      "menu_edit",
-                      "menu_delete",
-                      "category_toggle_status",
-                    ]}
+                    allowedRoles={["manager", "admin", "super_admin"]}
+                    requiredPermission={ACCESS_GROUPS.categories}
                   >
                     <CategoryManager />
                   </ProtectedRouteWithPermission>
@@ -457,7 +498,8 @@ function AdminContent() {
                 path="menu/sizes"
                 element={
                   <ProtectedRouteWithPermission
-                    requiredPermission={["menu_view_all", "menu_edit"]}
+                    allowedRoles={["manager", "admin", "super_admin"]}
+                    requiredPermission={ACCESS_GROUPS.sizes}
                   >
                     <SizeManagement />
                   </ProtectedRouteWithPermission>
@@ -466,7 +508,10 @@ function AdminContent() {
               <Route
                 path="menu/discounts"
                 element={
-                  <ProtectedRouteWithPermission requiredPermission="menu_edit">
+                  <ProtectedRouteWithPermission
+                    allowedRoles={["manager", "admin", "super_admin"]}
+                    requiredPermission={ACCESS_GROUPS.discounts}
+                  >
                     <DiscountManagement />
                   </ProtectedRouteWithPermission>
                 }
@@ -475,13 +520,8 @@ function AdminContent() {
                 path="menu/seasonal"
                 element={
                   <ProtectedRouteWithPermission
-                    requiredPermission={[
-                      "menu_view_all",
-                      "menu_create",
-                      "menu_edit",
-                      "menu_delete",
-                      "menu_toggle_availability",
-                    ]}
+                    allowedRoles={["manager", "admin", "super_admin"]}
+                    requiredPermission={ACCESS_GROUPS.seasonal}
                   >
                     <SeasonalMenu />
                   </ProtectedRouteWithPermission>
@@ -490,7 +530,10 @@ function AdminContent() {
               <Route
                 path="menu/bulk"
                 element={
-                  <ProtectedRouteWithPermission requiredPermission="menu_bulk_operations">
+                  <ProtectedRouteWithPermission
+                    allowedRoles={["manager", "admin", "super_admin"]}
+                    requiredPermission={ACCESS_GROUPS.menuBulk}
+                  >
                     <BulkOperations />
                   </ProtectedRouteWithPermission>
                 }
@@ -498,7 +541,10 @@ function AdminContent() {
               <Route
                 path="menu/prices"
                 element={
-                  <ProtectedRouteWithPermission requiredPermission="price_stats">
+                  <ProtectedRouteWithPermission
+                    allowedRoles={["manager", "admin", "super_admin"]}
+                    requiredPermission={ACCESS_GROUPS.priceHistory}
+                  >
                     <PriceHistory />
                   </ProtectedRouteWithPermission>
                 }
@@ -506,7 +552,10 @@ function AdminContent() {
               <Route
                 path="menu/import-export"
                 element={
-                  <ProtectedRouteWithPermission requiredPermission="menu_import_export">
+                  <ProtectedRouteWithPermission
+                    allowedRoles={["manager", "admin"]}
+                    requiredPermission={ACCESS_GROUPS.menuImportExport}
+                  >
                     <ImportExport />
                   </ProtectedRouteWithPermission>
                 }
@@ -520,7 +569,10 @@ function AdminContent() {
               <Route
                 path="tables/list"
                 element={
-                  <ProtectedRouteWithPermission requiredPermission="table_view_all">
+                  <ProtectedRouteWithPermission
+                    allowedRoles={["waiter", "manager", "admin", "super_admin"]}
+                    requiredPermission={ACCESS_GROUPS.tables}
+                  >
                     <TableManagement />
                   </ProtectedRouteWithPermission>
                 }
@@ -528,7 +580,10 @@ function AdminContent() {
               <Route
                 path="tables/qr"
                 element={
-                  <ProtectedRouteWithPermission requiredPermission="table_edit">
+                  <ProtectedRouteWithPermission
+                    allowedRoles={["manager", "admin", "super_admin"]}
+                    requiredPermission={ACCESS_GROUPS.tableQr}
+                  >
                     <TableQrManagement />
                   </ProtectedRouteWithPermission>
                 }
@@ -536,7 +591,10 @@ function AdminContent() {
               <Route
                 path="waiter-calls"
                 element={
-                  <ProtectedRouteWithPermission requiredPermission="waiter_call_view_all">
+                  <ProtectedRouteWithPermission
+                    allowedRoles={["waiter", "manager", "admin", "super_admin"]}
+                    requiredPermission={ACCESS_GROUPS.waiterCalls}
+                  >
                     <WaiterCalls />
                   </ProtectedRouteWithPermission>
                 }
@@ -544,7 +602,10 @@ function AdminContent() {
               <Route
                 path="feedback"
                 element={
-                  <ProtectedRouteWithPermission requiredPermission="feedback_view_all">
+                  <ProtectedRouteWithPermission
+                    allowedRoles={["manager", "admin", "super_admin"]}
+                    requiredPermission={ACCESS_GROUPS.feedback}
+                  >
                     <FeedbackManagement />
                   </ProtectedRouteWithPermission>
                 }
@@ -561,7 +622,10 @@ function AdminContent() {
               <Route
                 path="customers/sessions"
                 element={
-                  <ProtectedRouteWithPermission requiredPermission="session_view_all">
+                  <ProtectedRouteWithPermission
+                    allowedRoles={["waiter", "manager", "admin", "super_admin"]}
+                    requiredPermission={ACCESS_GROUPS.sessions}
+                  >
                     <CustomerSessions />
                   </ProtectedRouteWithPermission>
                 }
@@ -569,7 +633,10 @@ function AdminContent() {
               <Route
                 path="customers/bills"
                 element={
-                  <ProtectedRouteWithPermission requiredPermission="session_view_all">
+                  <ProtectedRouteWithPermission
+                    allowedRoles={["manager", "admin", "super_admin"]}
+                    requiredPermission={ACCESS_GROUPS.bills}
+                  >
                     <BillManagement />
                   </ProtectedRouteWithPermission>
                 }
@@ -577,7 +644,10 @@ function AdminContent() {
               <Route
                 path="customers/feedback"
                 element={
-                  <ProtectedRouteWithPermission requiredPermission="feedback_view_all">
+                  <ProtectedRouteWithPermission
+                    allowedRoles={["manager", "admin", "super_admin"]}
+                    requiredPermission={ACCESS_GROUPS.feedback}
+                  >
                     <FeedbackManagement />
                   </ProtectedRouteWithPermission>
                 }
@@ -585,7 +655,10 @@ function AdminContent() {
               <Route
                 path="customers/waiter-calls"
                 element={
-                  <ProtectedRouteWithPermission requiredPermission="waiter_call_view_all">
+                  <ProtectedRouteWithPermission
+                    allowedRoles={["waiter", "manager", "admin"]}
+                    requiredPermission={ACCESS_GROUPS.waiterCalls}
+                  >
                     <WaiterCalls />
                   </ProtectedRouteWithPermission>
                 }
@@ -610,7 +683,10 @@ function AdminContent() {
               <Route
                 path="settings/restaurant"
                 element={
-                  <ProtectedRouteWithPermission requiredPermission="system_settings">
+                  <ProtectedRouteWithPermission
+                    allowedRoles={["manager", "admin", "super_admin"]}
+                    requiredPermission={ACCESS_GROUPS.settings}
+                  >
                     <Settings />
                   </ProtectedRouteWithPermission>
                 }
@@ -618,7 +694,10 @@ function AdminContent() {
               <Route
                 path="settings/notifications"
                 element={
-                  <ProtectedRouteWithPermission requiredPermission="system_settings">
+                  <ProtectedRouteWithPermission
+                    allowedRoles={["manager", "admin"]}
+                    requiredPermission={ACCESS_GROUPS.settings}
+                  >
                     <NotificationSettings />
                   </ProtectedRouteWithPermission>
                 }
@@ -626,7 +705,10 @@ function AdminContent() {
               <Route
                 path="settings/backup"
                 element={
-                  <ProtectedRouteWithPermission requiredPermission="backup_restore">
+                  <ProtectedRouteWithPermission
+                    allowedRoles={["manager", "admin"]}
+                    requiredPermission={ACCESS_GROUPS.backup}
+                  >
                     <BackupManagement />
                   </ProtectedRouteWithPermission>
                 }

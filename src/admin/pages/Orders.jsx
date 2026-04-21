@@ -22,6 +22,7 @@ import { AdminListSkeleton } from "../components/common/AdminSkeleton";
 import ResponsiveFilterSection from "../components/common/ResponsiveFilterSection";
 import { orderService } from "../../common/services";
 import { useSettings } from "../../common/context/SettingsContext";
+import { useAuth } from "../../common/context/AuthContext";
 import { useMonitoringMode } from "../hooks/useMonitoringMode";
 import { useAdminLiveSync } from "../hooks/useAdminLiveSync";
 const ORDER_STATUS = [
@@ -112,9 +113,15 @@ const normalizeOrder = (order) => ({
 export function Orders() {
   const PAGE_SIZE = 10;
   const isMonitoringMode = useMonitoringMode();
+  const { hasPermission, user } = useAuth();
   const { settings } = useSettings();
   const currency = settings?.taxSettings?.currency || "INR";
   const { dispatch, kitchenView, addNotification } = useAdmin();
+  const canViewOrderStats = hasPermission("view_statistics");
+  const canUpdateOrderStatus =
+    !isMonitoringMode &&
+    hasPermission("order_update_status") &&
+    String(user?.role || "").toLowerCase() !== "chef";
   const [orders, setOrders] = useState([]);
   const [statistics, setStatistics] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -152,12 +159,16 @@ export function Orders() {
       }
       const [ordersResponse, statsResponse] = await Promise.all([
         orderService.getOrders(params),
-        orderService.getOrderStatistics(
-          {},
-          {
-            force: silent,
-          },
-        ),
+        canViewOrderStats
+          ? orderService.getOrderStatistics(
+              {},
+              {
+                force: silent,
+              },
+            )
+          : Promise.resolve({
+              data: null,
+            }),
       ]);
       const nextOrders = (ordersResponse.data || []).map(normalizeOrder);
       setOrders(nextOrders);
@@ -166,7 +177,7 @@ export function Orders() {
         pages: ordersResponse.pagination?.pages || 1,
         total: ordersResponse.total || 0,
       });
-      setStatistics(statsResponse.data || null);
+      setStatistics(statsResponse?.data || null);
       dispatch({
         type: "SET_ORDERS",
         payload: nextOrders,
@@ -184,6 +195,7 @@ export function Orders() {
     }
   }, [
     currentPage,
+    canViewOrderStats,
     dispatch,
     filters.paymentStatus,
     filters.search,
@@ -432,7 +444,7 @@ export function Orders() {
                 order={order}
                 onStatusUpdate={updateStatus}
                 isUpdating={updatingId === order._id}
-                isReadOnly={isMonitoringMode}
+                isReadOnly={!canUpdateOrderStatus}
               />
             ))}
           </div>
