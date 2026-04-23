@@ -284,7 +284,7 @@ const navigationSections = [
         label: "Waiter Calls",
         description: "Live service requests",
         icon: ConciergeBell,
-        path: buildAdminPath("/customers/waiter-calls"),
+        path: buildAdminPath("/waiter-calls"),
         allowedRoles: ["waiter", "manager", "admin", "super_admin"],
         requiredPermission: ACCESS_GROUPS.waiterCalls,
       },
@@ -294,6 +294,15 @@ const navigationSections = [
     id: "system",
     title: "System",
     items: [
+      {
+        id: "notifications",
+        label: "Notifications",
+        description: "Live alerts and updates",
+        icon: Bell,
+        path: buildAdminPath("/notifications"),
+        allowedRoles: ["waiter", "chef", "manager", "admin"],
+        requiredPermission: ACCESS_GROUPS.notifications,
+      },
       {
         id: "support",
         label: "Contact Super Admin",

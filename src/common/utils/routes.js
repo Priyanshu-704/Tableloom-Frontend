@@ -132,7 +132,7 @@ export const resolveAdminHomePath = (role = "") => {
     case "super_admin":
       return buildPlatformAdminPath("/tenant-management");
     case "waiter":
-      return buildAdminPath("/tables/list");
+      return buildAdminPath("/waiter-calls");
     case "chef":
       return buildAdminPath("/kitchen/dashboard");
     case "manager":

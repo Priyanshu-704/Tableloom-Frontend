@@ -152,6 +152,11 @@ const NotificationSettings = lazy(() =>
     default: m.NotificationSettings,
   })),
 );
+const Notifications = lazy(() =>
+  import("./pages/Notifications").then((m) => ({
+    default: m.Notifications,
+  })),
+);
 const BackupManagement = lazy(() =>
   import("./pages/BackupManagement").then((m) => ({
     default: m.BackupManagement,
@@ -596,6 +601,17 @@ function AdminContent() {
                 }
               />
               <Route
+                path="notifications"
+                element={
+                  <ProtectedRouteWithPermission
+                    allowedRoles={["waiter", "chef", "manager", "admin"]}
+                    requiredPermission={ACCESS_GROUPS.notifications}
+                  >
+                    <Notifications />
+                  </ProtectedRouteWithPermission>
+                }
+              />
+              <Route
                 path="feedback"
                 element={
                   <ProtectedRouteWithPermission
@@ -650,14 +666,7 @@ function AdminContent() {
               />
               <Route
                 path="customers/waiter-calls"
-                element={
-                  <ProtectedRouteWithPermission
-                    allowedRoles={["waiter", "manager", "admin"]}
-                    requiredPermission={ACCESS_GROUPS.waiterCalls}
-                  >
-                    <WaiterCalls />
-                  </ProtectedRouteWithPermission>
-                }
+                element={<Navigate to={buildAdminPath("/waiter-calls")} replace />}
               />
               <Route
                 path="settings"

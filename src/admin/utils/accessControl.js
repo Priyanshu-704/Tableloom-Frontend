@@ -128,6 +128,11 @@ export const ACCESS_GROUPS = Object.freeze({
 
 const HOME_CANDIDATES = [
   {
+    path: buildAdminPath("/waiter-calls"),
+    allowedRoles: ["waiter"],
+    requiredPermissions: ACCESS_GROUPS.waiterCalls,
+  },
+  {
     path: buildAdminPath("/dashboard"),
     allowedRoles: ["manager", "admin"],
     requiredPermissions: ACCESS_GROUPS.dashboard,
@@ -158,7 +163,7 @@ const HOME_CANDIDATES = [
     requiredPermissions: ACCESS_GROUPS.sessions,
   },
   {
-    path: buildAdminPath("/customers/waiter-calls"),
+    path: buildAdminPath("/waiter-calls"),
     allowedRoles: ["waiter", "manager", "admin"],
     requiredPermissions: ACCESS_GROUPS.waiterCalls,
   },
@@ -169,7 +174,7 @@ const ROLE_HOME_FALLBACKS = Object.freeze({
   admin: buildAdminPath("/dashboard"),
   manager: buildAdminPath("/dashboard"),
   chef: buildAdminPath("/kitchen/dashboard"),
-  waiter: buildAdminPath("/tables/list"),
+  waiter: buildAdminPath("/waiter-calls"),
 });
 
 const ALL_NOTIFICATION_TYPES = [

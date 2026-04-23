@@ -614,7 +614,7 @@ export function Dashboard() {
               <button
                 type="button"
                 onClick={() =>
-                  navigate(buildAdminPath("/customers/waiter-calls"))
+                  navigate(buildAdminPath("/waiter-calls"))
                 }
                 className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-left transition-colors hover:bg-emerald-100"
               >

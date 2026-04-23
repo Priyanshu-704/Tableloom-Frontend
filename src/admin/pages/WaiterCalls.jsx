@@ -15,6 +15,7 @@ import { AdminModal } from "../components/common/AdminModal";
 import AdminPagination from "../components/common/AdminPagination";
 import { AdminListSkeleton } from "../components/common/AdminSkeleton";
 import ResponsiveFilterSection from "../components/common/ResponsiveFilterSection";
+import { useAdminNotificationCenter } from "../context/AdminNotificationCenterContext";
 import { useMonitoringMode } from "../hooks/useMonitoringMode";
 import { useAuth } from "../../common/context/AuthContext";
 const STATUS_OPTIONS = [
@@ -139,6 +140,7 @@ export function WaiterCalls() {
   const isMonitoringMode = useMonitoringMode();
   const { hasPermission, user } = useAuth();
   const { addNotification } = useAdmin();
+  const { activityVersion } = useAdminNotificationCenter();
   const normalizedRole = String(user?.role || "").toLowerCase();
   const canAssignCalls =
     !isMonitoringMode &&
@@ -230,6 +232,13 @@ export function WaiterCalls() {
   useEffect(() => {
     loadDashboard();
   }, [loadDashboard]);
+  useEffect(() => {
+    if (!activityVersion) {
+      return;
+    }
+    loadCalls();
+    loadDashboard();
+  }, [activityVersion, loadCalls, loadDashboard]);
   useEffect(() => {
     setCurrentPage(1);
   }, [filters.callType, filters.priority, filters.search, filters.status]);
