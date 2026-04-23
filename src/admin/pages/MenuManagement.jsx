@@ -20,6 +20,7 @@ import { useAdmin } from "../context/AdminContext";
 import { ItemForm } from "../components/menu/ItemForm";
 import AdminPagination from "../components/common/AdminPagination";
 import { AdminPageSkeleton } from "../components/common/AdminSkeleton";
+import PermissionGuard from "../components/common/PermissionGuard";
 import { menuService } from "../../common/services";
 import { buildAdminPath } from "../../common/utils/routes";
 import { useMonitoringMode } from "../hooks/useMonitoringMode";
@@ -57,20 +58,29 @@ export function MenuManagement() {
   const canUseImportExport =
     !isMonitoringMode && hasPermission("menu_import_export");
   const canAccessCategories = hasAnyPermission(
-    "menu_view_all",
-    "menu_create",
-    "menu_edit",
-    "menu_delete",
-    "category_toggle_status",
+    "menu.category_view",
+    "menu.category_create",
+    "menu.category_edit",
+    "menu.category_delete",
+    "menu.category_toggle_status",
   );
-  const canAccessSizes = hasAnyPermission("menu_view_all", "menu_edit");
-  const canAccessDiscounts = hasPermission("menu_edit");
+  const canAccessSizes = hasAnyPermission(
+    "menu.size_view",
+    "menu.size_create",
+    "menu.size_edit",
+    "menu.size_toggle_status",
+  );
+  const canAccessDiscounts = hasAnyPermission(
+    "menu.discount_view",
+    "menu.discount_create",
+    "menu.discount_edit",
+    "menu.discount_toggle_status",
+  );
   const canAccessSeasonal = hasAnyPermission(
-    "menu_view_all",
-    "menu_create",
-    "menu_edit",
-    "menu_delete",
-    "menu_toggle_availability",
+    "menu.seasonal_view",
+    "menu.seasonal_create",
+    "menu.seasonal_edit",
+    "menu.seasonal_toggle_status",
   );
   const canAccessPriceHistory = hasAnyPermission("price_stats", "menu_stats");
   const [searchTerm, setSearchTerm] = useState("");
@@ -357,7 +367,7 @@ export function MenuManagement() {
               <span>Price History</span>
             </button>
           )}
-          {canCreateMenuItems && (
+          <PermissionGuard permission="menu.create" disableInMonitoring>
             <button
               onClick={handleAddItem}
               className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary-600 px-4 py-2 text-white transition-colors hover:bg-primary-700 sm:w-auto"
@@ -365,7 +375,7 @@ export function MenuManagement() {
               <Plus className="h-4 w-4" />
               <span>Add Item</span>
             </button>
-          )}
+          </PermissionGuard>
         </div>
       </div>
 

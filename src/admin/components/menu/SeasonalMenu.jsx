@@ -18,9 +18,11 @@ import { useAdmin } from "../../context/AdminContext";
 import { ItemForm } from "./ItemForm";
 import { AdminPageSkeleton } from "../common/AdminSkeleton";
 import { AdminModal } from "../common/AdminModal";
+import PermissionGuard from "../common/PermissionGuard";
 import { buildAdminPath } from "../../../common/utils/routes";
 import { useSettings } from "../../../common/context/SettingsContext";
 import { useMonitoringMode } from "../../hooks/useMonitoringMode";
+import { useAuth } from "../../../common/context/AuthContext";
 const FILTER_OPTIONS = [
   {
     value: "all",
@@ -48,9 +50,16 @@ const getPrimaryPrice = (item) => {
 export function SeasonalMenu() {
   const navigate = useNavigate();
   const isMonitoringMode = useMonitoringMode();
+  const { hasPermission } = useAuth();
   const { settings } = useSettings();
   const { addNotification } = useAdmin();
   const currency = settings?.taxSettings?.currency || "INR";
+  const canCreateSeasonal =
+    !isMonitoringMode && hasPermission("menu.seasonal_create");
+  const canEditSeasonal =
+    !isMonitoringMode && hasPermission("menu.seasonal_edit");
+  const canToggleSeasonal =
+    !isMonitoringMode && hasPermission("menu.seasonal_toggle_status");
   const [items, setItems] = useState([]);
   const [categories, setCategories] = useState([]);
   const [sizes, setSizes] = useState([]);
@@ -77,7 +86,11 @@ export function SeasonalMenu() {
             limit: 500,
           }),
           menuService.getCategories(true, true),
-          menuService.getSizes(true),
+          canCreateSeasonal || canEditSeasonal
+            ? menuService.getSizes(true)
+            : Promise.resolve({
+                data: [],
+              }),
         ]);
       setItems(itemsResponse?.data || []);
       setCategories(categoriesResponse?.data || []);
@@ -91,7 +104,7 @@ export function SeasonalMenu() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [canCreateSeasonal, canEditSeasonal]);
   useEffect(() => {
     loadSeasonalData();
   }, [loadSeasonalData]);
@@ -127,7 +140,7 @@ export function SeasonalMenu() {
     return items;
   }, [filter, items]);
   const openCreateForm = () => {
-    if (isMonitoringMode) {
+    if (!canCreateSeasonal) {
       addNotification(
         "Seasonal menu is read-only in monitoring mode.",
         "error",
@@ -145,7 +158,7 @@ export function SeasonalMenu() {
     setShowItemForm(true);
   };
   const handleSaveItem = async (itemData, imageFile) => {
-    if (isMonitoringMode) {
+    if (!(canCreateSeasonal || canEditSeasonal)) {
       addNotification(
         "Seasonal menu is read-only in monitoring mode.",
         "error",
@@ -196,7 +209,7 @@ export function SeasonalMenu() {
     seasonal,
   });
   const openSeasonalModal = (item) => {
-    if (isMonitoringMode) {
+    if (!canEditSeasonal && !canToggleSeasonal) {
       addNotification(
         "Seasonal menu is read-only in monitoring mode.",
         "error",
@@ -225,7 +238,7 @@ export function SeasonalMenu() {
     });
   };
   const submitSeasonalModal = async () => {
-    if (isMonitoringMode) {
+    if (!canEditSeasonal) {
       addNotification(
         "Seasonal menu is read-only in monitoring mode.",
         "error",
@@ -260,7 +273,7 @@ export function SeasonalMenu() {
     }
   };
   const toggleSeasonalStatus = async (item) => {
-    if (isMonitoringMode) {
+    if (!canToggleSeasonal) {
       addNotification(
         "Seasonal menu is read-only in monitoring mode.",
         "error",
@@ -268,6 +281,13 @@ export function SeasonalMenu() {
       return;
     }
     if (!item?.seasonal?.isSeasonal) {
+      if (!canEditSeasonal) {
+        addNotification(
+          "You need seasonal edit access to configure a new seasonal item.",
+          "error",
+        );
+        return;
+      }
       openSeasonalModal(item);
       return;
     }
@@ -339,7 +359,7 @@ export function SeasonalMenu() {
             <RefreshCw className="h-4 w-4" />
             Refresh
           </button>
-          {!isMonitoringMode ? (
+          <PermissionGuard permission="menu.seasonal_create" disableInMonitoring>
             <button
               type="button"
               onClick={openCreateForm}
@@ -348,7 +368,7 @@ export function SeasonalMenu() {
               <Plus className="h-4 w-4" />
               Add Seasonal Item
             </button>
-          ) : null}
+          </PermissionGuard>
         </div>
       </div>
 
@@ -463,7 +483,7 @@ export function SeasonalMenu() {
                     <div>Season: {item?.seasonal?.seasonName || "Not set"}</div>
                   </div>
 
-                  {!isMonitoringMode ? (
+                  {canToggleSeasonal ? (
                     <div className="flex flex-wrap gap-2">
                       <button
                         type="button"
@@ -489,7 +509,7 @@ export function SeasonalMenu() {
         </div>
       )}
 
-      {!isMonitoringMode && showItemForm ? (
+      {(canCreateSeasonal || canEditSeasonal) && showItemForm ? (
         <ItemForm
           item={editingItem}
           onSave={handleSaveItem}
@@ -502,7 +522,7 @@ export function SeasonalMenu() {
         />
       ) : null}
 
-      {!isMonitoringMode ? (
+      {canEditSeasonal ? (
         <AdminModal
           isOpen={seasonalModal.isOpen}
           title="Mark Seasonal Item"

@@ -84,8 +84,15 @@ export function TableManagement() {
   const canDeleteTable = !isMonitoringMode && hasPermission("table_delete");
   const canUpdateTableStatus =
     !isMonitoringMode && hasPermission("table_update_status");
-  const canManageQr = !isMonitoringMode && hasPermission("table_edit");
-  const canUseBatchQr = canManageQr;
+  const canViewQr = !isMonitoringMode && hasPermission("table.qr_view");
+  const canDownloadQr = !isMonitoringMode && hasPermission("table.qr_download");
+  const canRegenerateQr =
+    !isMonitoringMode && hasPermission("table.qr_regenerate");
+  const canRefreshQrToken =
+    !isMonitoringMode && hasPermission("table.qr_refresh_token");
+  const canManageQr =
+    canViewQr || canDownloadQr || canRegenerateQr || canRefreshQrToken;
+  const canUseBatchQr = canDownloadQr || canRegenerateQr;
   const [toasts, setToasts] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -106,7 +113,7 @@ export function TableManagement() {
     total: 0,
   });
   const handleManageQR = (table) => {
-    if (isMonitoringMode) {
+    if (!canManageQr) {
       return;
     }
     setSelectedTableForQR(table);
@@ -396,6 +403,9 @@ export function TableManagement() {
     }
   };
   const handleDownloadQR = async (tableId, tableNumber) => {
+    if (!canDownloadQr) {
+      return;
+    }
     try {
       await tableService.downloadQRCode(tableId);
       showToast(`QR code downloaded for table ${tableNumber}.`, "success");

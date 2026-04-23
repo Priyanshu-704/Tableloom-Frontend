@@ -40,11 +40,15 @@ export function PermissionManager({
       const displayNamesData = Object.fromEntries(displayNameEntries);
       setDisplayNames(displayNamesData);
       if (currentPermissions?.length) {
-        setSelectedPermissions([...currentPermissions]);
+        setSelectedPermissions(
+          await permissionService.expandPermissionSelection(currentPermissions),
+        );
       } else {
         const defaultPerms =
           await permissionService.getDefaultPermissionsForRole(userRole);
-        setSelectedPermissions(defaultPerms);
+        setSelectedPermissions(
+          await permissionService.expandPermissionSelection(defaultPerms),
+        );
       }
     } catch {
       setError("Failed to load permissions.");
@@ -56,30 +60,32 @@ export function PermissionManager({
   useEffect(() => {
     loadPermissions();
   }, [loadPermissions]);
-  const togglePermission = (permission) => {
-    setSelectedPermissions((prev) => {
-      if (prev.includes(permission)) {
-        return prev.filter((p) => p !== permission);
-      } else {
-        return [...prev, permission];
-      }
-    });
+  const togglePermission = async (permission) => {
+    const nextPermissions = selectedPermissions.includes(permission)
+      ? selectedPermissions.filter((item) => item !== permission)
+      : [...selectedPermissions, permission];
+    setSelectedPermissions(
+      await permissionService.expandPermissionSelection(nextPermissions),
+    );
   };
-  const toggleCategory = (categoryPermissions) => {
+  const toggleCategory = async (categoryPermissions) => {
     const allCategorySelected = categoryPermissions.every((p) =>
       selectedPermissions.includes(p),
     );
-    setSelectedPermissions((prev) => {
-      if (allCategorySelected) {
-        return prev.filter((p) => !categoryPermissions.includes(p));
-      } else {
-        const toAdd = categoryPermissions.filter((p) => !prev.includes(p));
-        return [...prev, ...toAdd];
-      }
-    });
+    const nextPermissions = allCategorySelected
+      ? selectedPermissions.filter((p) => !categoryPermissions.includes(p))
+      : [
+          ...selectedPermissions,
+          ...categoryPermissions.filter((p) => !selectedPermissions.includes(p)),
+        ];
+    setSelectedPermissions(
+      await permissionService.expandPermissionSelection(nextPermissions),
+    );
   };
-  const selectAll = () => {
-    setSelectedPermissions([...allPermissions]);
+  const selectAll = async () => {
+    setSelectedPermissions(
+      await permissionService.expandPermissionSelection(allPermissions),
+    );
   };
   const deselectAll = () => {
     setSelectedPermissions([]);
@@ -90,7 +96,9 @@ export function PermissionManager({
       const data = await permissionService.fetchAllPermissions();
       const rolePermissions = data.rolePermissions || {};
       const defaultPermissions = rolePermissions[userRole] || [];
-      setSelectedPermissions(defaultPermissions);
+      setSelectedPermissions(
+        await permissionService.expandPermissionSelection(defaultPermissions),
+      );
       setSuccess("Reset to role default permissions");
       addNotification("Loaded role default permissions.", "success");
       setTimeout(() => setSuccess(""), 3000);
@@ -112,8 +120,10 @@ export function PermissionManager({
         selectedPermissions,
       );
       if (result && result.success) {
+        const updatedPermissions = result?.data?.permissions || selectedPermissions;
+        setSelectedPermissions(updatedPermissions);
         if (onPermissionsUpdate) {
-          onPermissionsUpdate(userId, selectedPermissions);
+          onPermissionsUpdate(userId, updatedPermissions);
         }
         addNotification(
           result?.message || "Permissions updated successfully.",

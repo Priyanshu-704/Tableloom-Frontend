@@ -4,16 +4,13 @@ import userService from "../services/userService";
 import permissionService from "../services/permissionService";
 const AuthContext = createContext();
 let profileBootstrapPromise = null;
-let profileBootstrapResult = null;
 let permissionBootstrapPromise = null;
-let permissionBootstrapResult = null;
 const normalizePermission = (permission) =>
   String(permission || "")
     .trim()
     .replace(/[\s-]+/g, "_")
-    .toUpperCase();
-const hasFullAdminAccess = (role) =>
-  ["super_admin", "admin"].includes(String(role || "").toLowerCase());
+    .toLowerCase()
+    .replace(/\./g, "_");
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [permissions, setPermissions] = useState([]);
@@ -23,6 +20,7 @@ export const AuthProvider = ({ children }) => {
   const hasLoadedProfileRef = useRef(false);
   const loadProfile = async () => {
     try {
+      setLoading(true);
       const storedUser = sessionStorage.getItem("user");
       if (!storedUser) {
         setIsAuthenticated(false);
@@ -34,38 +32,40 @@ export const AuthProvider = ({ children }) => {
       if (!profileBootstrapPromise) {
         profileBootstrapPromise = userService
           .getProfile()
-          .then((response) => {
-            profileBootstrapResult = response;
-            return response;
-          })
+          .then((response) => response)
           .finally(() => {
             profileBootstrapPromise = null;
           });
       }
-      const response =
-        profileBootstrapResult || (await profileBootstrapPromise);
+      const response = await profileBootstrapPromise;
       const profile = response?.data;
       if (profile) {
-        setUser(profile);
-        setIsAuthenticated(true);
         if (!permissionBootstrapPromise) {
           permissionBootstrapPromise = permissionService
-            .getMyPermissions()
-            .then((result) => {
-              permissionBootstrapResult = result;
-              return result;
-            })
+            .getMyAccess()
+            .then((result) => result)
             .finally(() => {
               permissionBootstrapPromise = null;
             });
         }
-        const userPerms =
-          permissionBootstrapResult || (await permissionBootstrapPromise);
+        const access = await permissionBootstrapPromise;
+        const userPerms = access?.permissions || profile?.permissions || [];
         setPermissions(userPerms);
+        setUser({
+          ...profile,
+          permissions: userPerms,
+          roles: access?.roles || profile.roles || [],
+        });
+        setIsAuthenticated(true);
+      } else {
+        setIsAuthenticated(false);
+        setUser(null);
+        setPermissions([]);
       }
     } catch (err) {
       logger.error("Profile load failed:", err);
       userService.clearLocalAuth();
+      permissionService.clearCache();
       setIsAuthenticated(false);
       setUser(null);
     } finally {
@@ -88,17 +88,15 @@ export const AuthProvider = ({ children }) => {
   };
   const logout = () => {
     userService.logout();
+    permissionService.clearCache();
     profileBootstrapPromise = null;
-    profileBootstrapResult = null;
     permissionBootstrapPromise = null;
-    permissionBootstrapResult = null;
     setUser(null);
     setPermissions([]);
     setIsAuthenticated(false);
   };
   const hasPermission = (perm) => {
     if (!perm) return true;
-    if (hasFullAdminAccess(user?.role)) return true;
     const normalizedTarget = normalizePermission(perm);
     return permissions.some(
       (userPermission) =>
@@ -109,6 +107,8 @@ export const AuthProvider = ({ children }) => {
     if (!requiredPermissions.length) return true;
     return requiredPermissions.some((permission) => hasPermission(permission));
   };
+  const can = hasPermission;
+  const cannot = (permission) => !hasPermission(permission);
   return (
     <AuthContext.Provider
       value={{
@@ -119,6 +119,8 @@ export const AuthProvider = ({ children }) => {
         requiresPasswordChange,
         login,
         logout,
+        can,
+        cannot,
         hasPermission,
         hasAnyPermission,
         refreshProfile: loadProfile,

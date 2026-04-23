@@ -129,7 +129,7 @@ const navigationSections = [
         description: "Manage station setup",
         icon: CookingPot,
         path: buildAdminPath("/kitchen/stations"),
-        allowedRoles: ["manager", "admin", "super_admin"],
+        allowedRoles: ["chef", "manager", "admin", "super_admin"],
         requiredPermission: ACCESS_GROUPS.kitchenStations,
       },
       {

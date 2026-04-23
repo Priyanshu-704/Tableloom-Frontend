@@ -17,8 +17,10 @@ import kitchenStationService from "../../../common/services/kitchenStationServic
 import { CategoryModal } from "./CategoryModal";
 import { useAdmin } from "../../context/AdminContext";
 import { AdminPageSkeleton } from "../common/AdminSkeleton";
+import PermissionGuard from "../common/PermissionGuard";
 import { buildAdminPath } from "../../../common/utils/routes";
 import { useMonitoringMode } from "../../hooks/useMonitoringMode";
+import { useAuth } from "../../../common/context/AuthContext";
 import {
   createImagePreview,
   revokeImagePreview,
@@ -33,8 +35,18 @@ const initialFormData = {
 };
 export function CategoryManager({ onBack }) {
   const { confirmAction, addNotification } = useAdmin();
+  const { hasPermission } = useAuth();
   const isMonitoringMode = useMonitoringMode();
   const navigate = useNavigate();
+  const canCreateCategory =
+    !isMonitoringMode && hasPermission("menu.category_create");
+  const canEditCategory =
+    !isMonitoringMode && hasPermission("menu.category_edit");
+  const canToggleCategory =
+    !isMonitoringMode && hasPermission("menu.category_toggle_status");
+  const canDeleteCategory =
+    !isMonitoringMode && hasPermission("menu.category_delete");
+  const canViewKitchenStations = hasPermission("kitchen.station_view");
   const [categories, setCategories] = useState([]);
   const [kitchenStations, setKitchenStations] = useState([]);
   const [showForm, setShowForm] = useState(false);
@@ -74,7 +86,11 @@ export function CategoryManager({ onBack }) {
           statusFilter === "all" ? "all" : statusFilter === "active",
           withStationFilter === "true",
         ),
-        kitchenStationService.getKitchenStations(),
+        canViewKitchenStations
+          ? kitchenStationService.getKitchenStations()
+          : Promise.resolve({
+              data: [],
+            }),
       ]);
       setCategories(categoriesResponse.data || []);
       setKitchenStations(stationsResponse.data || []);
@@ -87,7 +103,7 @@ export function CategoryManager({ onBack }) {
     } finally {
       setLoading(false);
     }
-  }, [statusFilter, withStationFilter]);
+  }, [canViewKitchenStations, statusFilter, withStationFilter]);
   useEffect(() => {
     loadData();
   }, [loadData]);
@@ -128,7 +144,7 @@ export function CategoryManager({ onBack }) {
     }
   };
   const handleOpenCreate = () => {
-    if (isMonitoringMode) {
+    if (!canCreateCategory) {
       return;
     }
     setEditingCategory(null);
@@ -141,7 +157,7 @@ export function CategoryManager({ onBack }) {
     setShowForm(true);
   };
   const handleEditCategory = (category) => {
-    if (isMonitoringMode) {
+    if (!canEditCategory) {
       return;
     }
     setEditingCategory(category);
@@ -177,7 +193,7 @@ export function CategoryManager({ onBack }) {
   };
   const handleSubmit = async (event) => {
     event.preventDefault();
-    if (isMonitoringMode) {
+    if (!(canCreateCategory || canEditCategory)) {
       return;
     }
     if (!validateForm()) {
@@ -213,7 +229,7 @@ export function CategoryManager({ onBack }) {
     }
   };
   const handleToggleCategoryStatus = async (categoryId) => {
-    if (isMonitoringMode) {
+    if (!canToggleCategory) {
       return;
     }
     const category = categories.find((item) => item._id === categoryId);
@@ -239,7 +255,7 @@ export function CategoryManager({ onBack }) {
     }
   };
   const handleDeleteCategory = async (categoryId) => {
-    if (isMonitoringMode) {
+    if (!canDeleteCategory) {
       return;
     }
     const confirmed = await confirmAction({
@@ -287,7 +303,7 @@ export function CategoryManager({ onBack }) {
             <ArrowLeft className="h-4 w-4" />
             <span>Back to Menu</span>
           </button>
-          {!isMonitoringMode && (
+          <PermissionGuard permission="menu.category_create" disableInMonitoring>
             <button
               onClick={handleOpenCreate}
               className="flex items-center space-x-2 bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg"
@@ -295,7 +311,7 @@ export function CategoryManager({ onBack }) {
               <Plus className="h-4 w-4" />
               <span>Add Category</span>
             </button>
-          )}
+          </PermissionGuard>
         </div>
       </div>
 
@@ -363,33 +379,39 @@ export function CategoryManager({ onBack }) {
                 Display Order: {category.displayOrder || 0}
               </p>
 
-              {!isMonitoringMode && (
+              {(canEditCategory || canToggleCategory || canDeleteCategory) && (
                 <div className="pt-3 mt-3 border-t border-gray-200 flex items-center justify-between">
-                  <button
-                    onClick={() => handleEditCategory(category)}
-                    className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700"
-                  >
-                    <Edit className="h-4 w-4" />
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => handleToggleCategoryStatus(category._id)}
-                    className="flex items-center gap-1 text-sm text-orange-600 hover:text-orange-700"
-                  >
-                    {category.isActive ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
-                    {category.isActive ? "Deactivate" : "Activate"}
-                  </button>
-                  <button
-                    onClick={() => handleDeleteCategory(category._id)}
-                    className="flex items-center gap-1 text-sm text-red-600 hover:text-red-700"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                    Delete
-                  </button>
+                  <PermissionGuard permission="menu.category_edit" disableInMonitoring>
+                    <button
+                      onClick={() => handleEditCategory(category)}
+                      className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700"
+                    >
+                      <Edit className="h-4 w-4" />
+                      Edit
+                    </button>
+                  </PermissionGuard>
+                  <PermissionGuard permission="menu.category_toggle_status" disableInMonitoring>
+                    <button
+                      onClick={() => handleToggleCategoryStatus(category._id)}
+                      className="flex items-center gap-1 text-sm text-orange-600 hover:text-orange-700"
+                    >
+                      {category.isActive ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
+                      {category.isActive ? "Deactivate" : "Activate"}
+                    </button>
+                  </PermissionGuard>
+                  <PermissionGuard permission="menu.category_delete" disableInMonitoring>
+                    <button
+                      onClick={() => handleDeleteCategory(category._id)}
+                      className="flex items-center gap-1 text-sm text-red-600 hover:text-red-700"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      Delete
+                    </button>
+                  </PermissionGuard>
                 </div>
               )}
             </div>
@@ -406,18 +428,18 @@ export function CategoryManager({ onBack }) {
           <p className="text-gray-600 mb-4">
             Try clearing the filters or create a new category.
           </p>
-          {!isMonitoringMode && (
+          <PermissionGuard permission="menu.category_create" disableInMonitoring>
             <button
               onClick={handleOpenCreate}
               className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg"
             >
               Create Category
             </button>
-          )}
+          </PermissionGuard>
         </div>
       )}
 
-      {!isMonitoringMode && (
+      {(canCreateCategory || canEditCategory) && (
         <CategoryModal
           isOpen={showForm}
           editingCategory={editingCategory}

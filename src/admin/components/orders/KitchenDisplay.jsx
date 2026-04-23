@@ -126,7 +126,10 @@ const getOrderDelayMeta = (order) => {
     delayedItemsCount: delayedItems.length,
   };
 };
-export function KitchenDisplay({ onRefreshOrders, isReadOnly = false }) {
+export default function KitchenDisplay({
+  onRefreshOrders,
+  isReadOnly = false,
+}) {
   const { addNotification } = useAdmin();
   const { hasPermission } = useAuth();
   const isMonitoringMode = useMonitoringMode() || isReadOnly;

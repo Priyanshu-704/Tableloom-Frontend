@@ -51,11 +51,7 @@ const Orders = lazy(() =>
     default: m.Orders,
   })),
 );
-const KitchenDisplay = lazy(() =>
-  import("./components/orders/KitchenDisplay").then((m) => ({
-    default: m.KitchenDisplay,
-  })),
-);
+const KitchenDisplay = lazy(() => import("./components/orders/KitchenDisplay"));
 const KitchenStationManagement = lazy(() =>
   import("./pages/KitchenStationManagement").then((m) => ({
     default: m.KitchenStationManagement,
@@ -426,7 +422,7 @@ function AdminContent() {
                 path="kitchen/stations"
                 element={
                   <ProtectedRouteWithPermission
-                    allowedRoles={["manager", "admin", "super_admin"]}
+                    allowedRoles={["chef", "manager", "admin", "super_admin"]}
                     requiredPermission={ACCESS_GROUPS.kitchenStations}
                   >
                     <KitchenStationManagement />

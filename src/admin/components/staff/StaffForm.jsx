@@ -86,30 +86,44 @@ export function StaffForm({ onSubmit, onClose, editingUser = null }) {
     loadPermissions();
   }, []);
   useEffect(() => {
-    if (!editingUser && rolePermissionsMap[formData.role]) {
-      setFormData((prev) => ({
-        ...prev,
-        permissions: rolePermissionsMap[prev.role] || [],
-      }));
-    }
+    const syncRolePermissions = async () => {
+      if (!editingUser && rolePermissionsMap[formData.role]) {
+        const expandedPermissions =
+          await permissionService.expandPermissionSelection(
+            rolePermissionsMap[formData.role] || [],
+          );
+        setFormData((prev) => ({
+          ...prev,
+          permissions: expandedPermissions,
+        }));
+      }
+    };
+    syncRolePermissions();
   }, [formData.role, rolePermissionsMap, editingUser]);
   useEffect(() => {
-    if (editingUser) {
-      setFormData({
-        name: editingUser.name || "",
-        email: editingUser.email || "",
-        phone: editingUser.phone || "",
-        role: editingUser.role || "waiter",
-        permissions: editingUser.permissions || [],
-      });
-    }
+    const syncEditingUser = async () => {
+      if (editingUser) {
+        setFormData({
+          name: editingUser.name || "",
+          email: editingUser.email || "",
+          phone: editingUser.phone || "",
+          role: editingUser.role || "waiter",
+          permissions: await permissionService.expandPermissionSelection(
+            editingUser.permissions || [],
+          ),
+        });
+      }
+    };
+    syncEditingUser();
   }, [editingUser]);
   const handleRoleChange = async (role) => {
     const defaultPermissions = rolePermissionsMap[role] || [];
+    const expandedPermissions =
+      await permissionService.expandPermissionSelection(defaultPermissions);
     setFormData((prev) => ({
       ...prev,
       role,
-      permissions: defaultPermissions,
+      permissions: expandedPermissions,
     }));
     setStepErrors((prev) => ({
       ...prev,
@@ -177,12 +191,15 @@ export function StaffForm({ onSubmit, onClose, editingUser = null }) {
       [name]: "",
     }));
   };
-  const togglePermission = (permission) => {
+  const togglePermission = async (permission) => {
+    const nextPermissions = formData.permissions.includes(permission)
+      ? formData.permissions.filter((item) => item !== permission)
+      : [...formData.permissions, permission];
+    const expandedPermissions =
+      await permissionService.expandPermissionSelection(nextPermissions);
     setFormData((prev) => ({
       ...prev,
-      permissions: prev.permissions.includes(permission)
-        ? prev.permissions.filter((item) => item !== permission)
-        : [...prev.permissions, permission],
+      permissions: expandedPermissions,
     }));
   };
   const toggleCategory = (categoryName) => {
@@ -191,32 +208,30 @@ export function StaffForm({ onSubmit, onClose, editingUser = null }) {
       [categoryName]: !prev[categoryName],
     }));
   };
-  const selectAllInCategory = (category) => {
-    setFormData((prev) => {
-      const hasAllPermissions = category.permissions.every((permission) =>
-        prev.permissions.includes(permission),
-      );
-      if (hasAllPermissions) {
-        return {
-          ...prev,
-          permissions: prev.permissions.filter(
-            (permission) => !category.permissions.includes(permission),
-          ),
-        };
-      }
-      return {
-        ...prev,
-        permissions: [
-          ...new Set([...prev.permissions, ...category.permissions]),
-        ],
-      };
-    });
-  };
-  const selectAllPermissions = () => {
+  const selectAllInCategory = async (category) => {
+    const hasAllPermissions = category.permissions.every((permission) =>
+      formData.permissions.includes(permission),
+    );
+    const nextPermissions = hasAllPermissions
+      ? formData.permissions.filter(
+          (permission) => !category.permissions.includes(permission),
+        )
+      : [...new Set([...formData.permissions, ...category.permissions])];
+    const expandedPermissions =
+      await permissionService.expandPermissionSelection(nextPermissions);
     setFormData((prev) => ({
       ...prev,
-      permissions:
-        prev.permissions.length === allPermissions.length ? [] : allPermissions,
+      permissions: expandedPermissions,
+    }));
+  };
+  const selectAllPermissions = async () => {
+    const nextPermissions =
+      formData.permissions.length === allPermissions.length
+        ? []
+        : await permissionService.expandPermissionSelection(allPermissions);
+    setFormData((prev) => ({
+      ...prev,
+      permissions: nextPermissions,
     }));
   };
   if (loadingPermissions) {

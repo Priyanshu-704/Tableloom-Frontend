@@ -164,7 +164,7 @@ export function AdminHeader({
                 <PanelLeftClose className="h-5 w-5" />
               )}
             </button>
-            {hasPermission("notification_view") && canViewNotifications ? (
+            {hasPermission("notification.view") && canViewNotifications ? (
               <div className="relative">
                 <button
                   type="button"

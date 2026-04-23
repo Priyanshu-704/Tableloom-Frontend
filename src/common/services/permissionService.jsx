@@ -5,10 +5,20 @@ const permissionRequestCache = createRequestCache(15000);
 const permissionState = {
   permissions: null,
   allPermissions: null,
+  permissionDetails: null,
+  permissionDependencyMap: null,
   rolePermissions: null,
+  roles: null,
   permissionCategories: null,
   permissionDisplayNames: null,
+  myAccess: null,
 };
+const normalizePermission = (permission) =>
+  String(permission || "")
+    .trim()
+    .replace(/[\s-]+/g, "_")
+    .replace(/\./g, "_")
+    .toLowerCase();
 const getCurrentUser = () => {
   try {
     const data = sessionStorage.getItem("user");
@@ -17,20 +27,31 @@ const getCurrentUser = () => {
     return null;
   }
 };
-const hasFullAdminAccess = (role) =>
-  ["super_admin", "admin"].includes(String(role || "").toLowerCase());
 const generateDisplayNames = () => {
-  if (!permissionState.permissions) {
+  if (!permissionState.permissionDetails) {
     return;
   }
   permissionState.permissionDisplayNames = {};
-  Object.entries(permissionState.permissions).forEach(([key, value]) => {
-    permissionState.permissionDisplayNames[value] = key
-      .toLowerCase()
-      .split("_")
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(" ");
+  permissionState.permissionDetails.forEach((permission) => {
+    permissionState.permissionDisplayNames[permission.key] =
+      permission.name || permission.key;
   });
+};
+const generateDependencyMap = () => {
+  if (!permissionState.permissionDetails) {
+    return;
+  }
+  permissionState.permissionDependencyMap =
+    permissionState.permissionDetails.reduce((accumulator, permission) => {
+      const normalizedKey = normalizePermission(permission.key);
+      if (!normalizedKey) {
+        return accumulator;
+      }
+      accumulator[normalizedKey] = Array.isArray(permission.impliedPermissions)
+        ? permission.impliedPermissions.filter(Boolean)
+        : [];
+      return accumulator;
+    }, {});
 };
 const getCategoryName = (prefix) => {
   const names = {
@@ -43,6 +64,10 @@ const getCategoryName = (prefix) => {
     CART: "Cart Management",
     FEEDBACK: "Feedback Management",
     WAITER: "Waiter Call Management",
+    WAITER_CALL: "Waiter Call Management",
+    NOTIFICATION: "Notifications",
+    DASHBOARD: "Dashboard",
+    ANALYTICS: "Analytics",
     VIEW: "Reports & Analytics",
     SYSTEM: "System",
     BACKUP: "Backup & Restore",
@@ -50,16 +75,16 @@ const getCategoryName = (prefix) => {
   return names[prefix] || `${prefix} Management`;
 };
 const generateCategories = () => {
-  if (!permissionState.permissions) {
+  if (!permissionState.permissionDetails) {
     return;
   }
   const categoryMap = {};
-  Object.entries(permissionState.permissions).forEach(([key, value]) => {
-    const prefix = key.split("_")?.[0];
+  permissionState.permissionDetails.forEach((permission) => {
+    const prefix = String(permission.key || "").split(".")?.[0]?.toUpperCase();
     if (!categoryMap[prefix]) {
       categoryMap[prefix] = [];
     }
-    categoryMap[prefix].push(value);
+    categoryMap[prefix].push(permission.key);
   });
   permissionState.permissionCategories = Object.entries(categoryMap).map(
     ([prefix, permissions]) => ({
@@ -69,6 +94,18 @@ const generateCategories = () => {
   );
 };
 export const permissionService = {
+  clearCache: () => {
+    permissionState.permissions = null;
+    permissionState.allPermissions = null;
+    permissionState.permissionDetails = null;
+    permissionState.permissionDependencyMap = null;
+    permissionState.rolePermissions = null;
+    permissionState.roles = null;
+    permissionState.permissionCategories = null;
+    permissionState.permissionDisplayNames = null;
+    permissionState.myAccess = null;
+    permissionRequestCache.clear();
+  },
   fetchAllPermissions: async () => {
     try {
       return await permissionRequestCache.run(
@@ -78,8 +115,17 @@ export const permissionService = {
           const data = response?.data?.data || response?.data || {};
           permissionState.permissions = data?.permissions || {};
           permissionState.allPermissions = data?.allPermissions || [];
+          permissionState.permissionDetails =
+            data?.permissionDetails ||
+            permissionState.allPermissions.map((permission) => ({
+              key: permission,
+              name: permission,
+              description: "",
+            }));
           permissionState.rolePermissions = data?.rolePermissions || {};
+          permissionState.roles = data?.roles || [];
           generateDisplayNames();
+          generateDependencyMap();
           generateCategories();
           return data;
         },
@@ -106,19 +152,74 @@ export const permissionService = {
     }
     return permissionState.rolePermissions || {};
   },
+  getRoles: async () => {
+    if (!permissionState.roles) {
+      await permissionService.fetchAllPermissions();
+    }
+    return permissionState.roles || [];
+  },
+  getPermissionDetails: async () => {
+    if (!permissionState.permissionDetails) {
+      await permissionService.fetchAllPermissions();
+    }
+    return permissionState.permissionDetails || [];
+  },
+  expandPermissionSelection: async (permissions = []) => {
+    if (!permissionState.permissionDependencyMap) {
+      await permissionService.fetchAllPermissions();
+    }
+    const dependencyMap = permissionState.permissionDependencyMap || {};
+    const permissionKeyByNormalized = (permissionState.permissionDetails || []).reduce(
+      (accumulator, permission) => {
+        accumulator[normalizePermission(permission.key)] = permission.key;
+        return accumulator;
+      },
+      {},
+    );
+    const expandedPermissions = new Set();
+    const stack = [...permissions];
+    while (stack.length > 0) {
+      const currentPermission = stack.pop();
+      const normalizedPermission = normalizePermission(currentPermission);
+      if (!normalizedPermission || expandedPermissions.has(normalizedPermission)) {
+        continue;
+      }
+      expandedPermissions.add(normalizedPermission);
+      (dependencyMap[normalizedPermission] || []).forEach((dependency) => {
+        const normalizedDependency = normalizePermission(dependency);
+        if (
+          normalizedDependency &&
+          !expandedPermissions.has(normalizedDependency)
+        ) {
+          stack.push(dependency);
+        }
+      });
+    }
+    return Array.from(expandedPermissions).map(
+      (permission) => permissionKeyByNormalized[permission] || permission,
+    );
+  },
   getMyPermissions: async () => {
     try {
-      const currentUser = getCurrentUser();
-      if (hasFullAdminAccess(currentUser?.role)) {
-        return (await permissionService.getAllPermissionsList()) || [];
-      }
       return await permissionRequestCache.run("permissions-me", async () => {
         const response = await axiosInstance.get("/permissions/me");
-        return response?.data?.data?.permissions || [];
+        const access = response?.data?.data || {};
+        permissionState.myAccess = access;
+        return access?.permissions || [];
       });
     } catch (error) {
       handleApiError(error, "Failed to fetch your permissions");
     }
+  },
+  getMyAccess: async () => {
+    if (permissionState.myAccess) {
+      return permissionState.myAccess;
+    }
+    await permissionService.getMyPermissions();
+    return permissionState.myAccess || {
+      permissions: [],
+      roles: [],
+    };
   },
   getUserPermissions: async (userId) => {
     try {
@@ -135,6 +236,7 @@ export const permissionService = {
         permissions,
       });
       permissionRequestCache.invalidate("permissions-me");
+      permissionState.myAccess = null;
       return (
         response?.data ?? {
           success: true,
@@ -150,6 +252,7 @@ export const permissionService = {
         `/permissions/user/${userId}/reset`,
       );
       permissionRequestCache.invalidate("permissions-me");
+      permissionState.myAccess = null;
       return (
         response?.data ?? {
           success: true,
@@ -160,11 +263,11 @@ export const permissionService = {
     }
   },
   hasPermission: async (permission) => {
-    if (hasFullAdminAccess(getCurrentUser()?.role)) {
-      return true;
-    }
     const myPerms = await permissionService.getMyPermissions();
-    return myPerms.includes(permission);
+    return myPerms.some(
+      (userPermission) =>
+        normalizePermission(userPermission) === normalizePermission(permission),
+    );
   },
   getPermissionDisplayName: async (permission) => {
     if (!permissionState.permissionDisplayNames) {

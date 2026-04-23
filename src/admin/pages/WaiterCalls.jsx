@@ -143,7 +143,7 @@ export function WaiterCalls() {
   const canAssignCalls =
     !isMonitoringMode &&
     ["admin", "manager"].includes(normalizedRole) &&
-    hasPermission("waiter_call_view_all");
+    hasPermission("waiter_call_assign");
   const canAcknowledgeCalls =
     !isMonitoringMode && hasPermission("waiter_call_acknowledge");
   const canCompleteCalls =

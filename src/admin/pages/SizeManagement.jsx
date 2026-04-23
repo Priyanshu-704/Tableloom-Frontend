@@ -5,7 +5,9 @@ import { menuService } from "../../common/services";
 import { useAdmin } from "../context/AdminContext";
 import { AdminModal } from "../components/common/AdminModal";
 import { AdminPageSkeleton } from "../components/common/AdminSkeleton";
+import PermissionGuard from "../components/common/PermissionGuard";
 import { useMonitoringMode } from "../hooks/useMonitoringMode";
+import { useAuth } from "../../common/context/AuthContext";
 const initialFormData = {
   name: "",
   code: "",
@@ -14,6 +16,11 @@ const initialFormData = {
 export function SizeManagement() {
   const isMonitoringMode = useMonitoringMode();
   const { confirmAction, addNotification } = useAdmin();
+  const { hasPermission } = useAuth();
+  const canCreateSize = !isMonitoringMode && hasPermission("menu.size_create");
+  const canEditSize = !isMonitoringMode && hasPermission("menu.size_edit");
+  const canToggleSizeStatus =
+    !isMonitoringMode && hasPermission("menu.size_toggle_status");
   const [sizes, setSizes] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
@@ -61,7 +68,7 @@ export function SizeManagement() {
     return Object.keys(newErrors).length === 0;
   };
   const handleOpenCreate = () => {
-    if (isMonitoringMode) {
+    if (!canCreateSize) {
       addNotification(
         "Size management is read-only in monitoring mode.",
         "error",
@@ -74,7 +81,7 @@ export function SizeManagement() {
     setShowModal(true);
   };
   const handleOpenEdit = (size) => {
-    if (isMonitoringMode) {
+    if (!canEditSize) {
       addNotification(
         "Size management is read-only in monitoring mode.",
         "error",
@@ -92,7 +99,7 @@ export function SizeManagement() {
   };
   const handleSubmit = async (event) => {
     event.preventDefault();
-    if (isMonitoringMode) {
+    if (!(canCreateSize || canEditSize)) {
       addNotification(
         "Size management is read-only in monitoring mode.",
         "error",
@@ -128,7 +135,7 @@ export function SizeManagement() {
     }
   };
   const handleToggleStatus = async (sizeId) => {
-    if (isMonitoringMode) {
+    if (!canToggleSizeStatus) {
       addNotification(
         "Size management is read-only in monitoring mode.",
         "error",
@@ -183,7 +190,7 @@ export function SizeManagement() {
             Manage menu sizes and their reusable codes.
           </p>
         </div>
-        {!isMonitoringMode ? (
+        <PermissionGuard permission="menu.size_create" disableInMonitoring>
           <button
             onClick={handleOpenCreate}
             className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-white hover:bg-primary-700 sm:w-auto"
@@ -191,7 +198,7 @@ export function SizeManagement() {
             <Plus className="h-4 w-4" />
             Add Size
           </button>
-        ) : null}
+        </PermissionGuard>
       </div>
 
       <div className="grid grid-cols-1 gap-4 rounded-lg border border-gray-200 bg-white p-4 md:grid-cols-2">
@@ -239,7 +246,7 @@ export function SizeManagement() {
                   </div>
                 </div>
                 <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
-                  {!isMonitoringMode ? (
+                  <PermissionGuard permission="menu.size_edit" disableInMonitoring>
                     <button
                       onClick={() => handleOpenEdit(size)}
                       className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-blue-200 px-4 py-2 text-sm text-blue-700 hover:bg-blue-50"
@@ -248,8 +255,8 @@ export function SizeManagement() {
                       <Edit className="h-4 w-4" />
                       Edit
                     </button>
-                  ) : null}
-                  {!isMonitoringMode ? (
+                  </PermissionGuard>
+                  <PermissionGuard permission="menu.size_toggle_status" disableInMonitoring>
                     <button
                       onClick={() => handleToggleStatus(size._id)}
                       className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-orange-200 px-4 py-2 text-sm text-orange-700 hover:bg-orange-50"
@@ -262,7 +269,7 @@ export function SizeManagement() {
                       )}
                       {size.isActive ? "Deactivate" : "Activate"}
                     </button>
-                  ) : null}
+                  </PermissionGuard>
                 </div>
               </div>
             ))}
@@ -305,7 +312,7 @@ export function SizeManagement() {
                     </td>
                     <td className="p-4">
                       <div className="flex items-center justify-end gap-2">
-                        {!isMonitoringMode ? (
+                        <PermissionGuard permission="menu.size_edit" disableInMonitoring>
                           <button
                             onClick={() => handleOpenEdit(size)}
                             className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
@@ -313,8 +320,8 @@ export function SizeManagement() {
                           >
                             <Edit className="h-4 w-4" />
                           </button>
-                        ) : null}
-                        {!isMonitoringMode ? (
+                        </PermissionGuard>
+                        <PermissionGuard permission="menu.size_toggle_status" disableInMonitoring>
                           <button
                             onClick={() => handleToggleStatus(size._id)}
                             className="p-2 text-orange-600 hover:bg-orange-50 rounded-lg"
@@ -326,7 +333,7 @@ export function SizeManagement() {
                               <Eye className="h-4 w-4" />
                             )}
                           </button>
-                        ) : null}
+                        </PermissionGuard>
                       </div>
                     </td>
                   </tr>
@@ -346,18 +353,18 @@ export function SizeManagement() {
           <p className="text-gray-600 mb-4">
             Try clearing the filters or create a new size.
           </p>
-          {!isMonitoringMode ? (
+          <PermissionGuard permission="menu.size_create" disableInMonitoring>
             <button
               onClick={handleOpenCreate}
               className="w-full rounded-lg bg-primary-600 px-4 py-2 text-white hover:bg-primary-700 sm:w-auto"
             >
               Create Size
             </button>
-          ) : null}
+          </PermissionGuard>
         </div>
       )}
 
-      {!isMonitoringMode && showModal && (
+      {(canCreateSize || canEditSize) && showModal && (
         <AdminModal
           isOpen={showModal}
           title={editingSize ? "Edit Size" : "Create Size"}

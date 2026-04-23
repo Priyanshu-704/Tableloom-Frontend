@@ -31,6 +31,8 @@ export function StaffCard({
   onDelete,
   onUpdateRole,
   canManage,
+  canToggleStatus,
+  canDelete,
   canUpdateRoles,
   currentUserId,
   onManagePermissions,
@@ -107,7 +109,7 @@ export function StaffCard({
 
               {showMenu && (
                 <div className="absolute right-0 top-8 w-48 bg-white rounded-lg shadow-lg border z-10">
-                  {!isCurrentUser ? (
+                  {!isCurrentUser && canToggleStatus ? (
                     <button
                       onClick={handleToggleStatus}
                       className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
@@ -135,7 +137,7 @@ export function StaffCard({
                       <span>Manage Permissions</span>
                     </button>
                   )}
-                  {!isCurrentUser ? (
+                  {!isCurrentUser && canDelete ? (
                     <button
                       onClick={handleDelete}
                       className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center space-x-2"

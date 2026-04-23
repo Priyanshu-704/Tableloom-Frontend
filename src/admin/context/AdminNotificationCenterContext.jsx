@@ -104,7 +104,7 @@ export function AdminNotificationCenterProvider({ children }) {
     [user?.role],
   );
   const canViewNotifications =
-    hasPermission("notification_view") &&
+    hasPermission("notification.view") &&
     allowedNotificationTypes.length > 0 &&
     !isMonitoringMode;
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -308,7 +308,7 @@ export function AdminNotificationCenterProvider({ children }) {
     const joinRooms = () => {
       socket.emit("join-user-room", user._id);
       socket.emit("join-role-room", user.role);
-      if (["admin", "manager", "waiter"].includes(user.role)) {
+      if (["admin", "manager", "chef", "waiter"].includes(user.role)) {
         socket.emit("join-staff-room");
       }
       if (["admin", "manager"].includes(user.role)) {

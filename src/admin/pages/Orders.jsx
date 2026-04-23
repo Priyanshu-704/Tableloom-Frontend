@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { useAdmin } from "../context/AdminContext";
 import { OrderCard } from "../components/orders/OrderCard";
-import { KitchenDisplay } from "../components/orders/KitchenDisplay";
+import KitchenDisplay from "../components/orders/KitchenDisplay";
 import AdminPagination from "../components/common/AdminPagination";
 import { AdminListSkeleton } from "../components/common/AdminSkeleton";
 import ResponsiveFilterSection from "../components/common/ResponsiveFilterSection";

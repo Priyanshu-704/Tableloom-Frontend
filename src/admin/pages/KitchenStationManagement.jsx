@@ -5,7 +5,9 @@ import { kitchenStationService, menuService } from "../../common/services";
 import { useAdmin } from "../context/AdminContext";
 import { AdminModal } from "../components/common/AdminModal";
 import { AdminCardGridSkeleton } from "../components/common/AdminSkeleton";
+import PermissionGuard from "../components/common/PermissionGuard";
 import { useMonitoringMode } from "../hooks/useMonitoringMode";
+import { useAuth } from "../../common/context/AuthContext";
 const STATION_TYPES = [
   "grill",
   "fryer",
@@ -33,6 +35,17 @@ const initialFormData = {
 export function KitchenStationManagement() {
   const { addNotification, confirmAction } = useAdmin();
   const isMonitoringMode = useMonitoringMode();
+  const { hasPermission } = useAuth();
+  const canCreateStation =
+    !isMonitoringMode && hasPermission("kitchen.station_create");
+  const canEditStation =
+    !isMonitoringMode && hasPermission("kitchen.station_edit");
+  const canDeleteStation =
+    !isMonitoringMode && hasPermission("kitchen.station_delete");
+  const canAssignStationCategory =
+    !isMonitoringMode && hasPermission("kitchen.station_assign_category");
+  const canRemoveStationCategory =
+    !isMonitoringMode && hasPermission("kitchen.station_remove_category");
   const [stations, setStations] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -84,7 +97,7 @@ export function KitchenStationManagement() {
     [categories],
   );
   const handleOpenCreate = () => {
-    if (isMonitoringMode) {
+    if (!canCreateStation) {
       return;
     }
     setEditingStation(null);
@@ -95,7 +108,7 @@ export function KitchenStationManagement() {
     setShowForm(true);
   };
   const handleOpenEdit = (station) => {
-    if (isMonitoringMode) {
+    if (!canEditStation) {
       return;
     }
     setEditingStation(station);
@@ -212,7 +225,7 @@ export function KitchenStationManagement() {
   };
   const handleSave = async (e) => {
     e.preventDefault();
-    if (isMonitoringMode) {
+    if (!(canCreateStation || canEditStation)) {
       return;
     }
     if (!validateForm()) {
@@ -252,7 +265,7 @@ export function KitchenStationManagement() {
     }
   };
   const handleDelete = async (stationId) => {
-    if (isMonitoringMode) {
+    if (!canDeleteStation) {
       return;
     }
     const confirmed = await confirmAction({
@@ -278,7 +291,7 @@ export function KitchenStationManagement() {
     }
   };
   const handleAssignCategory = async (stationId, categoryId) => {
-    if (isMonitoringMode) {
+    if (!canAssignStationCategory) {
       return;
     }
     try {
@@ -295,7 +308,7 @@ export function KitchenStationManagement() {
     }
   };
   const handleRemoveCategory = async (stationId, categoryId) => {
-    if (isMonitoringMode) {
+    if (!canRemoveStationCategory) {
       return;
     }
     try {
@@ -323,7 +336,7 @@ export function KitchenStationManagement() {
             line.
           </p>
         </div>
-        {!isMonitoringMode && (
+        <PermissionGuard permission="kitchen.station_create" disableInMonitoring>
           <button
             onClick={handleOpenCreate}
             className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-white hover:bg-primary-700 sm:w-auto"
@@ -331,7 +344,7 @@ export function KitchenStationManagement() {
             <Plus className="h-4 w-4" />
             Add Station
           </button>
-        )}
+        </PermissionGuard>
       </div>
 
       {pageError && (
@@ -373,22 +386,26 @@ export function KitchenStationManagement() {
                   </div>
                 </div>
 
-                {!isMonitoringMode && (
+                {(canEditStation || canDeleteStation) && (
                   <div className="flex items-center gap-2 self-end sm:self-auto">
-                    <button
-                      onClick={() => handleOpenEdit(station)}
-                      className="p-2 text-blue-600 hover:bg-blue-50 rounded"
-                      title="Edit"
-                    >
-                      <Edit className="h-4 w-4" />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(station._id)}
-                      className="p-2 text-red-600 hover:bg-red-50 rounded"
-                      title="Delete"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
+                    <PermissionGuard permission="kitchen.station_edit" disableInMonitoring>
+                      <button
+                        onClick={() => handleOpenEdit(station)}
+                        className="p-2 text-blue-600 hover:bg-blue-50 rounded"
+                        title="Edit"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </button>
+                    </PermissionGuard>
+                    <PermissionGuard permission="kitchen.station_delete" disableInMonitoring>
+                      <button
+                        onClick={() => handleDelete(station._id)}
+                        className="p-2 text-red-600 hover:bg-red-50 rounded"
+                        title="Delete"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </PermissionGuard>
                   </div>
                 )}
               </div>
@@ -427,7 +444,10 @@ export function KitchenStationManagement() {
                         <span className="text-sm text-gray-700">
                           {category.name}
                         </span>
-                        {!isMonitoringMode && (
+                        <PermissionGuard
+                          permission="kitchen.station_remove_category"
+                          disableInMonitoring
+                        >
                           <button
                             onClick={() =>
                               handleRemoveCategory(station._id, category._id)
@@ -437,7 +457,7 @@ export function KitchenStationManagement() {
                             <Unlink className="h-3 w-3" />
                             Remove
                           </button>
-                        )}
+                        </PermissionGuard>
                       </div>
                     ))}
                   </div>
@@ -448,7 +468,7 @@ export function KitchenStationManagement() {
                 )}
               </div>
 
-              {!isMonitoringMode && (
+              {canAssignStationCategory && (
                 <div className="mt-auto border-t border-gray-100 pt-4">
                   <p className="text-sm font-medium text-gray-700 mb-2">
                     Assign Category
@@ -489,18 +509,18 @@ export function KitchenStationManagement() {
           <p className="text-gray-600 mb-4">
             Create a station to map categories and route orders.
           </p>
-          {!isMonitoringMode && (
+          <PermissionGuard permission="kitchen.station_create" disableInMonitoring>
             <button
               onClick={handleOpenCreate}
               className="w-full rounded-lg bg-primary-600 px-4 py-2 text-white hover:bg-primary-700 sm:w-auto"
             >
               Create Station
             </button>
-          )}
+          </PermissionGuard>
         </div>
       )}
 
-      {!isMonitoringMode && showForm && (
+      {(canCreateStation || canEditStation) && showForm && (
         <AdminModal
           isOpen={showForm}
           title={

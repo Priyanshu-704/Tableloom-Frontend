@@ -1,5 +1,5 @@
 import { logger } from "../../common/utils/logger.js";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Download,
   RefreshCw,
@@ -14,12 +14,18 @@ import tableService from "../../common/services/TableService";
 import Select from "../components/common/Select";
 import { useAdmin } from "../context/AdminContext";
 import { withTenantQueryParams } from "../../common/utils/qrImage";
+import { useAuth } from "../../common/context/AuthContext";
 export function QRBatchOperations({ tables, onClose, onSuccess }) {
   const { addNotification } = useAdmin();
+  const { hasPermission } = useAuth();
+  const canDownloadQr = hasPermission("table.qr_download");
+  const canRegenerateQr = hasPermission("table.qr_regenerate");
   const [loading, setLoading] = useState(false);
   const [selectedTables, setSelectedTables] = useState([]);
   const [selectAll, setSelectAll] = useState(false);
-  const [operation, setOperation] = useState("download");
+  const [operation, setOperation] = useState(
+    canDownloadQr ? "download" : canRegenerateQr ? "regenerate" : "print",
+  );
   const [qrSize, setQrSize] = useState("medium");
   const [printLayout, setPrintLayout] = useState("multiple");
   const [includeInstructions, setIncludeInstructions] = useState(true);
@@ -37,6 +43,29 @@ export function QRBatchOperations({ tables, onClose, onSuccess }) {
   const selectedTableData = tablesWithQR.filter((t) =>
     selectedTables.includes(t.id),
   );
+  const operationOptions = [
+    canDownloadQr
+      ? {
+          id: "download",
+          label: "Download",
+          icon: Download,
+        }
+      : null,
+    canRegenerateQr
+      ? {
+          id: "regenerate",
+          label: "Regenerate",
+          icon: RefreshCw,
+        }
+      : null,
+    canDownloadQr || canRegenerateQr
+      ? {
+          id: "print",
+          label: "Print",
+          icon: Printer,
+        }
+      : null,
+  ].filter(Boolean);
   const getPreviewWidth = (size) => {
     switch (size) {
       case "small":
@@ -290,6 +319,14 @@ export function QRBatchOperations({ tables, onClose, onSuccess }) {
         break;
     }
   };
+  useEffect(() => {
+    if (operationOptions.some((item) => item.id === operation)) {
+      return;
+    }
+    setOperation(
+      canDownloadQr ? "download" : canRegenerateQr ? "regenerate" : "print",
+    );
+  }, [canDownloadQr, canRegenerateQr, operation, operationOptions]);
   return (
     <div className="p-6">
       <div className="mb-6">
@@ -297,23 +334,7 @@ export function QRBatchOperations({ tables, onClose, onSuccess }) {
           Select Operation
         </label>
         <div className="grid grid-cols-3 gap-3">
-          {[
-            {
-              id: "download",
-              label: "Download",
-              icon: Download,
-            },
-            {
-              id: "regenerate",
-              label: "Regenerate",
-              icon: RefreshCw,
-            },
-            {
-              id: "print",
-              label: "Print",
-              icon: Printer,
-            },
-          ].map((op) => {
+          {operationOptions.map((op) => {
             const Icon = op.icon;
             return (
               <button

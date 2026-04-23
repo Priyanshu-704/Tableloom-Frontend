@@ -18,7 +18,7 @@ export function AdminLogin() {
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, permissions } = useAuth();
   const { settings } = useSettings();
   const tenantContext =
     typeof window !== "undefined"
@@ -54,7 +54,14 @@ export function AdminLogin() {
           );
           return;
         }
-        navigate(resolveAccessibleAdminHomePath({ role }));
+        navigate(
+          resolveAccessibleAdminHomePath(
+            {
+              role,
+            },
+            response?.data?.permissions || permissions || [],
+          ),
+        );
       } else {
         setError(response.message || "Login failed");
       }

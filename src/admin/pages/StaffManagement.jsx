@@ -17,6 +17,7 @@ import { StaffForm } from "../components/staff/StaffForm";
 import { PermissionManager } from "../components/staff/PermissionManager";
 import AdminPagination from "../components/common/AdminPagination";
 import { AdminPageSkeleton } from "../components/common/AdminSkeleton";
+import PermissionGuard from "../components/common/PermissionGuard";
 import { Button } from "../../common/components/ui/button";
 import { Input } from "../../common/components/ui/input";
 import { useMonitoringMode } from "../hooks/useMonitoringMode";
@@ -223,7 +224,11 @@ export function StaffManagement() {
       logger.error("Failed to update permissions locally:", error);
     }
   };
-  const canManagePermissions = hasPermission("user_manage_permissions");
+  const canManagePermissions = !isMonitoringMode && hasPermission("user_manage_permissions");
+  const canToggleStaffStatus = !isMonitoringMode && hasPermission("user_change_status");
+  const canDeleteStaffAccounts = !isMonitoringMode && hasPermission("user_delete");
+  const canChangeStaffRoles = !isMonitoringMode && hasPermission("user_change_role");
+  const canCreateStaff = !isMonitoringMode && hasPermission("user_create");
   const deleteStaff = async (staffId) => {
     if (isMonitoringMode) {
       return;
@@ -322,21 +327,11 @@ export function StaffManagement() {
       return;
     }
   };
-  const canRegisterStaff = () => {
-    return !isMonitoringMode && hasPermission("user_create");
-  };
-  const canManageStaff = () => {
-    return (
-      !isMonitoringMode &&
-      (hasPermission("user_edit") ||
-        hasPermission("user_delete") ||
-        hasPermission("user_change_status") ||
-        hasPermission("user_change_role"))
-    );
-  };
-  const canUpdateRoles = () => {
-    return !isMonitoringMode && hasPermission("user_change_role");
-  };
+  const canManageStaff = () =>
+    canToggleStaffStatus ||
+    canDeleteStaffAccounts ||
+    canChangeStaffRoles ||
+    canManagePermissions;
   const stats = {
     total: staffMembers.length,
     active: staffMembers.filter((s) => s.isActive).length,
@@ -373,12 +368,15 @@ export function StaffManagement() {
             <span>Refresh</span>
           </Button>
 
-          {canRegisterStaff() && (
+          <PermissionGuard
+            permission="user_create"
+            disableInMonitoring
+          >
             <Button onClick={handleAddStaff} disabled={isLoading}>
               <UserPlus className="h-5 w-5" />
               <span>Add Staff</span>
             </Button>
-          )}
+          </PermissionGuard>
         </div>
       </div>
 
@@ -507,12 +505,13 @@ export function StaffManagement() {
             onDelete={handleDeleteStaff}
             onUpdateRole={handleOpenRoleUpdate}
             canManage={canManageStaff()}
-            canUpdateRoles={canUpdateRoles()}
+            canToggleStatus={canToggleStaffStatus}
+            canDelete={canDeleteStaffAccounts}
+            canUpdateRoles={canChangeStaffRoles}
             currentUserId={user?._id}
             onManagePermissions={handleManagePermissions}
-            canManagePermissions={!isMonitoringMode && canManagePermissions}
+            canManagePermissions={canManagePermissions}
             isReadOnly={isMonitoringMode}
-            I
           />
         ))}
       </div>
@@ -537,7 +536,7 @@ export function StaffManagement() {
               ? "Try adjusting your search or filters"
               : "Get started by adding your first staff member"}
           </p>
-          {canRegisterStaff() &&
+          {canCreateStaff &&
             !searchTerm &&
             filterRole === "all" &&
             filterStatus === "all" && (

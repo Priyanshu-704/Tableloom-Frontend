@@ -7,12 +7,10 @@ export const normalizePermission = (permission) =>
   String(permission || "")
     .trim()
     .replace(/[\s-]+/g, "_")
-    .toUpperCase();
+    .replace(/\./g, "_")
+    .toLowerCase();
 
 export const normalizeRole = (role) => String(role || "").trim().toLowerCase();
-
-export const hasFullAdminAccess = (role) =>
-  ["super_admin", "admin"].includes(normalizeRole(role));
 
 export const ACCESS_GROUPS = Object.freeze({
   dashboard: ["view_dashboard"],
@@ -33,7 +31,14 @@ export const ACCESS_GROUPS = Object.freeze({
     "kitchen_mark_served",
     "order_update_item_status",
   ],
-  kitchenStations: ["kitchen_manage_stations"],
+  kitchenStations: [
+    "kitchen.station_view",
+    "kitchen.station_create",
+    "kitchen.station_edit",
+    "kitchen.station_delete",
+    "kitchen.station_assign_category",
+    "kitchen.station_remove_category",
+  ],
   staff: [
     "user_view_all",
     "user_create",
@@ -50,20 +55,29 @@ export const ACCESS_GROUPS = Object.freeze({
     "menu_toggle_availability",
   ],
   categories: [
-    "menu_view_all",
-    "menu_create",
-    "menu_edit",
-    "menu_delete",
-    "category_toggle_status",
+    "menu.category_view",
+    "menu.category_create",
+    "menu.category_edit",
+    "menu.category_delete",
+    "menu.category_toggle_status",
   ],
-  sizes: ["menu_view_all", "menu_edit"],
-  discounts: ["menu_edit"],
+  sizes: [
+    "menu.size_view",
+    "menu.size_create",
+    "menu.size_edit",
+    "menu.size_toggle_status",
+  ],
+  discounts: [
+    "menu.discount_view",
+    "menu.discount_create",
+    "menu.discount_edit",
+    "menu.discount_toggle_status",
+  ],
   seasonal: [
-    "menu_view_all",
-    "menu_create",
-    "menu_edit",
-    "menu_delete",
-    "menu_toggle_availability",
+    "menu.seasonal_view",
+    "menu.seasonal_create",
+    "menu.seasonal_edit",
+    "menu.seasonal_toggle_status",
   ],
   priceHistory: ["price_stats", "menu_stats"],
   menuBulk: ["menu_bulk_operations"],
@@ -83,7 +97,12 @@ export const ACCESS_GROUPS = Object.freeze({
     "table_delete",
     "table_update_status",
   ],
-  tableQr: ["table_edit"],
+  tableQr: [
+    "table.qr_view",
+    "table.qr_download",
+    "table.qr_regenerate",
+    "table.qr_refresh_token",
+  ],
   sessions: [
     "session_view_all",
     "session_update",
@@ -145,6 +164,14 @@ const HOME_CANDIDATES = [
   },
 ];
 
+const ROLE_HOME_FALLBACKS = Object.freeze({
+  super_admin: buildPlatformAdminPath("/tenant-management"),
+  admin: buildAdminPath("/dashboard"),
+  manager: buildAdminPath("/dashboard"),
+  chef: buildAdminPath("/kitchen/dashboard"),
+  waiter: buildAdminPath("/tables/list"),
+});
+
 const ALL_NOTIFICATION_TYPES = [
   "waiter_call",
   "order_ready",
@@ -164,8 +191,24 @@ const ALL_NOTIFICATION_TYPES = [
 ];
 
 const NOTIFICATION_TYPES_BY_ROLE = Object.freeze({
-  waiter: ["waiter_call", "order_ready", "table_assigned", "customer_checkout"],
-  chef: ["system_alert", "order_delayed", "task_assigned"],
+  waiter: [
+    "waiter_call",
+    "order_ready",
+    "payment_request",
+    "table_assigned",
+    "customer_checkout",
+    "reservation_alert",
+    "staff_announcement",
+    "shift_change",
+    "task_assigned",
+  ],
+  chef: [
+    "system_alert",
+    "order_delayed",
+    "staff_announcement",
+    "shift_change",
+    "task_assigned",
+  ],
   manager: ALL_NOTIFICATION_TYPES,
   admin: ALL_NOTIFICATION_TYPES,
   super_admin: ALL_NOTIFICATION_TYPES,
@@ -188,9 +231,6 @@ export const hasAccessRequirement = ({
   if (!requiredPermissions || requiredPermissions.length === 0) {
     return true;
   }
-  if (hasFullAdminAccess(normalizedRole)) {
-    return true;
-  }
   const normalizedPermissions = new Set(
     (permissions || []).map((permission) => normalizePermission(permission)),
   );
@@ -204,15 +244,23 @@ export const resolveAccessibleAdminHomePath = (user, permissions = []) => {
   if (role === "super_admin") {
     return buildPlatformAdminPath("/tenant-management");
   }
+  const normalizedPermissions = (permissions || []).filter(Boolean);
+  if (normalizedPermissions.length === 0) {
+    return ROLE_HOME_FALLBACKS[role] || buildAdminPath("/unauthorized");
+  }
   const matchingPath = HOME_CANDIDATES.find((candidate) =>
     hasAccessRequirement({
       role,
-      permissions,
+      permissions: normalizedPermissions,
       allowedRoles: candidate.allowedRoles,
       requiredPermissions: candidate.requiredPermissions,
     }),
   )?.path;
-  return matchingPath || buildAdminPath("/unauthorized");
+  return (
+    matchingPath ||
+    ROLE_HOME_FALLBACKS[role] ||
+    buildAdminPath("/unauthorized")
+  );
 };
 
 export const getAllowedNotificationTypes = (role) =>

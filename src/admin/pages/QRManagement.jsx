@@ -20,6 +20,7 @@ import tableService from "../../common/services/TableService";
 import Select from "../components/common/Select";
 import { useAdmin } from "../context/AdminContext";
 import { withTenantQueryParams } from "../../common/utils/qrImage";
+import { useAuth } from "../../common/context/AuthContext";
 const QR_SIZE_OPTIONS = [
   {
     value: "small",
@@ -112,6 +113,11 @@ const getQrRouteDetails = (qrUrl = "") => {
 };
 export function QRManagement({ table, onClose, onSuccess }) {
   const { addNotification } = useAdmin();
+  const { hasPermission } = useAuth();
+  const canViewQr = hasPermission("table.qr_view");
+  const canDownloadQr = hasPermission("table.qr_download");
+  const canRegenerateQr = hasPermission("table.qr_regenerate");
+  const canRefreshQrToken = hasPermission("table.qr_refresh_token");
   const [loading, setLoading] = useState(false);
   const [showRegenerateConfirm, setShowRegenerateConfirm] = useState(false);
   const [qrSize, setQrSize] = useState("medium");
@@ -141,6 +147,10 @@ export function QRManagement({ table, onClose, onSuccess }) {
     };
   }, []);
   const loadTokenStatus = useCallback(async () => {
+    if (!canViewQr) {
+      setTokenStatus(null);
+      return;
+    }
     try {
       const response = await tableService.getQRTokenStatus(table.id);
       if (response.success) {
@@ -149,7 +159,7 @@ export function QRManagement({ table, onClose, onSuccess }) {
     } catch (error) {
       logger.error("Failed to load token status:", error);
     }
-  }, [table.id]);
+  }, [canViewQr, table.id]);
   useEffect(() => {
     setTableState({
       ...table,
@@ -158,6 +168,9 @@ export function QRManagement({ table, onClose, onSuccess }) {
     loadTokenStatus();
   }, [loadTokenStatus, table]);
   const handleRegenerateQR = async () => {
+    if (!canRegenerateQr) {
+      return;
+    }
     setLoading(true);
     try {
       const response = await tableService.regenerateQRCode(table.id);
@@ -182,6 +195,9 @@ export function QRManagement({ table, onClose, onSuccess }) {
     }
   };
   const handleDownloadQR = async () => {
+    if (!canDownloadQr) {
+      return;
+    }
     try {
       await tableService.downloadQRCode(table.id);
       addNotification("QR code downloaded successfully.", "success");
@@ -315,6 +331,9 @@ export function QRManagement({ table, onClose, onSuccess }) {
     addNotification("Email draft opened successfully.", "success");
   };
   const handleRefreshToken = async () => {
+    if (!canRefreshQrToken) {
+      return;
+    }
     setLoading(true);
     try {
       const response = await tableService.refreshQRToken(table.id);
@@ -466,17 +485,19 @@ export function QRManagement({ table, onClose, onSuccess }) {
                 </div>
               </div>
 
-              <button
-                className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-50 sm:w-auto"
-                disabled={loading}
-                onClick={handleRefreshToken}
-                type="button"
-              >
-                <RefreshCw
-                  className={`h-4 w-4 ${loading ? "animate-spin" : ""}`}
-                />
-                Refresh Token
-              </button>
+              {canRefreshQrToken ? (
+                <button
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-50 sm:w-auto"
+                  disabled={loading}
+                  onClick={handleRefreshToken}
+                  type="button"
+                >
+                  <RefreshCw
+                    className={`h-4 w-4 ${loading ? "animate-spin" : ""}`}
+                  />
+                  Refresh Token
+                </button>
+              ) : null}
             </div>
           </div>
 
@@ -604,14 +625,16 @@ export function QRManagement({ table, onClose, onSuccess }) {
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
-                  <button
-                    className="inline-flex items-center justify-center gap-2 rounded-2xl bg-primary-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-primary-700"
-                    onClick={handleDownloadQR}
-                    type="button"
-                  >
-                    <Download className="h-4 w-4" />
-                    Download
-                  </button>
+                  {canDownloadQr ? (
+                    <button
+                      className="inline-flex items-center justify-center gap-2 rounded-2xl bg-primary-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-primary-700"
+                      onClick={handleDownloadQR}
+                      type="button"
+                    >
+                      <Download className="h-4 w-4" />
+                      Download
+                    </button>
+                  ) : null}
                   <button
                     className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-100 px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-200"
                     onClick={handlePrintQR}
@@ -695,7 +718,7 @@ export function QRManagement({ table, onClose, onSuccess }) {
                       printed copies will stop working until they are replaced.
                     </p>
 
-                    {!showRegenerateConfirm ? (
+                    {canRegenerateQr && !showRegenerateConfirm ? (
                       <button
                         className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-amber-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-amber-700 sm:w-auto"
                         onClick={() => setShowRegenerateConfirm(true)}
@@ -704,7 +727,7 @@ export function QRManagement({ table, onClose, onSuccess }) {
                         <RefreshCw className="h-4 w-4" />
                         Regenerate QR Code
                       </button>
-                    ) : (
+                    ) : canRegenerateQr ? (
                       <div className="mt-4 space-y-3">
                         <p className="text-sm font-medium text-amber-900">
                           Are you sure you want to replace the current QR?
@@ -737,7 +760,7 @@ export function QRManagement({ table, onClose, onSuccess }) {
                           </button>
                         </div>
                       </div>
-                    )}
+                    ) : null}
                   </div>
                 </div>
               </section>

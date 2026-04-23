@@ -4,7 +4,9 @@ import { ChevronDown, Percent, Plus, RefreshCw } from "lucide-react";
 import { menuService } from "../../common/services";
 import { useAdmin } from "../context/AdminContext";
 import { AdminModal } from "../components/common/AdminModal";
+import PermissionGuard from "../components/common/PermissionGuard";
 import { useMonitoringMode } from "../hooks/useMonitoringMode";
+import { useAuth } from "../../common/context/AuthContext";
 const initialForm = {
   code: "",
   description: "",
@@ -19,6 +21,13 @@ const initialForm = {
 export function DiscountManagement() {
   const isMonitoringMode = useMonitoringMode();
   const { addNotification } = useAdmin();
+  const { hasPermission } = useAuth();
+  const canCreateDiscount =
+    !isMonitoringMode && hasPermission("menu.discount_create");
+  const canEditDiscount =
+    !isMonitoringMode && hasPermission("menu.discount_edit");
+  const canToggleDiscountStatus =
+    !isMonitoringMode && hasPermission("menu.discount_toggle_status");
   const [coupons, setCoupons] = useState([]);
   const [form, setForm] = useState(initialForm);
   const [editingId, setEditingId] = useState("");
@@ -48,7 +57,7 @@ export function DiscountManagement() {
     setShowCouponModal(false);
   };
   const openCreateModal = () => {
-    if (isMonitoringMode) {
+    if (!canCreateDiscount) {
       addNotification(
         "Discount management is read-only in monitoring mode.",
         "error",
@@ -61,7 +70,7 @@ export function DiscountManagement() {
   };
   const handleSubmit = async (event) => {
     event.preventDefault();
-    if (isMonitoringMode) {
+    if (!(canCreateDiscount || canEditDiscount)) {
       addNotification(
         "Discount management is read-only in monitoring mode.",
         "error",
@@ -99,7 +108,7 @@ export function DiscountManagement() {
     }
   };
   const handleToggleCouponStatus = async (coupon) => {
-    if (isMonitoringMode) {
+    if (!canToggleDiscountStatus) {
       addNotification(
         "Discount management is read-only in monitoring mode.",
         "error",
@@ -124,7 +133,7 @@ export function DiscountManagement() {
     }
   };
   const startEdit = (coupon) => {
-    if (isMonitoringMode) {
+    if (!canEditDiscount) {
       addNotification(
         "Discount management is read-only in monitoring mode.",
         "error",
@@ -188,7 +197,7 @@ export function DiscountManagement() {
             <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
             Refresh
           </button>
-          {!isMonitoringMode ? (
+          <PermissionGuard permission="menu.discount_create" disableInMonitoring>
             <button
               type="button"
               onClick={openCreateModal}
@@ -197,7 +206,7 @@ export function DiscountManagement() {
               <Plus className="h-4 w-4" />
               Create Coupon
             </button>
-          ) : null}
+          </PermissionGuard>
         </div>
       </div>
 
@@ -281,22 +290,26 @@ export function DiscountManagement() {
                     </div>
                   </details>
                 </div>
-                {!isMonitoringMode ? (
+                {(canEditDiscount || canToggleDiscountStatus) ? (
                   <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => startEdit(coupon)}
-                      className="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleToggleCouponStatus(coupon)}
-                      className="rounded-lg border border-primary-200 px-3 py-2 text-sm text-primary-700"
-                    >
-                      {coupon.isActive ? "Deactivate" : "Activate"}
-                    </button>
+                    <PermissionGuard permission="menu.discount_edit" disableInMonitoring>
+                      <button
+                        type="button"
+                        onClick={() => startEdit(coupon)}
+                        className="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700"
+                      >
+                        Edit
+                      </button>
+                    </PermissionGuard>
+                    <PermissionGuard permission="menu.discount_toggle_status" disableInMonitoring>
+                      <button
+                        type="button"
+                        onClick={() => handleToggleCouponStatus(coupon)}
+                        className="rounded-lg border border-primary-200 px-3 py-2 text-sm text-primary-700"
+                      >
+                        {coupon.isActive ? "Deactivate" : "Activate"}
+                      </button>
+                    </PermissionGuard>
                   </div>
                 ) : null}
               </div>
@@ -311,7 +324,7 @@ export function DiscountManagement() {
         </div>
       </div>
 
-      {!isMonitoringMode ? (
+      {(canCreateDiscount || canEditDiscount) ? (
         <AdminModal
           isOpen={showCouponModal}
           title={editingId ? "Edit Coupon" : "Create Coupon"}
