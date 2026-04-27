@@ -8,6 +8,7 @@ import React, {
   useState,
 } from "react";
 import { io } from "socket.io-client";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useNotification } from "../../common/NotificationContext";
 import { useSettings } from "../../common/context/SettingsContext";
 import {
@@ -62,14 +63,22 @@ const getStoredSessionId = () => {
   );
 };
 export function UserLiveUpdatesProvider({ children }) {
-  const { notify, addPersistentNotification, refreshNotifications } =
-    useNotification();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const {
+    notify,
+    addPersistentNotification,
+    clearNotifications,
+    refreshNotifications,
+  } = useNotification();
   const { sessionId, dispatch } = useApp();
   const { settings } = useSettings();
   const socketRef = useRef(null);
   const joinedSessionRef = useRef("");
   const previousSessionRef = useRef("");
   const handledEventIdsRef = useRef(new Map());
+  const completedSessionRedirectRef = useRef("");
+  const locationPathRef = useRef(location.pathname);
   const [isConnected, setIsConnected] = useState(false);
   const activeSessionId = sessionId || getStoredSessionId();
   const markLiveEventHandled = useCallback((payload = {}) => {
@@ -94,6 +103,9 @@ export function UserLiveUpdatesProvider({ children }) {
     handledEventIdsRef.current.set(eventKey, now);
     return true;
   }, []);
+  useEffect(() => {
+    locationPathRef.current = location.pathname;
+  }, [location.pathname]);
   useEffect(() => {
     if (!sessionId && activeSessionId) {
       dispatch({
@@ -182,19 +194,37 @@ export function UserLiveUpdatesProvider({ children }) {
       notify(nextMessage, "waiter");
     };
     const handleSessionCompleted = (payload = {}) => {
+      const completedSessionId =
+        String(payload?.sessionId || activeSessionId || getStoredSessionId())
+          .trim();
+      if (
+        completedSessionId &&
+        completedSessionRedirectRef.current === completedSessionId
+      ) {
+        return;
+      }
+      completedSessionRedirectRef.current = completedSessionId;
       const thankYouMessage =
         payload?.thankYouMessage ||
         "Payment completed successfully. Thank you for dining with us.";
       storeCompletedVisit({
-        sessionId: payload?.sessionId || activeSessionId,
+        sessionId: completedSessionId,
         billId: payload?.billId || "",
         billNumber: payload?.billNumber || "",
         message: thankYouMessage,
       });
+      clearNotifications().catch(() => {});
       dispatch({
         type: "CLEAR_SESSION",
       });
-      window.location.replace(buildCustomerPath("/thank-you"));
+      if (locationPathRef.current !== buildCustomerPath("/thank-you")) {
+        navigate(buildCustomerPath("/thank-you"), {
+          replace: true,
+          state: {
+            message: thankYouMessage,
+          },
+        });
+      }
     };
     socket.on("connect", () => {
       setIsConnected(true);
@@ -224,10 +254,17 @@ export function UserLiveUpdatesProvider({ children }) {
   }, [
     activeSessionId,
     addPersistentNotification,
+    clearNotifications,
     dispatch,
     markLiveEventHandled,
+    navigate,
     notify,
   ]);
+  useEffect(() => {
+    if (activeSessionId) {
+      completedSessionRedirectRef.current = "";
+    }
+  }, [activeSessionId]);
   useEffect(() => {
     const socket = socketRef.current;
     if (!socket || !activeSessionId) {
