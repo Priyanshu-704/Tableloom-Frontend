@@ -972,7 +972,7 @@ function TableCard({
               </div>
             )}
 
-            {table.qrCode && !isReadOnly && canManageQr && (
+            {!isReadOnly && canManageQr && (
               <button
                 onClick={() => onManageQR(table)}
                 className="flex items-center justify-center space-x-1 text-purple-600 hover:text-purple-800 text-sm font-medium transition-colors px-3 py-2 rounded-lg border border-purple-200 hover:bg-purple-50 whitespace-nowrap"

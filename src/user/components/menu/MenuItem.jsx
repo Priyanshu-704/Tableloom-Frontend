@@ -18,6 +18,9 @@ export function MenuItem({ item }) {
   });
   const [checkingStatus, setCheckingStatus] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  useEffect(() => {
+    setSelectedSize(item.sizes?.[0] || null);
+  }, [item.id, item.sizes]);
   const formatPrice = (value) =>
     new Intl.NumberFormat("en-IN", {
       style: "currency",
@@ -29,7 +32,9 @@ export function MenuItem({ item }) {
       if (!item.id) return;
       setCheckingStatus(true);
       try {
-        const result = await isItemInCart(item.id, selectedSize?.id);
+        const result = await isItemInCart(item.id, selectedSize?.id || null);
+        console.log("selectedSize:", selectedSize);
+console.log("item:", item);
         if (result.success) {
           setCartItemInfo({
             quantity: result.quantity,
@@ -215,7 +220,7 @@ export function MenuItem({ item }) {
                 </div>
               ) : (
                 <button
-                  onClick={handleAdd}
+                  onClick={() => handleAdd()}
                   disabled={
                     checkingStatus || isSubmitting || item.sizes?.length === 0
                   }

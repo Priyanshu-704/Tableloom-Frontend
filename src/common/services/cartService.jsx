@@ -2,6 +2,7 @@ import { logger } from "../utils/logger.js";
 import { axiosInstance } from "./api";
 let cachedCartData = null;
 let cartRequestPromise = null;
+const cartListeners = new Set();
 const TEST_SESSION_ID =
   import.meta.env.DEV &&
   import.meta.env.VITE_TEST_CUSTOMER_SESSION_ID
@@ -37,23 +38,43 @@ const ensureSuccess = (response, fallbackMessage) => {
   }
   return response.data;
 };
+const emitCartChange = (cartData = null) => {
+  cartListeners.forEach((listener) => {
+    try {
+      listener(cartData);
+    // eslint-disable-next-line no-empty, no-unused-vars
+    } catch (_error) {}
+  });
+};
 const extractCartData = (data) => {
   const cartData = data?.data ?? null;
   cachedCartData = cartData;
   cartRequestPromise = null;
+  emitCartChange(cartData);
   return cartData;
 };
 export const cartService = {
   sessionId: "",
+  subscribe(listener) {
+    if (typeof listener !== "function") {
+      return () => {};
+    }
+    cartListeners.add(listener);
+    return () => {
+      cartListeners.delete(listener);
+    };
+  },
   getCachedCart() {
     return cachedCartData;
   },
   setCachedCart(cartData) {
     cachedCartData = cartData || null;
+    emitCartChange(cachedCartData);
   },
   clearCachedCart() {
     cachedCartData = null;
     cartRequestPromise = null;
+    emitCartChange(null);
   },
   setSessionId(sessionId) {
     this.sessionId = sessionId || "";

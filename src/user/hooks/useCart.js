@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import cartService from "../../common/services/cartService";
 export function useCart(options = {}) {
   const { autoInitialize = true } = options;
-  const [cart, setCart] = useState(null);
+  const [cart, setCart] = useState(() => cartService.getCachedCart() || null);
   const [cartSummary, setCartSummary] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -36,6 +36,17 @@ export function useCart(options = {}) {
       items,
     });
   }, []);
+  useEffect(() => {
+    syncCartState(cartService.getCachedCart() || null);
+    const unsubscribe = cartService.subscribe((nextCart) => {
+      if (mountedRef.current) {
+        syncCartState(nextCart || null);
+      }
+    });
+    return () => {
+      unsubscribe();
+    };
+  }, [syncCartState]);
   const fetchCart = useCallback(
     async (forceRefresh = false) => {
       if (isFetchingRef.current && !forceRefresh) {

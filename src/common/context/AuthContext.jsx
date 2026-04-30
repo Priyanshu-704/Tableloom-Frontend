@@ -11,6 +11,8 @@ const normalizePermission = (permission) =>
     .replace(/[\s-]+/g, "_")
     .toLowerCase()
     .replace(/\./g, "_");
+const hasFullAdminAccess = (user = null) =>
+  ["admin", "super_admin"].includes(String(user?.role || "").toLowerCase());
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [permissions, setPermissions] = useState([]);
@@ -97,6 +99,9 @@ export const AuthProvider = ({ children }) => {
   };
   const hasPermission = (perm) => {
     if (!perm) return true;
+    if (hasFullAdminAccess(user)) {
+      return true;
+    }
     const normalizedTarget = normalizePermission(perm);
     return permissions.some(
       (userPermission) =>

@@ -18,6 +18,7 @@ import ResponsiveFilterSection from "../components/common/ResponsiveFilterSectio
 import { useAdminNotificationCenter } from "../context/AdminNotificationCenterContext";
 import { useMonitoringMode } from "../hooks/useMonitoringMode";
 import { useAuth } from "../../common/context/AuthContext";
+import { useAdminLiveSync } from "../hooks/useAdminLiveSync";
 const STATUS_OPTIONS = [
   {
     value: "all",
@@ -232,6 +233,29 @@ export function WaiterCalls() {
   useEffect(() => {
     loadDashboard();
   }, [loadDashboard]);
+  useAdminLiveSync({
+    enabled: true,
+    events: [
+      "waiter-call:new",
+      "waiter-call:taken",
+      "waiter-call:assigned",
+      "waiter-call:completed-staff",
+      "waiter-call:status-updated",
+      "waiter-call:cancelled",
+      "waiter-call:stats-updated",
+    ],
+    joinRooms: (socket, currentUser) => {
+      socket.emit("join-role-room", currentUser.role);
+      socket.emit("join-staff-room");
+      if (["admin", "manager"].includes(String(currentUser.role || "").toLowerCase())) {
+        socket.emit("join-management-room");
+      }
+    },
+    onEvent: () => {
+      loadCalls();
+      loadDashboard();
+    },
+  });
   useEffect(() => {
     if (!activityVersion) {
       return;

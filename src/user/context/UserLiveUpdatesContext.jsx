@@ -116,6 +116,15 @@ export function UserLiveUpdatesProvider({ children }) {
   }, [activeSessionId, dispatch, sessionId]);
   useEffect(() => {
     const socketUrl = buildSocketUrl();
+    if (!activeSessionId) {
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+        socketRef.current = null;
+      }
+      joinedSessionRef.current = "";
+      setIsConnected(false);
+      return undefined;
+    }
     if (!socketUrl || socketRef.current) {
       return undefined;
     }
@@ -263,17 +272,6 @@ export function UserLiveUpdatesProvider({ children }) {
   useEffect(() => {
     if (activeSessionId) {
       completedSessionRedirectRef.current = "";
-    }
-  }, [activeSessionId]);
-  useEffect(() => {
-    const socket = socketRef.current;
-    if (!socket || !activeSessionId) {
-      return;
-    }
-    if (joinedSessionRef.current !== activeSessionId && socket.connected) {
-      socket.emit("join-session-room", activeSessionId);
-      socket.emit("join-customer-room", activeSessionId);
-      joinedSessionRef.current = activeSessionId;
     }
   }, [activeSessionId]);
   useEffect(() => {

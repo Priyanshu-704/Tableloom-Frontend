@@ -3,9 +3,12 @@ import axios from "axios";
 import { API_BASE_URL } from "../utils/env.js";
 import {
   buildAdminPath,
+  buildCustomerPath,
   buildPlatformAdminPath,
   extractTenantFromPath,
   isSuperAdminMonitoringPath,
+  isSuperAdminPath,
+  isTenantAdminPath,
   isTenantOperationalApiPath,
   stripAppBasePath,
 } from "../utils/routes.js";
@@ -246,13 +249,19 @@ api.interceptors.response.use(
 );
 const handleUnauthorized = () => {
   const user = getStoredUser();
+  const currentPath = window.location.pathname || "/";
+  const isAdminContext = isTenantAdminPath(currentPath);
+  const isPlatformAdminContext = isSuperAdminPath(currentPath);
   sessionStorage.removeItem("user");
   clearStoredTenantId();
   clearStoredAuthTokens();
   window.location.href =
-    String(user?.role || "").toLowerCase() === "super_admin"
+    String(user?.role || "").toLowerCase() === "super_admin" ||
+    isPlatformAdminContext
       ? buildPlatformAdminPath("/login")
-      : buildAdminPath("/login");
+      : isAdminContext
+        ? buildAdminPath("/login")
+        : buildCustomerPath("/");
 };
 const handleForbidden = () =>
   showNotification(

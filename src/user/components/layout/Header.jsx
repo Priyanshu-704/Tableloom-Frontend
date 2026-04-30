@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { useEffect } from "react";
 import { ShoppingCart, Bell, MessageSquareText, LogOut } from "lucide-react";
-import { useCart } from "../../hooks/useCart";
 import { useNotification } from "../../../common/NotificationContext";
 import { LanguageSwitcher } from "../common/LanguageSwitcher";
 import { useTranslation } from "../../hooks/useTranslation";
@@ -9,15 +8,13 @@ import { useNavigate } from "react-router-dom";
 import { useApp } from "../../context/AppContext";
 import { useSettings } from "../../../common/context/SettingsContext";
 import customerSessionService from "../../../common/services/CustomerSessionService";
+import cartService from "../../../common/services/cartService";
 import { BrandBadge } from "../../../common/components/BrandBadge";
 import { buildCustomerPath } from "../../../common/utils/routes";
 import { storeCompletedVisit } from "../../utils/completedVisit";
 export function Header() {
   const { tableNumber, sessionId, dispatch } = useApp();
   const navigate = useNavigate();
-  const { getCartItemsCount } = useCart({
-    autoInitialize: false,
-  });
   const {
     notifications,
     unreadCount,
@@ -33,19 +30,32 @@ export function Header() {
   const [loggingOut, setLoggingOut] = useState(false);
   useEffect(() => {
     let mounted = true;
-    const loadCount = async () => {
-      const result = await getCartItemsCount();
-      if (mounted) {
-        setCartCount(Number(result?.count) || 0);
+    const syncCountFromCart = (cartData = null) => {
+      if (!mounted) {
+        return;
       }
+      const itemCount = Number(cartData?.summary?.itemCount || 0);
+      setCartCount(itemCount);
+    };
+    const loadCount = async () => {
+      const cachedCart = cartService.getCachedCart();
+      if (cachedCart) {
+        syncCountFromCart(cachedCart);
+        return;
+      }
+      const result = await cartService.getItemCount();
+      if (!mounted) {
+        return;
+      }
+      setCartCount(Number(result?.count) || 0);
     };
     loadCount();
-    const intervalId = window.setInterval(loadCount, 5000);
+    const unsubscribe = cartService.subscribe(syncCountFromCart);
     return () => {
       mounted = false;
-      window.clearInterval(intervalId);
+      unsubscribe();
     };
-  }, [getCartItemsCount]);
+  }, []);
   const handleLogout = async () => {
     if (!sessionId || loggingOut) {
       return;
