@@ -88,7 +88,6 @@ const navigationSections = [
         icon: LayoutDashboard,
         path: buildAdminPath("/dashboard"),
         allowedRoles: ["manager", "admin", "super_admin"],
-        requiredPermission: ACCESS_GROUPS.dashboard,
       },
       {
         id: "analytics",

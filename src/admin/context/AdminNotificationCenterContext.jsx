@@ -90,6 +90,7 @@ export function AdminNotificationCenterProvider({ children }) {
     location.pathname,
     user?.role,
   );
+  const isSuperAdmin = String(user?.role || "").toLowerCase() === "super_admin";
   const allowedNotificationTypes = useMemo(
     () => getAllowedNotificationTypes(user?.role),
     [user?.role],
@@ -105,8 +106,7 @@ export function AdminNotificationCenterProvider({ children }) {
   );
   const canViewNotifications =
     hasPermission("notification.view") &&
-    allowedNotificationTypes.length > 0 &&
-    !isMonitoringMode;
+    allowedNotificationTypes.length > 0;
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [stats, setStats] = useState(null);
@@ -308,10 +308,10 @@ export function AdminNotificationCenterProvider({ children }) {
     const joinRooms = () => {
       socket.emit("join-user-room", user._id);
       socket.emit("join-role-room", user.role);
-      if (["admin", "manager", "chef", "waiter"].includes(user.role)) {
+      if (!isSuperAdmin && ["admin", "manager", "chef", "waiter"].includes(user.role)) {
         socket.emit("join-staff-room");
       }
-      if (["admin", "manager"].includes(user.role)) {
+      if (!isSuperAdmin && ["admin", "manager"].includes(user.role)) {
         socket.emit("join-management-room");
       }
     };
@@ -390,6 +390,7 @@ export function AdminNotificationCenterProvider({ children }) {
     loadStats,
     user?._id,
     user?.role,
+    isSuperAdmin,
   ]);
   useEffect(() => {
     let unsubscribe = () => {};

@@ -337,7 +337,6 @@ function AdminContent() {
                 element={
                   <ProtectedRouteWithPermission
                     allowedRoles={["manager", "admin", "super_admin"]}
-                    requiredPermission={ACCESS_GROUPS.dashboard}
                   >
                     <Dashboard />
                   </ProtectedRouteWithPermission>

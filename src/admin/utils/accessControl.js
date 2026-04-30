@@ -135,7 +135,6 @@ const HOME_CANDIDATES = [
   {
     path: buildAdminPath("/dashboard"),
     allowedRoles: ["manager", "admin"],
-    requiredPermissions: ACCESS_GROUPS.dashboard,
   },
   {
     path: buildAdminPath("/tables/list"),
