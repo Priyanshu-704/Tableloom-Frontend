@@ -13,12 +13,15 @@ import { useAdmin } from "../context/AdminContext";
 import { useMonitoringMode } from "../hooks/useMonitoringMode";
 export function BackupManagement() {
   const { addNotification } = useAdmin();
-  const { hasPermission } = useAuth();
+  const { hasPermission, user } = useAuth();
   const isMonitoringMode = useMonitoringMode();
-  const canManageBackups = !isMonitoringMode && hasPermission("backup_restore");
+  const isSuperAdmin = user?.role === "super_admin";
+  const canManageBackups =
+    hasPermission("backup_restore") && (!isMonitoringMode || isSuperAdmin);
   const [exporting, setExporting] = useState(false);
   const [cloning, setCloning] = useState(false);
   const [lastExportAt, setLastExportAt] = useState("");
+  const [lastExportScope, setLastExportScope] = useState("");
   const [cloneSummary, setCloneSummary] = useState(null);
   const [targetConfig, setTargetConfig] = useState({
     targetUri: "",
@@ -41,6 +44,7 @@ export function BackupManagement() {
         return;
       }
       setLastExportAt(new Date().toLocaleString());
+      setLastExportScope(response?.scope || "");
       addNotification(`Backup exported as ${response.filename}`, "success");
     } catch {
       addNotification("Failed to export backup", "error");
@@ -80,11 +84,11 @@ export function BackupManagement() {
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Backup Management</h1>
         <p className="text-gray-600">
-          Export a full admin backup of operational data as a JSON file.
+          Export and clone backup data with scope based on the signed-in role.
         </p>
         <p className="mt-2 text-sm text-gray-500">
-          Changes and backup operations in this area apply only to the current
-          tenant workspace.
+          Super admins can export or clone the complete database. Restaurant
+          admins are limited to their current tenant workspace only.
         </p>
       </div>
 
@@ -98,13 +102,18 @@ export function BackupManagement() {
               Create Backup
             </h2>
             <p className="mt-1 text-sm text-gray-600">
-              The export includes restaurant settings, menu, tables, sessions,
-              orders, kitchen stations, notifications, and staff records with
-              sensitive auth fields removed.
+              {isSuperAdmin
+                ? "Your export contains the full database snapshot across tenants."
+                : "Your export contains only the current tenant workspace, with sensitive auth fields removed from staff records."}
             </p>
             {lastExportAt ? (
               <p className="mt-3 text-sm text-primary-700">
                 Last export: {lastExportAt}
+              </p>
+            ) : null}
+            {lastExportScope ? (
+              <p className="mt-1 text-xs font-medium uppercase tracking-wide text-primary-700">
+                Scope: {lastExportScope.replace(/_/g, " ")}
               </p>
             ) : null}
           </div>
@@ -126,7 +135,7 @@ export function BackupManagement() {
           </Button>
           <div className="inline-flex items-center justify-center gap-2 rounded-full bg-emerald-50 px-3 py-2 text-sm text-emerald-700 sm:justify-start">
             <ShieldCheck className="h-4 w-4" />
-            Admin-only export
+            {isSuperAdmin ? "Full database access" : "Tenant-only export"}
           </div>
         </div>
       </div>
@@ -141,8 +150,9 @@ export function BackupManagement() {
               Clone To Another Database
             </h2>
             <p className="mt-1 text-sm text-gray-600">
-              Copy the current operational collections into another MongoDB
-              cluster or database directly from the admin panel.
+              {isSuperAdmin
+                ? "Clone the full application database into another MongoDB cluster or database."
+                : "Clone only this tenant's operational data into another MongoDB cluster or database."}
             </p>
           </div>
         </div>
@@ -220,7 +230,8 @@ export function BackupManagement() {
           </Button>
           <p className="text-sm text-gray-500 sm:max-w-xl">
             The target database is written server-side using the URI you provide
-            here.
+            here. Scope enforcement happens in the backend before any data is
+            copied.
           </p>
         </div>
 
@@ -229,6 +240,13 @@ export function BackupManagement() {
             <p className="text-sm font-semibold text-gray-900">
               Last clone target:{" "}
               {cloneSummary.targetDbName || "Unknown database"}
+            </p>
+            <p className="mt-1 text-xs font-medium uppercase tracking-wide text-gray-500">
+              Scope:{" "}
+              {String(cloneSummary.accessScope || "tenant_only").replace(
+                /_/g,
+                " ",
+              )}
             </p>
             <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
               {Object.entries(cloneSummary.collections).map(([key, value]) => (

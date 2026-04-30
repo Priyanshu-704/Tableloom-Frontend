@@ -88,6 +88,9 @@ const isReadOnlyMonitoringRequest = (config) => {
     return false;
   }
   const url = String(config?.url || "");
+  if (url.includes("/backups/clone")) {
+    return false;
+  }
   return isTenantOperationalApiPath(url) && !url.includes("/users/logout");
 };
 export const getTenantHeaders = () => {

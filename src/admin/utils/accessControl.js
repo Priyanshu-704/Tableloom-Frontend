@@ -236,6 +236,11 @@ export const hasAccessRequirement = ({
   if (!requiredPermissions || requiredPermissions.length === 0) {
     return true;
   }
+  // Tenant admins and platform admins are treated as top-level viewers once
+  // the route has already opted them in through `allowedRoles`.
+  if (["admin", "super_admin"].includes(normalizedRole)) {
+    return true;
+  }
   const normalizedPermissions = new Set(
     (permissions || []).map((permission) => normalizePermission(permission)),
   );

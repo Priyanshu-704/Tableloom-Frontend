@@ -34,6 +34,15 @@ const labels = {
   pushNotifications: "Push notifications",
   smsNotifications: "SMS notifications",
 };
+
+const clampNumber = (value, min, max, fallback) => {
+  const parsedValue = Number(value);
+  if (Number.isNaN(parsedValue)) {
+    return fallback;
+  }
+  return Math.min(max, Math.max(min, parsedValue));
+};
+
 export function NotificationSettings() {
   const { addNotification } = useAdmin();
   const { applySettings } = useSettings();
@@ -150,7 +159,7 @@ export function NotificationSettings() {
           <AdminFormSkeleton fields={6} />
         ) : (
           <>
-            <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
+            <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-4">
               <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
                 <div className="flex items-center gap-3">
                   <Activity className="h-5 w-5 text-primary-600" />
@@ -184,6 +193,27 @@ export function NotificationSettings() {
                 <p className="mt-2 text-base font-semibold text-gray-900">
                   {delayMonitorStatus?.lastRunSummary?.delayedOrdersFound ?? 0}{" "}
                   delayed orders
+                </p>
+                <p className="mt-1 text-sm text-gray-500">
+                  {delayMonitorStatus?.lastRunSummary?.criticalDelayedOrders ??
+                    0}{" "}
+                  critical
+                </p>
+              </div>
+
+              <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+                <p className="text-sm text-gray-500">Last Run Status</p>
+                <p className="mt-2 text-base font-semibold text-gray-900">
+                  {delayMonitorStatus?.lastError
+                    ? "Completed with errors"
+                    : delayMonitorStatus?.lastRunSummary?.checkedAt
+                      ? "Completed"
+                      : "Not run yet"}
+                </p>
+                <p className="mt-1 text-sm text-gray-500">
+                  {delayMonitorStatus?.lastRunSummary?.trigger
+                    ? `Triggered by ${delayMonitorStatus.lastRunSummary.trigger}`
+                    : "Waiting for first check"}
                 </p>
               </div>
             </div>
@@ -261,7 +291,12 @@ export function NotificationSettings() {
                     onChange={(event) =>
                       setDelayMonitor((current) => ({
                         ...current,
-                        intervalMinutes: Number(event.target.value || 5),
+                        intervalMinutes: clampNumber(
+                          event.target.value,
+                          1,
+                          59,
+                          5,
+                        ),
                       }))
                     }
                     disabled={!canManageNotificationSettings}
@@ -281,8 +316,11 @@ export function NotificationSettings() {
                     onChange={(event) =>
                       setDelayMonitor((current) => ({
                         ...current,
-                        criticalThresholdMinutes: Number(
-                          event.target.value || 15,
+                        criticalThresholdMinutes: clampNumber(
+                          event.target.value,
+                          1,
+                          240,
+                          15,
                         ),
                       }))
                     }
@@ -323,6 +361,12 @@ export function NotificationSettings() {
                 Save Notification Settings
               </Button>
             </div>
+
+            {delayMonitorStatus?.lastError ? (
+              <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                Last monitor error: {delayMonitorStatus.lastError}
+              </div>
+            ) : null}
           </>
         )}
       </div>

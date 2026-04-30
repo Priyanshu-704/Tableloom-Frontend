@@ -25,6 +25,7 @@ export const backupAdminService = {
       return {
         success: true,
         filename,
+        scope: response.headers?.["x-backup-scope"] || null,
       };
     } catch (error) {
       handleApiError(error, "Failed to export backup");
