@@ -16,17 +16,50 @@ import {
   subscribeToForegroundPush,
 } from "../../common/firebase/pushNotifications.js";
 import pushNotificationService from "../../common/services/pushNotificationService";
+import customerSessionService from "../../common/services/CustomerSessionService";
+import orderService from "../../common/services/orderService";
 import { axiosInstance } from "../../common/services/api";
 import { buildCustomerPath } from "../../common/utils/routes";
 import { useApp } from "./AppContext";
 import { storeCompletedVisit } from "../utils/completedVisit";
+
 const UserLiveUpdatesContext = createContext({
   isConnected: false,
 });
+
 const buildSocketUrl = () => {
   const baseUrl = axiosInstance?.defaults?.baseURL || "";
   return baseUrl.replace(/\/api\/?$/, "");
 };
+
+const SOCKET_OPTIONS = {
+  withCredentials: true,
+  transports: ["polling", "websocket"],
+  upgrade: true,
+  autoConnect: false,
+};
+
+const ORDER_EVENT_NAMES = [
+  "order:status-updated",
+  "order-status-updated",
+  "order:updated",
+  "order-updated",
+  "order_updated",
+  "new-order",
+  "new_order",
+  "order:new",
+];
+
+const extractOrderPayload = (payload = {}) => {
+  if (payload?.order && typeof payload.order === "object") {
+    return payload.order;
+  }
+  if (payload?.data && typeof payload.data === "object") {
+    return payload.data;
+  }
+  return payload;
+};
+
 const normalizeOrder = (payload = {}) => ({
   ...payload,
   id: payload?._id || payload?.id || payload?.orderId || "",
@@ -79,6 +112,12 @@ export function UserLiveUpdatesProvider({ children }) {
   const handledEventIdsRef = useRef(new Map());
   const completedSessionRedirectRef = useRef("");
   const locationPathRef = useRef(location.pathname);
+  const orderSyncTimerRef = useRef(null);
+  const lastOrderToastRef = useRef({
+    orderId: "",
+    status: "",
+    timestamp: 0,
+  });
   const [isConnected, setIsConnected] = useState(false);
   const activeSessionId = sessionId || getStoredSessionId();
   const markLiveEventHandled = useCallback((payload = {}) => {
@@ -103,6 +142,42 @@ export function UserLiveUpdatesProvider({ children }) {
     handledEventIdsRef.current.set(eventKey, now);
     return true;
   }, []);
+  const handleSessionCompleted = useCallback(
+    (payload = {}) => {
+      const completedSessionId = String(
+        payload?.sessionId || activeSessionId || getStoredSessionId(),
+      ).trim();
+      if (
+        completedSessionId &&
+        completedSessionRedirectRef.current === completedSessionId
+      ) {
+        return;
+      }
+      completedSessionRedirectRef.current = completedSessionId;
+      const thankYouMessage =
+        payload?.thankYouMessage ||
+        "Payment completed successfully. Thank you for dining with us.";
+      storeCompletedVisit({
+        sessionId: completedSessionId,
+        billId: payload?.billId || "",
+        billNumber: payload?.billNumber || "",
+        message: thankYouMessage,
+      });
+      clearNotifications().catch(() => {});
+      dispatch({
+        type: "CLEAR_SESSION",
+      });
+      if (locationPathRef.current !== buildCustomerPath("/thank-you")) {
+        navigate(buildCustomerPath("/thank-you"), {
+          replace: true,
+          state: {
+            message: thankYouMessage,
+          },
+        });
+      }
+    },
+    [activeSessionId, clearNotifications, dispatch, navigate],
+  );
   useEffect(() => {
     locationPathRef.current = location.pathname;
   }, [location.pathname]);
@@ -114,6 +189,89 @@ export function UserLiveUpdatesProvider({ children }) {
       });
     }
   }, [activeSessionId, dispatch, sessionId]);
+
+  const syncCurrentOrder = useCallback(
+    async ({
+      orderId = "",
+      fallbackOrder = null,
+      notifyStatus = "",
+      skipToast = false,
+    } = {}) => {
+      const sessionOrderResponse = activeSessionId
+        ? await orderService
+            .getOrderBySession(activeSessionId, {
+              force: true,
+            })
+            .catch(() => null)
+        : null;
+      const sessionOrder = normalizeOrder(sessionOrderResponse?.data || null);
+      const shouldUseSessionOrder =
+        sessionOrderResponse?.success &&
+        sessionOrder &&
+        (sessionOrder?._id || sessionOrder?.id);
+      const detailOrderResponse =
+        !shouldUseSessionOrder && orderId
+          ? await orderService
+              .getOrderById(orderId, {
+                force: true,
+              })
+              .catch(() => null)
+          : null;
+      const detailOrder = normalizeOrder(detailOrderResponse?.data || null);
+      const nextOrder =
+        (shouldUseSessionOrder ? sessionOrder : null) ||
+        (detailOrderResponse?.success &&
+        detailOrder &&
+        (detailOrder?._id || detailOrder?.id)
+          ? detailOrder
+          : null) ||
+        fallbackOrder;
+      if (!nextOrder || !(nextOrder?._id || nextOrder?.id)) {
+        return;
+      }
+      dispatch({
+        type: "SET_CURRENT_ORDER",
+        payload: nextOrder,
+      });
+      const nextStatus = notifyStatus || nextOrder?.status || "";
+      if (!nextStatus || skipToast) {
+        return;
+      }
+      const nextOrderId = String(
+        nextOrder?._id || nextOrder?.id || orderId || "",
+      ).trim();
+      const now = Date.now();
+      const lastToast = lastOrderToastRef.current;
+      if (
+        lastToast.orderId === nextOrderId &&
+        lastToast.status === nextStatus &&
+        now - lastToast.timestamp < 4000
+      ) {
+        return;
+      }
+      lastOrderToastRef.current = {
+        orderId: nextOrderId,
+        status: nextStatus,
+        timestamp: now,
+      };
+      notify(`Order status updated: ${nextStatus.replace(/_/g, " ")}`, "info");
+    },
+    [activeSessionId, dispatch, notify],
+  );
+
+  const scheduleOrderSync = useCallback(
+    (options = {}) => {
+      if (orderSyncTimerRef.current) {
+        window.clearTimeout(orderSyncTimerRef.current);
+      }
+      orderSyncTimerRef.current = window.setTimeout(() => {
+        orderSyncTimerRef.current = null;
+        syncCurrentOrder(options).catch(() => {});
+      }, 150);
+    },
+    [syncCurrentOrder],
+  );
+
   useEffect(() => {
     const socketUrl = buildSocketUrl();
     if (!activeSessionId) {
@@ -122,42 +280,59 @@ export function UserLiveUpdatesProvider({ children }) {
         socketRef.current = null;
       }
       joinedSessionRef.current = "";
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsConnected(false);
       return undefined;
     }
     if (!socketUrl || socketRef.current) {
       return undefined;
     }
-    const socket = io(socketUrl, {
-      transports: ["websocket", "polling"],
-      withCredentials: true,
-      autoConnect: true,
-    });
+    const socket = io(socketUrl, SOCKET_OPTIONS);
     socketRef.current = socket;
     const joinSessionRoom = (activeSessionId) => {
       if (!activeSessionId) {
         return;
+      }
+      if (
+        joinedSessionRef.current &&
+        joinedSessionRef.current !== activeSessionId
+      ) {
+        socket.emit("leave-session-room", joinedSessionRef.current);
+        socket.emit("leave-customer-room", joinedSessionRef.current);
       }
       socket.emit("join-session-room", activeSessionId);
       socket.emit("join-customer-room", activeSessionId);
       joinedSessionRef.current = activeSessionId;
     };
     const handleOrderUpdate = (payload = {}) => {
-      const normalizedOrder = normalizeOrder(payload);
-      if (!(normalizedOrder?._id || normalizedOrder?.id)) {
+      const resolvedPayload = extractOrderPayload(payload);
+      const normalizedOrder = normalizeOrder(resolvedPayload);
+      const nextOrderId = String(
+        normalizedOrder?._id ||
+          normalizedOrder?.id ||
+          resolvedPayload?.orderId ||
+          payload?.orderId ||
+          "",
+      ).trim();
+      const nextStatus =
+        resolvedPayload?.status || payload?.status || normalizedOrder?.status;
+      const nextSessionId = String(
+        resolvedPayload?.sessionId || payload?.sessionId || activeSessionId,
+      ).trim();
+      if (!nextOrderId && !nextSessionId) {
         return;
       }
-      dispatch({
-        type: "SET_CURRENT_ORDER",
-        payload: normalizedOrder,
-      });
-      const nextStatus = payload?.status || normalizedOrder?.status;
-      if (nextStatus) {
-        notify(
-          `Order status updated: ${nextStatus.replace(/_/g, " ")}`,
-          "info",
-        );
+      if (nextOrderId) {
+        dispatch({
+          type: "SET_CURRENT_ORDER",
+          payload: normalizedOrder,
+        });
       }
+      scheduleOrderSync({
+        orderId: nextOrderId,
+        fallbackOrder: normalizedOrder,
+        notifyStatus: nextStatus,
+      });
     };
     const handlePersistentNotification = (payload = {}) => {
       if (!markLiveEventHandled(payload)) {
@@ -202,39 +377,6 @@ export function UserLiveUpdatesProvider({ children }) {
               : getWaiterMessage(payload);
       notify(nextMessage, "waiter");
     };
-    const handleSessionCompleted = (payload = {}) => {
-      const completedSessionId =
-        String(payload?.sessionId || activeSessionId || getStoredSessionId())
-          .trim();
-      if (
-        completedSessionId &&
-        completedSessionRedirectRef.current === completedSessionId
-      ) {
-        return;
-      }
-      completedSessionRedirectRef.current = completedSessionId;
-      const thankYouMessage =
-        payload?.thankYouMessage ||
-        "Payment completed successfully. Thank you for dining with us.";
-      storeCompletedVisit({
-        sessionId: completedSessionId,
-        billId: payload?.billId || "",
-        billNumber: payload?.billNumber || "",
-        message: thankYouMessage,
-      });
-      clearNotifications().catch(() => {});
-      dispatch({
-        type: "CLEAR_SESSION",
-      });
-      if (locationPathRef.current !== buildCustomerPath("/thank-you")) {
-        navigate(buildCustomerPath("/thank-you"), {
-          replace: true,
-          state: {
-            message: thankYouMessage,
-          },
-        });
-      }
-    };
     socket.on("connect", () => {
       setIsConnected(true);
       joinSessionRoom(activeSessionId);
@@ -242,8 +384,9 @@ export function UserLiveUpdatesProvider({ children }) {
     socket.on("disconnect", () => {
       setIsConnected(false);
     });
-    socket.on("order:status-updated", handleOrderUpdate);
-    socket.on("order-status-updated", handleOrderUpdate);
+    ORDER_EVENT_NAMES.forEach((eventName) => {
+      socket.on(eventName, handleOrderUpdate);
+    });
     socket.on("new_notification", handlePersistentNotification);
     socket.on("waiter-call:confirmed", handleWaiterUpdate);
     socket.on("waiter-call:updated", handleWaiterUpdate);
@@ -254,7 +397,12 @@ export function UserLiveUpdatesProvider({ children }) {
     socket.on("waiter-call:cancelled", handleWaiterUpdate);
     socket.on("session:completed", handleSessionCompleted);
     socket.on("customer-session:completed", handleSessionCompleted);
+    socket.connect();
     return () => {
+      if (orderSyncTimerRef.current) {
+        window.clearTimeout(orderSyncTimerRef.current);
+        orderSyncTimerRef.current = null;
+      }
       socket.disconnect();
       socketRef.current = null;
       joinedSessionRef.current = "";
@@ -263,17 +411,96 @@ export function UserLiveUpdatesProvider({ children }) {
   }, [
     activeSessionId,
     addPersistentNotification,
-    clearNotifications,
     dispatch,
+    handleSessionCompleted,
     markLiveEventHandled,
-    navigate,
     notify,
+    scheduleOrderSync,
   ]);
+
+  useEffect(() => {
+    if (
+      !activeSessionId ||
+      !socketRef.current ||
+      !socketRef.current.connected ||
+      joinedSessionRef.current === activeSessionId
+    ) {
+      return;
+    }
+    if (joinedSessionRef.current) {
+      socketRef.current.emit("leave-session-room", joinedSessionRef.current);
+      socketRef.current.emit("leave-customer-room", joinedSessionRef.current);
+    }
+    socketRef.current.emit("join-session-room", activeSessionId);
+    socketRef.current.emit("join-customer-room", activeSessionId);
+    joinedSessionRef.current = activeSessionId;
+  }, [activeSessionId]);
   useEffect(() => {
     if (activeSessionId) {
       completedSessionRedirectRef.current = "";
     }
   }, [activeSessionId]);
+  useEffect(() => {
+    if (!activeSessionId) {
+      return undefined;
+    }
+    let cancelled = false;
+    const syncOrderStatus = async () => {
+      const response = await orderService
+        .getOrderBySession(activeSessionId, {
+          force: true,
+        })
+        .catch(() => null);
+      const nextOrder = normalizeOrder(response?.data || null);
+      if (cancelled || !response?.success || !nextOrder) {
+        return;
+      }
+      dispatch({
+        type: "SET_CURRENT_ORDER",
+        payload: nextOrder,
+      });
+    };
+    syncOrderStatus();
+    const pollTimer = window.setInterval(syncOrderStatus, 8000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(pollTimer);
+    };
+  }, [activeSessionId, dispatch]);
+  useEffect(() => {
+    if (!activeSessionId) {
+      return undefined;
+    }
+    let cancelled = false;
+    const syncCompletedSession = async () => {
+      const response = await customerSessionService
+        .getSession(activeSessionId, {
+          force: true,
+        })
+        .catch(() => null);
+      if (cancelled || !response?.success || !response?.data) {
+        return;
+      }
+      const sessionData = response.data;
+      const isCompletedSession =
+        String(sessionData?.sessionStatus || "").toLowerCase() === "completed";
+      const isPaid =
+        String(sessionData?.paymentStatus || "").toLowerCase() === "paid";
+      if (isCompletedSession && isPaid) {
+        handleSessionCompleted({
+          sessionId: sessionData?.sessionId || activeSessionId,
+          thankYouMessage:
+            "Payment completed successfully. Thank you for dining with us.",
+        });
+      }
+    };
+    syncCompletedSession();
+    const pollTimer = window.setInterval(syncCompletedSession, 8000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(pollTimer);
+    };
+  }, [activeSessionId, handleSessionCompleted]);
   useEffect(() => {
     if (!activeSessionId) {
       return;

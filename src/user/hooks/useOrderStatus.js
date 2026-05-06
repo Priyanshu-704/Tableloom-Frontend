@@ -66,8 +66,12 @@ export function useOrderStatus(orderId) {
     }
     setIsLoading(true);
     const response = orderId
-      ? await orderService.getOrderById(orderId)
-      : await orderService.getOrderBySession(sessionId);
+      ? await orderService.getOrderById(orderId, {
+          force: true,
+        })
+      : await orderService.getOrderBySession(sessionId, {
+          force: true,
+        });
     const nextOrder = normalizeOrder(response?.data || null);
     if (response?.success && nextOrder) {
       setFetchedOrder(nextOrder);
@@ -94,6 +98,33 @@ export function useOrderStatus(orderId) {
     }, 0);
     return () => window.clearTimeout(timeoutId);
   }, [refreshOrder]);
+  useEffect(() => {
+    if (!orderId && !sessionId) {
+      return undefined;
+    }
+    const pollOrder = () => {
+      const responsePromise = orderId
+        ? orderService.getOrderById(orderId, {
+            force: true,
+          })
+        : orderService.getOrderBySession(sessionId, {
+            force: true,
+          });
+      responsePromise.then((response) => {
+        const nextOrder = normalizeOrder(response?.data || null);
+        if (!response?.success || !nextOrder) {
+          return;
+        }
+        setFetchedOrder(nextOrder);
+        dispatch({
+          type: "SET_CURRENT_ORDER",
+          payload: nextOrder,
+        });
+      }).catch(() => {});
+    };
+    const intervalId = window.setInterval(pollOrder, 8000);
+    return () => window.clearInterval(intervalId);
+  }, [dispatch, orderId, sessionId]);
   return {
     order,
     isLoading,

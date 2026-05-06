@@ -3,27 +3,49 @@ import handleApiError from "../utils/handleApiError";
 import { createRequestCache } from "../utils/requestCache";
 const orderRequestCache = createRequestCache(10000);
 export const orderService = {
-  getOrderById: async (orderId) => {
+  getOrderById: async (orderId, options = {}) => {
     try {
-      const response = await axiosInstance.get(`/orders/${orderId}`);
-      return (
-        response?.data ?? {
-          success: true,
-          data: null,
-        }
+      return await orderRequestCache.run(
+        {
+          scope: `orders:detail:${orderId}`,
+          orderId,
+        },
+        async () => {
+          const response = await axiosInstance.get(`/orders/${orderId}`);
+          return (
+            response?.data ?? {
+              success: true,
+              data: null,
+            }
+          );
+        },
+        {
+          force: options?.force === true,
+        },
       );
     } catch (error) {
       handleApiError(error, "Failed to fetch order details");
     }
   },
-  getOrderBySession: async (sessionId) => {
+  getOrderBySession: async (sessionId, options = {}) => {
     try {
-      const response = await axiosInstance.get(`/orders/session/${sessionId}`);
-      return (
-        response?.data ?? {
-          success: true,
-          data: null,
-        }
+      return await orderRequestCache.run(
+        {
+          scope: `orders:session:${sessionId}`,
+          sessionId,
+        },
+        async () => {
+          const response = await axiosInstance.get(`/orders/session/${sessionId}`);
+          return (
+            response?.data ?? {
+              success: true,
+              data: null,
+            }
+          );
+        },
+        {
+          force: options?.force === true,
+        },
       );
     } catch (error) {
       handleApiError(error, "Failed to fetch current session order");
@@ -102,6 +124,7 @@ export const orderService = {
         status,
         notes,
       });
+      orderRequestCache.invalidate("orders:");
       return (
         response?.data ?? {
           success: true,

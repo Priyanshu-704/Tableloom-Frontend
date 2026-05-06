@@ -195,7 +195,7 @@ class TableService {
     return `${capacity} ${capacity === 1 ? "person" : "people"}`;
   }
   canOccupy(table) {
-    return table.status === "available" && table.isActive;
+    return ["available", "cleaning"].includes(table.status) && table.isActive;
   }
   canClean(table) {
     return ["available", "occupied", "billing"].includes(table.status);

@@ -1,3 +1,4 @@
+/* eslint-disable no-undef */
 (function () {
   const searchParams = new URL(self.location.href).searchParams;
   const firebaseVersion = searchParams.get("firebaseVersion") || "12.11.0";

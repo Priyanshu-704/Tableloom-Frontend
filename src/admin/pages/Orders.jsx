@@ -118,10 +118,15 @@ export function Orders() {
   const currency = settings?.taxSettings?.currency || "INR";
   const { dispatch, kitchenView, addNotification } = useAdmin();
   const canViewOrderStats = hasPermission("view_statistics");
-  const canUpdateOrderStatus =
+  const canFullyUpdateOrderStatus =
+    !isMonitoringMode && hasPermission("order_update_status");
+  const canMarkServedOnly =
     !isMonitoringMode &&
-    hasPermission("order_update_status") &&
-    String(user?.role || "").toLowerCase() !== "chef";
+    !canFullyUpdateOrderStatus &&
+    hasPermission("kitchen_mark_served");
+  const canUpdateOrderStatus =
+    canFullyUpdateOrderStatus || canMarkServedOnly;
+  const canCancelOrders = String(user?.role || "").toLowerCase() === "chef";
   const [orders, setOrders] = useState([]);
   const [statistics, setStatistics] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -445,6 +450,15 @@ export function Orders() {
                 onStatusUpdate={updateStatus}
                 isUpdating={updatingId === order._id}
                 isReadOnly={!canUpdateOrderStatus}
+                canCancel={canCancelOrders}
+                canAdvanceStatus={canUpdateOrderStatus}
+                allowedNextStatuses={
+                  canFullyUpdateOrderStatus
+                    ? null
+                    : canMarkServedOnly
+                      ? ["served"]
+                      : []
+                }
               />
             ))}
           </div>

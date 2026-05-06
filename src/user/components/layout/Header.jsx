@@ -13,7 +13,8 @@ import { BrandBadge } from "../../../common/components/BrandBadge";
 import { buildCustomerPath } from "../../../common/utils/routes";
 import { storeCompletedVisit } from "../../utils/completedVisit";
 export function Header() {
-  const { tableNumber, sessionId, dispatch } = useApp();
+  const { tableNumber, sessionId, currentOrder, sessionDetails, dispatch } =
+    useApp();
   const navigate = useNavigate();
   const {
     notifications,
@@ -28,6 +29,16 @@ export function Header() {
   const [showNotifications, setShowNotifications] = useState(false);
   const [cartCount, setCartCount] = useState(0);
   const [loggingOut, setLoggingOut] = useState(false);
+  const resolvedOrder =
+    currentOrder || sessionDetails?.currentOrder || null;
+  const resolvedOrderStatus = String(resolvedOrder?.status || "")
+    .trim()
+    .toLowerCase();
+  const hasPlacedOrder = Boolean(
+    resolvedOrder &&
+      !["completed", "cancelled"].includes(resolvedOrderStatus),
+  );
+  const canShowLogout = Boolean(sessionId) && !hasPlacedOrder;
   useEffect(() => {
     let mounted = true;
     const syncCountFromCart = (cartData = null) => {
@@ -136,7 +147,7 @@ export function Header() {
               ) : null}
             </button>
 
-            {sessionId ? (
+            {canShowLogout ? (
               <button
                 type="button"
                 onClick={handleLogout}
@@ -247,7 +258,7 @@ export function Header() {
               )}
             </button>
 
-            {sessionId ? (
+            {canShowLogout ? (
               <button
                 type="button"
                 onClick={handleLogout}

@@ -8,7 +8,6 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { useLocation } from "react-router-dom";
 import { io } from "socket.io-client";
 import { useAuth } from "../../common/context/AuthContext";
 import { useSettings } from "../../common/context/SettingsContext";
@@ -18,7 +17,6 @@ import {
 } from "../../common/firebase/pushNotifications.js";
 import { notificationAdminService } from "../../common/services";
 import pushNotificationService from "../../common/services/pushNotificationService";
-import { isSuperAdminMonitoringPath } from "../../common/utils/routes";
 import { useAdmin } from "./AdminContext";
 import {
   canAccessNotificationType,
@@ -81,15 +79,18 @@ const getSocketUrl = () => {
   const apiUrl = import.meta.env.VITE_APP_API_URL;
   return apiUrl.replace(/\/api\/?$/, "");
 };
+
+const SOCKET_OPTIONS = {
+  withCredentials: true,
+  transports: ["polling", "websocket"],
+  upgrade: true,
+  autoConnect: false,
+};
 export function AdminNotificationCenterProvider({ children }) {
-  const location = useLocation();
+
   const { user, isAuthenticated, hasPermission } = useAuth();
   const { addNotification } = useAdmin();
   const { settings } = useSettings();
-  const isMonitoringMode = isSuperAdminMonitoringPath(
-    location.pathname,
-    user?.role,
-  );
   const isSuperAdmin = String(user?.role || "").toLowerCase() === "super_admin";
   const allowedNotificationTypes = useMemo(
     () => getAllowedNotificationTypes(user?.role),
@@ -117,6 +118,10 @@ export function AdminNotificationCenterProvider({ children }) {
   const [activityVersion, setActivityVersion] = useState(0);
   const socketRef = useRef(null);
   const filtersRef = useRef(defaultFilters);
+  const isDrawerOpenRef = useRef(false);
+  const loadNotificationsRef = useRef(null);
+  const loadStatsRef = useRef(null);
+  const addNotificationRef = useRef(addNotification);
   const lastFetchKeyRef = useRef("");
   const handledEventIdsRef = useRef(new Map());
   const markLiveEventHandled = useCallback((payload = {}) => {
@@ -296,14 +301,23 @@ export function AdminNotificationCenterProvider({ children }) {
     filtersRef.current = filters;
   }, [filters]);
   useEffect(() => {
+    isDrawerOpenRef.current = isDrawerOpen;
+  }, [isDrawerOpen]);
+  useEffect(() => {
+    loadNotificationsRef.current = loadNotifications;
+  }, [loadNotifications]);
+  useEffect(() => {
+    loadStatsRef.current = loadStats;
+  }, [loadStats]);
+  useEffect(() => {
+    addNotificationRef.current = addNotification;
+  }, [addNotification]);
+  useEffect(() => {
     if (!isAuthenticated || !canViewNotifications || !user?._id) {
       setIsConnected(false);
       return undefined;
     }
-    const socket = io(getSocketUrl(), {
-      withCredentials: true,
-      transports: ["websocket", "polling"],
-    });
+    const socket = io(getSocketUrl(), SOCKET_OPTIONS);
     socketRef.current = socket;
     const joinRooms = () => {
       socket.emit("join-user-room", user._id);
@@ -331,13 +345,13 @@ export function AdminNotificationCenterProvider({ children }) {
         setNotifications([]);
       }
       setActivityVersion((current) => current + 1);
-      if (isDrawerOpen) {
-        loadNotifications({
+      if (isDrawerOpenRef.current) {
+        loadNotificationsRef.current?.({
           silent: true,
           force: true,
         });
       } else {
-        loadStats();
+        loadStatsRef.current?.();
       }
     };
     const handleWaiterCall = (payload = {}) => {
@@ -346,15 +360,18 @@ export function AdminNotificationCenterProvider({ children }) {
       }
       const tableLabel =
         payload.tableName || `Table ${payload.tableNumber || ""}`.trim();
-      addNotification(`${tableLabel} requested staff attention`, "warning");
+      addNotificationRef.current?.(
+        `${tableLabel} requested staff attention`,
+        "warning",
+      );
       setActivityVersion((current) => current + 1);
-      if (isDrawerOpen) {
-        loadNotifications({
+      if (isDrawerOpenRef.current) {
+        loadNotificationsRef.current?.({
           silent: true,
           force: true,
         });
       } else {
-        loadStats();
+        loadStatsRef.current?.();
       }
     };
     socket.on("connect", () => {
@@ -372,9 +389,13 @@ export function AdminNotificationCenterProvider({ children }) {
     socket.on("new_waiter_call", handleWaiterCall);
     socket.on("notification:sound", (payload = {}) => {
       if (payload.soundType === "urgent") {
-        addNotification("Important live notification received", "warning");
+        addNotificationRef.current?.(
+          "Important live notification received",
+          "warning",
+        );
       }
     });
+    socket.connect();
     return () => {
       socket.disconnect();
       socketRef.current = null;
@@ -382,12 +403,8 @@ export function AdminNotificationCenterProvider({ children }) {
     };
   }, [
     appendLiveNotification,
-    addNotification,
     canViewNotifications,
     isAuthenticated,
-    isDrawerOpen,
-    loadNotifications,
-    loadStats,
     user?._id,
     user?.role,
     isSuperAdmin,

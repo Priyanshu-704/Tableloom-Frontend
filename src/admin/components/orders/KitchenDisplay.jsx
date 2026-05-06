@@ -232,6 +232,8 @@ export default function KitchenDisplay({
       "new-order",
       "order:updated",
       "order-updated",
+      "order:status-updated",
+      "order-status-updated",
       "order:delayed",
       "order_delayed",
       "new_order",
@@ -245,6 +247,7 @@ export default function KitchenDisplay({
     ],
     joinRooms: (socket) => {
       socket.emit("join-kitchen-room");
+      socket.emit("join-staff-room");
     },
     onEvent: ({ eventName, payload }) => {
       if (eventName === "stations_updated" && Array.isArray(payload)) {

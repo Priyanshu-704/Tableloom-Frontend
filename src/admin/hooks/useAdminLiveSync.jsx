@@ -9,6 +9,13 @@ const buildSocketUrl = () => {
   return baseUrl.replace(/\/api\/?$/, "");
 };
 
+const SOCKET_OPTIONS = {
+  withCredentials: true,
+  transports: ["polling", "websocket"],
+  upgrade: true,
+  autoConnect: false,
+};
+
 export function useAdminLiveSync({
   enabled = true,
   events = [],
@@ -49,10 +56,7 @@ export function useAdminLiveSync({
       return undefined;
     }
 
-    const socket = io(socketUrl, {
-      withCredentials: true,
-      transports: ["websocket", "polling"],
-    });
+    const socket = io(socketUrl, SOCKET_OPTIONS);
 
     const emitJoinedRooms = () => {
       joinRoomsRef.current?.(socket, user);
@@ -86,6 +90,7 @@ export function useAdminLiveSync({
     eventHandlers.forEach(({ eventName, handler }) => {
       socket.on(eventName, handler);
     });
+    socket.connect();
 
     return () => {
       if (timerRef.current) {

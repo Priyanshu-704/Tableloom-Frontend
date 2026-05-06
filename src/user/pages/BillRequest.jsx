@@ -8,7 +8,6 @@ import {
   Mail,
   Receipt,
   RefreshCw,
-  User,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useApp } from "../context/AppContext";
@@ -33,6 +32,8 @@ const formatCurrency = (value, currency = "INR") =>
     currency,
     maximumFractionDigits: 2,
   }).format(Number(value || 0));
+const isValidEmail = (value = "") =>
+  /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || "").trim());
 const normalizeBillItems = (payload = {}) => {
   if (Array.isArray(payload?.orders) && payload.orders.length > 0) {
     return payload.orders.flatMap((order, orderIndex) =>
@@ -195,7 +196,20 @@ export function BillRequest() {
   const sessionEmail = String(
     billData?.session?.email || customerInfo?.email || "",
   ).trim();
-  const billDeliveryEmail = sessionEmail || String(email || "").trim();
+  const billDeliveryEmail = String(email || sessionEmail || "")
+    .trim()
+    .toLowerCase();
+  const ensureBillEmail = () => {
+    if (!billDeliveryEmail) {
+      notify("Enter your email address to receive the bill.", "error");
+      return false;
+    }
+    if (!isValidEmail(billDeliveryEmail)) {
+      notify("Enter a valid email address to continue.", "error");
+      return false;
+    }
+    return true;
+  };
   const requestBillForSelection = async ({ notifyUser = true } = {}) => {
     if (!sessionId) {
       if (notifyUser) {
@@ -223,6 +237,9 @@ export function BillRequest() {
     return response;
   };
   const handleRequestBill = async () => {
+    if (!ensureBillEmail()) {
+      return;
+    }
     await requestBillForSelection();
   };
   const openBillDocument = (mode = "view") => {
@@ -249,6 +266,9 @@ export function BillRequest() {
   const launchRazorpayCheckout = async () => {
     if (!sessionId || !billData?.summary?.totalAmount) {
       notify("Unable to process payment right now", "error");
+      return;
+    }
+    if (!ensureBillEmail()) {
       return;
     }
     try {
@@ -398,6 +418,9 @@ export function BillRequest() {
     }
   };
   const handlePayment = async () => {
+    if (!ensureBillEmail()) {
+      return;
+    }
     if (selectedPayment === "cash") {
       const response = await requestBillForSelection({
         notifyUser: false,
@@ -688,9 +711,7 @@ export function BillRequest() {
             Bill Delivery
           </h3>
           <p className="mt-2 text-sm text-gray-600">
-            {sessionEmail
-              ? "Using the email captured when this dining session was created."
-              : "Provide an email address if you want the generated bill sent there as well."}
+            Enter the email address where you want the bill delivered.
           </p>
           {isTaxInclusive ? (
             <p className="mt-2 text-xs text-amber-600">
@@ -699,11 +720,10 @@ export function BillRequest() {
           ) : null}
           <input
             type="email"
-            value={sessionEmail || email}
+            value={email}
             onChange={(event) => setEmail(event.target.value)}
             placeholder="Enter your email address"
-            readOnly={Boolean(sessionEmail)}
-            className={`mt-4 w-full rounded-xl border border-slate-300 px-4 py-3 text-sm focus:border-primary-500 focus:outline-none ${sessionEmail ? "cursor-not-allowed bg-slate-100 text-slate-600" : ""}`}
+            className="mt-4 w-full rounded-xl border border-slate-300 px-4 py-3 text-sm focus:border-primary-500 focus:outline-none"
           />
         </div>
 

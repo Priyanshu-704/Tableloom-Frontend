@@ -115,11 +115,19 @@ export function OrderCard({
   onStatusUpdate,
   isUpdating = false,
   isReadOnly = false,
+  canCancel = false,
+  canAdvanceStatus = true,
+  allowedNextStatuses = null,
 }) {
   const [showActions, setShowActions] = React.useState(false);
   const statusConfig = STATUS_CONFIG[order.status] || STATUS_CONFIG.pending;
   const StatusIcon = statusConfig.icon;
   const now = React.useMemo(() => new Date().getTime(), []);
+  const canUseNextStatus =
+    Boolean(statusConfig.nextStatus) &&
+    (Array.isArray(allowedNextStatuses)
+      ? allowedNextStatuses.includes(statusConfig.nextStatus)
+      : true);
   const getEstimatedTime = () => {
     if (!order.estimatedReadyTime) return null;
     const diffMins = Math.round(
@@ -177,7 +185,9 @@ export function OrderCard({
                     onClick={() => setShowActions(false)}
                   />
                   <div className="absolute right-0 z-20 mt-1 w-48 rounded-lg border border-gray-200 bg-white py-1 shadow-lg">
-                    {statusConfig.nextAction && (
+                    {statusConfig.nextAction &&
+                    canAdvanceStatus &&
+                    canUseNextStatus ? (
                       <button
                         type="button"
                         onClick={() => changeStatus(statusConfig.nextStatus)}
@@ -185,10 +195,11 @@ export function OrderCard({
                       >
                         {statusConfig.nextAction}
                       </button>
-                    )}
-                    {!["cancelled", "served", "completed"].includes(
+                    ) : null}
+                    {canCancel &&
+                    !["cancelled", "served", "completed"].includes(
                       order.status,
-                    ) && (
+                    ) ? (
                       <button
                         type="button"
                         onClick={() => changeStatus(ORDER_STATUS.CANCELLED)}
@@ -196,7 +207,7 @@ export function OrderCard({
                       >
                         Cancel Order
                       </button>
-                    )}
+                    ) : null}
                   </div>
                 </>
               )}
@@ -274,7 +285,7 @@ export function OrderCard({
             ) : null}
           </div>
 
-          {!isReadOnly && statusConfig.nextAction ? (
+          {!isReadOnly && statusConfig.nextAction && canUseNextStatus ? (
             <button
               type="button"
               disabled={isUpdating}

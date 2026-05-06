@@ -171,7 +171,8 @@ export function OrderStatus({ onBack }) {
   };
   const currentStepIndex = getCurrentStepIndex();
   const resolvedStatus = getResolvedOrderStatus(order.status);
-  const isFinalStatus = resolvedStatus === FINAL_STATUS_KEY;
+  const isCancelled = resolvedStatus === ORDER_STATUS.CANCELLED;
+  const isFinalStatus = resolvedStatus === FINAL_STATUS_KEY || isCancelled;
   return (
     <div className="min-h-screen bg-gray-50 mb-14">
       <WaiterModal
@@ -272,6 +273,12 @@ export function OrderStatus({ onBack }) {
         </div>
 
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          {isCancelled ? (
+            <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+              This order was cancelled by the kitchen. Please place a new order
+              if you still want to continue dining.
+            </div>
+          ) : null}
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-lg font-semibold text-gray-900">
               Order Progress

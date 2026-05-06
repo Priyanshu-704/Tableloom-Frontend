@@ -35,7 +35,7 @@ export const customerSessionService = {
         customerData: {
           name: customerData?.name || "",
           email: customerData?.email || "",
-          phone: customerData?.phone || "",
+          phone: customerData?.phone || customerData?.mobile || "",
         },
       });
       return normalizeResponse(response);
@@ -43,7 +43,7 @@ export const customerSessionService = {
       handleApiError(error, "Failed to start customer session");
     }
   },
-  getSession: async (sessionId) => {
+  getSession: async (sessionId, options = {}) => {
     try {
       return await sessionRequestCache.run(
         `customer-session:${sessionId}`,
@@ -52,6 +52,9 @@ export const customerSessionService = {
             `/customers/session/${sessionId}`,
           );
           return normalizeResponse(response);
+        },
+        {
+          force: options?.force === true,
         },
       );
     } catch (error) {
