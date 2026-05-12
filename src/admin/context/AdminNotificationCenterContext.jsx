@@ -16,6 +16,7 @@ import {
   subscribeToForegroundPush,
 } from "../../common/firebase/pushNotifications.js";
 import { notificationAdminService } from "../../common/services";
+import { getStoredAuthTokens } from "../../common/services/api";
 import pushNotificationService from "../../common/services/pushNotificationService";
 import { useAdmin } from "./AdminContext";
 import {
@@ -317,7 +318,15 @@ export function AdminNotificationCenterProvider({ children }) {
       setIsConnected(false);
       return undefined;
     }
-    const socket = io(getSocketUrl(), SOCKET_OPTIONS);
+    const { accessToken } = getStoredAuthTokens();
+    const socket = io(getSocketUrl(), {
+      ...SOCKET_OPTIONS,
+      auth: accessToken
+        ? {
+            accessToken: `Bearer ${accessToken}`,
+          }
+        : undefined,
+    });
     socketRef.current = socket;
     const joinRooms = () => {
       socket.emit("join-user-room", user._id);

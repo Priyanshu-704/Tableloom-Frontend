@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef } from "react";
 import { io } from "socket.io-client";
 import { useAuth } from "../../common/context/AuthContext";
-import { axiosInstance } from "../../common/services/api";
+import { axiosInstance, getStoredAuthTokens } from "../../common/services/api";
 import { logger } from "../../common/utils/logger.js";
 
 const buildSocketUrl = () => {
@@ -56,7 +56,15 @@ export function useAdminLiveSync({
       return undefined;
     }
 
-    const socket = io(socketUrl, SOCKET_OPTIONS);
+    const { accessToken } = getStoredAuthTokens();
+    const socket = io(socketUrl, {
+      ...SOCKET_OPTIONS,
+      auth: accessToken
+        ? {
+            accessToken: `Bearer ${accessToken}`,
+          }
+        : undefined,
+    });
 
     const emitJoinedRooms = () => {
       joinRoomsRef.current?.(socket, user);

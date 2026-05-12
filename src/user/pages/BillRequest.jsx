@@ -79,7 +79,7 @@ const normalizeBillItems = (payload = {}) => {
 };
 export function BillRequest() {
   const navigate = useNavigate();
-  const { sessionId, tableNumber, customerInfo, dispatch } = useApp();
+  const { sessionId, tableNumber, customerInfo } = useApp();
   const { notify, clearNotifications } = useNotification();
   const { settings } = useSettings();
   const [billData, setBillData] = useState(null);
@@ -378,12 +378,9 @@ export function BillRequest() {
               activeBill._id,
             billNumber:
               verificationResponse?.data?.bill?.billNumber ||
-              activeBill.billNumber ||
-              "",
+            activeBill.billNumber ||
+            "",
             message: thankYouMessage,
-          });
-          dispatch({
-            type: "CLEAR_SESSION",
           });
           try {
             await clearNotifications();

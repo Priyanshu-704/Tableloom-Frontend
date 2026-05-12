@@ -81,20 +81,33 @@ const normalizeOrder = (payload = {}) => ({
       }
     : {}),
 });
+
+const resolvePaidSessionSnapshot = (payload = null) => {
+  const responseData = payload?.data || payload || {};
+  const sessionData = responseData?.session || responseData || null;
+  const billData = responseData?.bill || null;
+  const sessionStatus = String(
+    sessionData?.sessionStatus || sessionData?.status || "",
+  )
+    .trim()
+    .toLowerCase();
+  const paymentStatus = String(
+    billData?.paymentStatus || sessionData?.paymentStatus || "",
+  )
+    .trim()
+    .toLowerCase();
+  return {
+    sessionData,
+    billData,
+    isPaid: paymentStatus === "paid",
+    isCompletedSession: sessionStatus === "completed",
+  };
+};
+
 const getWaiterMessage = (payload = {}) =>
   payload?.message ||
   payload?.statusMessage ||
   "Your request has been updated.";
-const getStoredSessionId = () => {
-  if (typeof window === "undefined") {
-    return "";
-  }
-  return (
-    window.sessionStorage.getItem("sessionId") ||
-    window.localStorage.getItem("sessionId") ||
-    ""
-  );
-};
 export function UserLiveUpdatesProvider({ children }) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -119,7 +132,7 @@ export function UserLiveUpdatesProvider({ children }) {
     timestamp: 0,
   });
   const [isConnected, setIsConnected] = useState(false);
-  const activeSessionId = sessionId || getStoredSessionId();
+  const activeSessionId = sessionId;
   const markLiveEventHandled = useCallback((payload = {}) => {
     const eventKey =
       payload?._id ||
@@ -145,7 +158,7 @@ export function UserLiveUpdatesProvider({ children }) {
   const handleSessionCompleted = useCallback(
     (payload = {}) => {
       const completedSessionId = String(
-        payload?.sessionId || activeSessionId || getStoredSessionId(),
+        payload?.sessionId || activeSessionId,
       ).trim();
       if (
         completedSessionId &&
@@ -159,13 +172,10 @@ export function UserLiveUpdatesProvider({ children }) {
         "Payment completed successfully. Thank you for dining with us.";
       storeCompletedVisit({
         sessionId: completedSessionId,
-        billId: payload?.billId || "",
-        billNumber: payload?.billNumber || "",
+        billId:
+          payload?.billId || payload?.bill?._id || payload?.bill?.id || "",
+        billNumber: payload?.billNumber || payload?.bill?.billNumber || "",
         message: thankYouMessage,
-      });
-      clearNotifications().catch(() => {});
-      dispatch({
-        type: "CLEAR_SESSION",
       });
       if (locationPathRef.current !== buildCustomerPath("/thank-you")) {
         navigate(buildCustomerPath("/thank-you"), {
@@ -175,21 +185,13 @@ export function UserLiveUpdatesProvider({ children }) {
           },
         });
       }
+      clearNotifications().catch(() => {});
     },
     [activeSessionId, clearNotifications, dispatch, navigate],
   );
   useEffect(() => {
     locationPathRef.current = location.pathname;
   }, [location.pathname]);
-  useEffect(() => {
-    if (!sessionId && activeSessionId) {
-      dispatch({
-        type: "SET_SESSION",
-        payload: activeSessionId,
-      });
-    }
-  }, [activeSessionId, dispatch, sessionId]);
-
   const syncCurrentOrder = useCallback(
     async ({
       orderId = "",
@@ -474,33 +476,37 @@ export function UserLiveUpdatesProvider({ children }) {
     let cancelled = false;
     const syncCompletedSession = async () => {
       const response = await customerSessionService
-        .getSession(activeSessionId, {
-          force: true,
-        })
+        .getSessionWithBill(activeSessionId)
         .catch(() => null);
       if (cancelled || !response?.success || !response?.data) {
         return;
       }
-      const sessionData = response.data;
-      const isCompletedSession =
-        String(sessionData?.sessionStatus || "").toLowerCase() === "completed";
-      const isPaid =
-        String(sessionData?.paymentStatus || "").toLowerCase() === "paid";
-      if (isCompletedSession && isPaid) {
+      const { sessionData, billData, isPaid, isCompletedSession } =
+        resolvePaidSessionSnapshot(response);
+      if (sessionData) {
+        dispatch({
+          type: "SET_SESSION_DETAILS",
+          payload: sessionData,
+        });
+      }
+      if (isPaid || isCompletedSession) {
         handleSessionCompleted({
           sessionId: sessionData?.sessionId || activeSessionId,
+          bill: billData,
+          billId: billData?._id || billData?.id || "",
+          billNumber: billData?.billNumber || "",
           thankYouMessage:
             "Payment completed successfully. Thank you for dining with us.",
         });
       }
     };
     syncCompletedSession();
-    const pollTimer = window.setInterval(syncCompletedSession, 8000);
+    const pollTimer = window.setInterval(syncCompletedSession, 4000);
     return () => {
       cancelled = true;
       window.clearInterval(pollTimer);
     };
-  }, [activeSessionId, handleSessionCompleted]);
+  }, [activeSessionId, dispatch, handleSessionCompleted]);
   useEffect(() => {
     if (!activeSessionId) {
       return;

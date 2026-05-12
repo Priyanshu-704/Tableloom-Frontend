@@ -25,6 +25,18 @@ import { useSettings } from "../../common/context/SettingsContext";
 import { useAuth } from "../../common/context/AuthContext";
 import { useMonitoringMode } from "../hooks/useMonitoringMode";
 import { useAdminLiveSync } from "../hooks/useAdminLiveSync";
+
+const ORDER_LIVE_EVENTS = [
+  "order:new",
+  "new-order",
+  "new_order",
+  "order:updated",
+  "order-updated",
+  "order_updated",
+  "order:status-updated",
+  "order-status-updated",
+];
+
 const ORDER_STATUS = [
   {
     value: "all",
@@ -146,7 +158,7 @@ export function Orders() {
   useEffect(() => {
     addNotificationRef.current = addNotification;
   }, [addNotification]);
-  const loadOrders = useCallback(async ({ silent = false } = {}) => {
+  const loadOrders = useCallback(async ({ silent = false, force = false } = {}) => {
     try {
       if (!silent) {
         setLoading(true);
@@ -163,12 +175,14 @@ export function Orders() {
         params.paymentStatus = filters.paymentStatus;
       }
       const [ordersResponse, statsResponse] = await Promise.all([
-        orderService.getOrders(params),
+        orderService.getOrders(params, {
+          force,
+        }),
         canViewOrderStats
           ? orderService.getOrderStatistics(
               {},
               {
-                force: silent,
+                force: force || silent,
               },
             )
           : Promise.resolve({
@@ -209,19 +223,36 @@ export function Orders() {
   useEffect(() => {
     loadOrders();
   }, [loadOrders]);
+  useEffect(() => {
+    if (kitchenView) {
+      return undefined;
+    }
+    const pollTimer = window.setInterval(() => {
+      loadOrders({
+        silent: true,
+      });
+    }, 5000);
+    return () => {
+      window.clearInterval(pollTimer);
+    };
+  }, [kitchenView, loadOrders]);
   useAdminLiveSync({
     enabled: !kitchenView,
-    events: ["order:status-updated", "order-status-updated"],
+    events: ORDER_LIVE_EVENTS,
     joinRooms: (socket, user) => {
-      socket.emit("join-role-room", user.role);
+      const normalizedRole = String(user?.role || "").toLowerCase();
+      if (normalizedRole) {
+        socket.emit("join-role-room", normalizedRole);
+      }
       socket.emit("join-staff-room");
-      if (["admin", "manager"].includes(user.role)) {
+      if (["admin", "manager"].includes(normalizedRole)) {
         socket.emit("join-management-room");
       }
     },
     onEvent: () => {
       loadOrders({
         silent: true,
+        force: true,
       });
     },
   });
@@ -260,7 +291,9 @@ export function Orders() {
       setUpdatingId(orderId);
       await orderService.updateOrderStatus(orderId, status);
       addNotification("Order status updated", "success");
-      await loadOrders();
+      await loadOrders({
+        force: true,
+      });
     } catch (error) {
       logger.error("Failed to update order status:", error);
       addNotificationRef.current(
@@ -293,7 +326,11 @@ export function Orders() {
         <div className="flex flex-wrap gap-3">
           <button
             type="button"
-            onClick={loadOrders}
+            onClick={() =>
+              loadOrders({
+                force: true,
+              })
+            }
             disabled={loading}
             className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 transition-colors hover:bg-gray-50 disabled:opacity-60 sm:w-auto"
           >

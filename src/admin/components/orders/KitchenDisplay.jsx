@@ -16,6 +16,27 @@ import {
 import { useAuth } from "../../../common/context/AuthContext";
 import { useMonitoringMode } from "../../hooks/useMonitoringMode";
 import { useAdminLiveSync } from "../../hooks/useAdminLiveSync";
+
+const ORDER_LIVE_EVENTS = [
+  "order:new",
+  "new-order",
+  "new_order",
+  "order:updated",
+  "order-updated",
+  "order_updated",
+  "order:status-updated",
+  "order-status-updated",
+  "order:delayed",
+  "order_delayed",
+  "item_preparing",
+  "item_ready",
+  "item_served",
+  "items_updated",
+  "stations_updated",
+  "order_priority_updated",
+  "delay_acknowledged",
+];
+
 const ORDER_STATUS_OPTIONS = [
   {
     value: "pending",
@@ -131,7 +152,7 @@ export default function KitchenDisplay({
   isReadOnly = false,
 }) {
   const { addNotification } = useAdmin();
-  const { hasPermission } = useAuth();
+  const { hasPermission, user } = useAuth();
   const isMonitoringMode = useMonitoringMode() || isReadOnly;
   const [stations, setStations] = useState([]);
   const [selectedStation, setSelectedStation] = useState("");
@@ -224,30 +245,31 @@ export default function KitchenDisplay({
     loadKitchenData();
   }, [loadKitchenData]);
   useEffect(() => {
+    const pollTimer = window.setInterval(() => {
+      loadKitchenData({
+        silent: true,
+      });
+      loadDelayMonitorStatus();
+    }, 5000);
+    return () => {
+      window.clearInterval(pollTimer);
+    };
+  }, [loadDelayMonitorStatus, loadKitchenData]);
+  useEffect(() => {
     loadDelayMonitorStatus();
   }, [loadDelayMonitorStatus]);
   useAdminLiveSync({
-    events: [
-      "order:new",
-      "new-order",
-      "order:updated",
-      "order-updated",
-      "order:status-updated",
-      "order-status-updated",
-      "order:delayed",
-      "order_delayed",
-      "new_order",
-      "item_preparing",
-      "item_ready",
-      "item_served",
-      "items_updated",
-      "stations_updated",
-      "order_priority_updated",
-      "delay_acknowledged",
-    ],
+    events: ORDER_LIVE_EVENTS,
     joinRooms: (socket) => {
+      const normalizedRole = String(user?.role || "").toLowerCase();
       socket.emit("join-kitchen-room");
       socket.emit("join-staff-room");
+      if (normalizedRole) {
+        socket.emit("join-role-room", normalizedRole);
+      }
+      if (["admin", "manager"].includes(normalizedRole)) {
+        socket.emit("join-management-room");
+      }
     },
     onEvent: ({ eventName, payload }) => {
       if (eventName === "stations_updated" && Array.isArray(payload)) {

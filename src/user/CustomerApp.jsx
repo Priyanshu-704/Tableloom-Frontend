@@ -168,7 +168,7 @@ function CustomerApp() {
       <Suspense fallback={<RouteLoader />}>
         <Routes>
           <Route
-            path="/"
+            index
             element={
               sessionId || BYPASS_CUSTOMER_SESSION_GUARD ? (
                 <Navigate to={buildCustomerPath("/home")} replace />
@@ -177,9 +177,9 @@ function CustomerApp() {
               )
             }
           />
-          <Route path="/thank-you" element={<ThankYou />} />
+          <Route path="thank-you" element={<ThankYou />} />
           <Route
-            path="/home"
+            path="home"
             element={
               <SessionRequiredRoute
                 hasSession={Boolean(sessionId)}

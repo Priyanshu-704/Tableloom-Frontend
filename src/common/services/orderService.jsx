@@ -77,10 +77,17 @@ export const orderService = {
       handleApiError(error, "Failed to fetch order history");
     }
   },
-  getOrders: async (filters = {}) => {
+  getOrders: async (filters = {}, options = {}) => {
     try {
       const response = await axiosInstance.get("/orders", {
         params: filters,
+        headers:
+          options.force === true
+            ? {
+                "Cache-Control": "no-cache",
+                Pragma: "no-cache",
+              }
+            : undefined,
       });
       return (
         response?.data ?? {
@@ -102,6 +109,13 @@ export const orderService = {
         async () => {
           const response = await axiosInstance.get("/orders/dashboard/stats", {
             params: filters,
+            headers:
+              options.force === true
+                ? {
+                    "Cache-Control": "no-cache",
+                    Pragma: "no-cache",
+                  }
+                : undefined,
           });
           return (
             response?.data ?? {

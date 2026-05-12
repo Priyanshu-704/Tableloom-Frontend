@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { CheckCircle2, Home, ScanLine } from "lucide-react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { buildCustomerPath } from "../../common/utils/routes";
+import { useApp } from "../context/AppContext";
 import {
   clearCompletedVisit,
   getCompletedVisit,
@@ -9,12 +10,22 @@ import {
 export function ThankYou() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { sessionId, dispatch } = useApp();
   const completedVisit = getCompletedVisit();
-  if (!completedVisit) {
+  const fallbackMessage = String(location.state?.message || "").trim();
+  useEffect(() => {
+    if (!sessionId) {
+      return;
+    }
+    dispatch({
+      type: "CLEAR_SESSION",
+    });
+  }, [dispatch, sessionId]);
+  if (!completedVisit && !fallbackMessage) {
     return <Navigate to={buildCustomerPath("/")} replace />;
   }
   const message =
-    location.state?.message ||
+    fallbackMessage ||
     completedVisit?.message ||
     "Thank you for dining with us. We hope to see you again soon.";
 

@@ -90,26 +90,25 @@ export function Header() {
           "warning",
         );
       }
-      dispatch({
-        type: "CLEAR_SESSION",
-      });
       if (shouldRedirectToThankYou) {
         storeCompletedVisit({
           sessionId,
           message: thankYouMessage,
         });
       }
-      navigate(
-        buildCustomerPath(shouldRedirectToThankYou ? "/thank-you" : "/"),
-        {
-          replace: true,
-          state: shouldRedirectToThankYou
-            ? {
-                message: thankYouMessage,
-              }
-            : null,
-        },
-      );
+      navigate(buildCustomerPath(shouldRedirectToThankYou ? "/thank-you" : "/"), {
+        replace: true,
+        state: shouldRedirectToThankYou
+          ? {
+              message: thankYouMessage,
+            }
+          : null,
+      });
+      if (!shouldRedirectToThankYou) {
+        dispatch({
+          type: "CLEAR_SESSION",
+        });
+      }
     } catch (error) {
       const message =
         error?.message ||
