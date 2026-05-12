@@ -7,6 +7,25 @@ import React, {
   useReducer,
 } from "react";
 import customerNotificationService from "./services/customerNotificationService";
+
+const COMPLETED_VISIT_STORAGE_KEY = "tableloom_completed_visit";
+
+const hasCompletedVisitSnapshot = () => {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  try {
+    const raw = window.sessionStorage.getItem(COMPLETED_VISIT_STORAGE_KEY);
+    if (!raw) {
+      return false;
+    }
+    const visit = JSON.parse(raw);
+    return Boolean(visit?.completedAt);
+  } catch {
+    return false;
+  }
+};
 const NotificationContext = createContext();
 const initialState = {
   toasts: [],
@@ -126,7 +145,7 @@ export function NotificationProvider({ children }) {
           window.localStorage.getItem("sessionId") ||
           ""
         : "";
-    if (!sessionId) {
+    if (!sessionId || hasCompletedVisitSnapshot()) {
       dispatch({
         type: "SET_NOTIFICATIONS",
         payload: {
@@ -178,7 +197,15 @@ export function NotificationProvider({ children }) {
     });
   }, []);
   const clearNotifications = useCallback(async () => {
-    await customerNotificationService.clearAll();
+    const sessionId =
+      typeof window !== "undefined"
+        ? window.sessionStorage.getItem("sessionId") ||
+          window.localStorage.getItem("sessionId") ||
+          ""
+        : "";
+    if (sessionId && !hasCompletedVisitSnapshot()) {
+      await customerNotificationService.clearAll();
+    }
     dispatch({
       type: "CLEAR_NOTIFICATIONS",
     });

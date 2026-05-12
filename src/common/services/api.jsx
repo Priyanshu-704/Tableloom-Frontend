@@ -24,6 +24,7 @@ import {
 const API_URL = API_BASE_URL;
 const ACCESS_TOKEN_STORAGE_KEY = "auth.accessToken";
 const REFRESH_TOKEN_STORAGE_KEY = "auth.refreshToken";
+const COMPLETED_VISIT_STORAGE_KEY = "tableloom_completed_visit";
 const api = axios.create({
   baseURL: API_URL,
   headers: {
@@ -73,6 +74,18 @@ export const clearStoredAuthTokens = () =>
 const getStoredUser = () => {
   try {
     const raw = sessionStorage.getItem("user");
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+};
+const getStoredCompletedVisit = () => {
+  if (!canUseSessionStorage()) {
+    return null;
+  }
+
+  try {
+    const raw = window.sessionStorage.getItem(COMPLETED_VISIT_STORAGE_KEY);
     return raw ? JSON.parse(raw) : null;
   } catch {
     return null;
@@ -249,12 +262,17 @@ api.interceptors.response.use(
 );
 const handleUnauthorized = () => {
   const user = getStoredUser();
+  const completedVisit = getStoredCompletedVisit();
   const currentPath = window.location.pathname || "/";
   const isAdminContext = isTenantAdminPath(currentPath);
   const isPlatformAdminContext = isSuperAdminPath(currentPath);
   sessionStorage.removeItem("user");
   clearStoredTenantId();
   clearStoredAuthTokens();
+  if (!isAdminContext && !isPlatformAdminContext && completedVisit?.completedAt) {
+    window.location.href = buildCustomerPath("/thank-you");
+    return;
+  }
   window.location.href =
     String(user?.role || "").toLowerCase() === "super_admin" ||
     isPlatformAdminContext

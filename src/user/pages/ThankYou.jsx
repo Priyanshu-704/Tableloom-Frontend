@@ -1,14 +1,10 @@
 import React, { useEffect } from "react";
-import { CheckCircle2, Home, ScanLine } from "lucide-react";
-import { Navigate, useLocation, useNavigate } from "react-router-dom";
+import { CheckCircle2 } from "lucide-react";
+import { Navigate, useLocation } from "react-router-dom";
 import { buildCustomerPath } from "../../common/utils/routes";
 import { useApp } from "../context/AppContext";
-import {
-  clearCompletedVisit,
-  getCompletedVisit,
-} from "../utils/completedVisit";
+import { getCompletedVisit } from "../utils/completedVisit";
 export function ThankYou() {
-  const navigate = useNavigate();
   const location = useLocation();
   const { sessionId, dispatch } = useApp();
   const completedVisit = getCompletedVisit();
@@ -29,13 +25,6 @@ export function ThankYou() {
     completedVisit?.message ||
     "Thank you for dining with us. We hope to see you again soon.";
 
-  const handleReturnToStart = () => {
-    clearCompletedVisit();
-    navigate(buildCustomerPath("/"), {
-      replace: true,
-    });
-  };
-
   return (
     <div className="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top,#ecfeff,#f8fafc_55%,#ffffff)] px-4 py-10">
       <div className="w-full max-w-xl rounded-4xl border border-emerald-100 bg-white/95 p-8 text-center shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur">
@@ -49,25 +38,6 @@ export function ThankYou() {
           Thank You
         </h1>
         <p className="mt-4 text-base leading-7 text-slate-600">{message}</p>
-
-        <div className="mt-8 grid gap-3 sm:grid-cols-2">
-          <button
-            type="button"
-            onClick={handleReturnToStart}
-            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-900 px-5 py-3 font-semibold text-white transition hover:bg-slate-800"
-          >
-            <Home className="h-4 w-4" />
-            Back To Start
-          </button>
-          <button
-            type="button"
-            onClick={handleReturnToStart}
-            className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 px-5 py-3 font-semibold text-slate-700 transition hover:bg-slate-50"
-          >
-            <ScanLine className="h-4 w-4" />
-            Scan Another Table
-          </button>
-        </div>
       </div>
     </div>
   );
