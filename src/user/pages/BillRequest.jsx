@@ -148,6 +148,13 @@ export function BillRequest() {
           bill: payload.bill || null,
           orders: Array.isArray(payload.orders) ? payload.orders : [],
           items: normalizeBillItems(payload),
+          hasBillableOrders: Boolean(payload.hasBillableOrders),
+          allOrdersServed: Boolean(payload.allOrdersServed),
+          blockedOrderCount: Number(payload.blockedOrderCount || 0),
+          blockedStatuses: Array.isArray(payload.blockedStatuses)
+            ? payload.blockedStatuses
+            : [],
+          paymentBlockedMessage: String(payload.paymentBlockedMessage || ""),
           canRequestBill: Boolean(payload.canRequestBill),
           canCompleteSession: Boolean(payload.canCompleteSession),
         });
@@ -237,6 +244,10 @@ export function BillRequest() {
     return response;
   };
   const handleRequestBill = async () => {
+    if (billData?.paymentBlockedMessage) {
+      notify(billData.paymentBlockedMessage, "warning");
+      return;
+    }
     if (!ensureBillEmail()) {
       return;
     }
@@ -415,6 +426,10 @@ export function BillRequest() {
     }
   };
   const handlePayment = async () => {
+    if (billData?.paymentBlockedMessage) {
+      notify(billData.paymentBlockedMessage, "warning");
+      return;
+    }
     if (!ensureBillEmail()) {
       return;
     }
@@ -491,6 +506,12 @@ export function BillRequest() {
   );
   const splitPerPersonAmount =
     normalizedSplitCount > 0 ? totalAmount / normalizedSplitCount : totalAmount;
+  const paymentBlockedMessage = String(
+    billData?.paymentBlockedMessage || "",
+  ).trim();
+  const blockedStatusesLabel = (billData?.blockedStatuses || [])
+    .map((status) => String(status || "").replace(/_/g, " "))
+    .join(", ");
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
       <div className="sticky top-0 z-30 border-b border-gray-200 bg-white shadow-sm">
@@ -611,6 +632,20 @@ export function BillRequest() {
               </p>
             </div>
           </div>
+
+          {paymentBlockedMessage ? (
+            <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+              <p className="font-semibold text-amber-950">
+                Payment is locked for now
+              </p>
+              <p className="mt-1">{paymentBlockedMessage}</p>
+              {blockedStatusesLabel ? (
+                <p className="mt-2 text-xs uppercase tracking-[0.16em] text-amber-700">
+                  Waiting on status: {blockedStatusesLabel}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
         </div>
 
         <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
@@ -838,11 +873,7 @@ export function BillRequest() {
               : `Pay ${formatCurrency(totalAmount, currency)} with ${PAYMENT_LABELS[selectedPayment] || "Razorpay"}`}
         </button>
 
-        {!billData?.canCompleteSession ? (
-          <div className="rounded-2xl border border-sky-200 bg-sky-50 p-4 text-sm text-sky-800">
-            No billable orders were found for this session yet.
-          </div>
-        ) : null}
+       
       </div>
     </div>
   );
