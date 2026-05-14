@@ -334,7 +334,7 @@ const navigationSections = [
         description: "Export and safeguard data",
         icon: DatabaseBackup,
         path: buildAdminPath("/settings/backup"),
-        allowedRoles: ["manager", "admin"],
+        allowedRoles: ["admin"],
         requiredPermission: ACCESS_GROUPS.backup,
       },
     ],

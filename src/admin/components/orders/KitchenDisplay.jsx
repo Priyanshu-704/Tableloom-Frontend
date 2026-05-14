@@ -39,10 +39,6 @@ const ORDER_LIVE_EVENTS = [
 
 const ORDER_STATUS_OPTIONS = [
   {
-    value: "pending",
-    label: "Pending",
-  },
-  {
     value: "accepted",
     label: "Accepted",
   },
@@ -352,7 +348,7 @@ export default function KitchenDisplay({
   };
   const getItemActionLabel = (itemStatus) => {
     if (itemStatus === "pending") {
-      return "Awaiting Accept";
+      return "Awaiting Confirmation";
     }
     if (itemStatus === "accepted") {
       return "Start";

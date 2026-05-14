@@ -174,7 +174,7 @@ export function Orders() {
       if (filters.paymentStatus !== "all") {
         params.paymentStatus = filters.paymentStatus;
       }
-      const [ordersResponse, statsResponse] = await Promise.all([
+      const [ordersResponse, statsResponse] = await Promise.allSettled([
         orderService.getOrders(params, {
           force,
         }),
@@ -189,14 +189,21 @@ export function Orders() {
               data: null,
             }),
       ]);
-      const nextOrders = (ordersResponse.data || []).map(normalizeOrder);
+      if (ordersResponse.status !== "fulfilled") {
+        throw ordersResponse.reason;
+      }
+      const nextOrders = (ordersResponse.value?.data || []).map(normalizeOrder);
       setOrders(nextOrders);
       setPagination({
-        page: ordersResponse.pagination?.page || currentPage,
-        pages: ordersResponse.pagination?.pages || 1,
-        total: ordersResponse.total || 0,
+        page: ordersResponse.value?.pagination?.page || currentPage,
+        pages: ordersResponse.value?.pagination?.pages || 1,
+        total: ordersResponse.value?.total || 0,
       });
-      setStatistics(statsResponse?.data || null);
+      if (statsResponse.status === "fulfilled") {
+        setStatistics(statsResponse.value?.data || null);
+      } else {
+        logger.error("Failed to load order statistics:", statsResponse.reason);
+      }
       dispatch({
         type: "SET_ORDERS",
         payload: nextOrders,

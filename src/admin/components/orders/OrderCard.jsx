@@ -120,9 +120,17 @@ export function OrderCard({
   allowedNextStatuses = null,
 }) {
   const [showActions, setShowActions] = React.useState(false);
+  const [now, setNow] = React.useState(() => Date.now());
   const statusConfig = STATUS_CONFIG[order.status] || STATUS_CONFIG.pending;
   const StatusIcon = statusConfig.icon;
-  const now = React.useMemo(() => new Date().getTime(), []);
+  React.useEffect(() => {
+    const timer = window.setInterval(() => {
+      setNow(Date.now());
+    }, 30000);
+    return () => {
+      window.clearInterval(timer);
+    };
+  }, []);
   const canUseNextStatus =
     Boolean(statusConfig.nextStatus) &&
     (Array.isArray(allowedNextStatuses)
