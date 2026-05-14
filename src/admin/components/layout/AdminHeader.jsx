@@ -13,13 +13,17 @@ import { AccountPopover } from "./AccountPopover";
 import { useSettings } from "../../../common/context/SettingsContext";
 import { useAuth } from "../../../common/context/AuthContext";
 import { isSuperAdminMonitoringPath } from "../../../common/utils/routes";
+import {
+  getVisibleAdminNavigationSections,
+  resolveActiveAdminNavigation,
+} from "../../utils/navigationConfig";
 export function AdminHeader({
   isMobileSidebarOpen = false,
   onToggleMobileSidebar,
   isDesktopSidebarCollapsed = false,
   onToggleDesktopSidebar,
 }) {
-  const { hasPermission, user } = useAuth();
+  const { hasPermission, permissions, user } = useAuth();
   const location = useLocation();
   const { settings } = useSettings();
   const {
@@ -41,15 +45,44 @@ export function AdminHeader({
     location.pathname,
     user?.role,
   );
+  const visibleSections = useMemo(
+    () =>
+      getVisibleAdminNavigationSections({
+        user,
+        permissions,
+        isMonitoringMode,
+      }),
+    [isMonitoringMode, permissions, user],
+  );
+  const activeNavigation = useMemo(
+    () =>
+      resolveActiveAdminNavigation({
+        location,
+        sections: visibleSections,
+      }),
+    [location, visibleSections],
+  );
   const workspaceLabel =
     String(user?.role || "").toLowerCase() === "super_admin"
       ? "Platform Workspace"
       : "Live Workspace";
-  const subtitle = isMonitoringMode
+  const headerTitle =
+    activeNavigation?.item?.label || settings?.restaurant?.name || "Tableloom";
+  const subtitle =
+    activeNavigation?.item?.description ||
+    (isMonitoringMode
+      ? "Viewing tenant operations in read-only mode"
+      : `Signed in as ${user?.name || "Administrator"}`);
+  const sectionLabel =
+    activeNavigation?.section?.title ||
+    (String(user?.role || "").toLowerCase() === "super_admin"
+      ? "Platform Navigation"
+      : "Admin Navigation");
+  const workspaceSubtitle = isMonitoringMode
     ? "Viewing tenant operations in read-only mode"
     : `Signed in as ${user?.name || "Administrator"}`;
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 h-16 border-b border-slate-800/60 bg-[linear-gradient(90deg,rgba(2,6,23,0.97)_0%,rgba(15,23,42,0.95)_42%,rgba(10,37,64,0.94)_100%)] shadow-lg shadow-slate-950/20 backdrop-blur-sm">
+    <header className="fixed top-0 left-0 right-0 z-50 h-20 border-b border-slate-800/60 bg-[linear-gradient(90deg,rgba(2,6,23,0.97)_0%,rgba(15,23,42,0.95)_42%,rgba(10,37,64,0.94)_100%)] shadow-lg shadow-slate-950/20 backdrop-blur-sm">
       <div className="flex h-full">
         <div
           className={`hidden h-full shrink-0 items-center border-r border-slate-800/60 bg-[linear-gradient(180deg,rgba(15,23,42,0.92)_0%,rgba(17,24,39,0.88)_100%)] transition-[width,padding] duration-300 lg:flex ${isDesktopSidebarCollapsed ? "w-24 justify-center px-3" : "w-72 px-6"}`}
@@ -73,10 +106,10 @@ export function AdminHeader({
               className={`min-w-0 ${isDesktopSidebarCollapsed ? "hidden" : ""}`}
             >
               <p className="truncate text-base font-bold text-white xl:text-lg">
-                {settings?.restaurant?.name || "Tableloom"}
+                {headerTitle}
               </p>
               <p className="mt-1 truncate text-[11px] font-semibold uppercase tracking-[0.22em] text-sky-200/80">
-                Admin Panel
+                {sectionLabel}
               </p>
             </div>
           </div>
@@ -125,8 +158,11 @@ export function AdminHeader({
             <div className="hidden lg:block">
               <div className="flex flex-wrap items-center gap-3">
                 <h1 className="truncate text-lg font-bold text-white xl:text-xl">
-                  {settings?.restaurant?.name || "Tableloom"}
+                  {headerTitle}
                 </h1>
+                <span className="inline-flex items-center rounded-full border border-white/10 bg-white/6 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-sky-100">
+                  {sectionLabel}
+                </span>
                 <span className="inline-flex items-center rounded-full border border-white/10 bg-white/6 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-sky-100">
                   {workspaceLabel}
                 </span>
@@ -138,6 +174,11 @@ export function AdminHeader({
                 ) : null}
               </div>
               <p className="mt-1 truncate text-sm text-slate-300">{subtitle}</p>
+              {subtitle !== workspaceSubtitle ? (
+                <p className="mt-1 truncate text-xs text-slate-400">
+                  {workspaceSubtitle}
+                </p>
+              ) : null}
             </div>
           </div>
 

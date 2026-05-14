@@ -441,9 +441,6 @@ export function AdminNotificationCenterProvider({ children }) {
       if (!canViewNotifications) {
         return;
       }
-      if (String(user?.role || "").toLowerCase() === "super_admin") {
-        return;
-      }
       const tokenResult = await getPushToken({
         requestPermission: true,
       }).catch((error) => {

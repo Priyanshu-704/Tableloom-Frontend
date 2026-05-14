@@ -565,6 +565,7 @@ export const menuService = {
         updates,
         action,
       });
+      menuRequestCache.invalidate("menu:");
       return (
         response?.data ?? {
           success: true,
@@ -622,6 +623,19 @@ export const menuService = {
       handleApiError(error, "Failed to download import template");
     }
   },
+  downloadCategoryImportTemplate: async () => {
+    try {
+      const response = await axiosInstance.get("/menu/categories/import/template", {
+        responseType: "blob",
+      });
+      downloadBlob(response?.data, "category-import-template.csv");
+      return {
+        success: true,
+      };
+    } catch (error) {
+      handleApiError(error, "Failed to download category import template");
+    }
+  },
   importMenuItems: async (csvFile) => {
     try {
       const formData = new FormData();
@@ -635,6 +649,7 @@ export const menuService = {
           },
         },
       );
+      menuRequestCache.invalidate("menu:");
       return (
         response?.data ?? {
           success: true,
@@ -642,6 +657,29 @@ export const menuService = {
       );
     } catch (error) {
       handleApiError(error, "Failed to import menu items");
+    }
+  },
+  importCategories: async (csvFile) => {
+    try {
+      const formData = new FormData();
+      formData.append("file", csvFile);
+      const response = await axiosInstance.post(
+        "/menu/categories/bulk/import",
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        },
+      );
+      menuRequestCache.invalidate("menu:");
+      return (
+        response?.data ?? {
+          success: true,
+        }
+      );
+    } catch (error) {
+      handleApiError(error, "Failed to import categories");
     }
   },
   processMenuItemFormData,

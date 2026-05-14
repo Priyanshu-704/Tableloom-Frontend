@@ -11,10 +11,22 @@ import {
   Upload,
   XCircle,
 } from "lucide-react";
-import { menuService } from "../../../common/services";
+import { kitchenStationService, menuService } from "../../../common/services";
 import { useAdmin } from "../../context/AdminContext";
 import { AdminPageSkeleton } from "../common/AdminSkeleton";
 import { useMonitoringMode } from "../../hooks/useMonitoringMode";
+import { Button } from "../../../common/components/ui/button";
+import { Checkbox } from "../../../common/components/ui/checkbox";
+import { Input } from "../../../common/components/ui/input";
+import { Label } from "../../../common/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../../../common/components/ui/select";
+import { Textarea } from "../../../common/components/ui/textarea";
 const BULK_ACTIONS = [
   {
     id: "updatePrices",
@@ -62,6 +74,7 @@ export function BulkOperations() {
   const [menuItems, setMenuItems] = useState([]);
   const [categories, setCategories] = useState([]);
   const [sizes, setSizes] = useState([]);
+  const [stations, setStations] = useState([]);
   const [selectedAction, setSelectedAction] = useState("");
   const [selectedItems, setSelectedItems] = useState(new Set());
   const [bulkData, setBulkData] = useState({});
@@ -88,8 +101,12 @@ export function BulkOperations() {
   const loadBulkData = useCallback(async () => {
     try {
       setLoadingData(true);
-      const [itemsResponse, categoryResponse, sizeResponse] = await Promise.all(
-        [
+      const [
+        itemsResponse,
+        categoryResponse,
+        sizeResponse,
+        stationResponse,
+      ] = await Promise.all([
           menuService.getMenuItems({
             activeOnly: false,
             availableOnly: false,
@@ -98,8 +115,8 @@ export function BulkOperations() {
           }),
           menuService.getCategories(true, true),
           menuService.getSizes(true),
-        ],
-      );
+          kitchenStationService.getKitchenStations(),
+        ]);
       setMenuItems(itemsResponse?.data || []);
       setItemPage(1);
       setHasMoreItems(
@@ -108,6 +125,7 @@ export function BulkOperations() {
       );
       setCategories(categoryResponse?.data || []);
       setSizes(sizeResponse?.data || []);
+      setStations(stationResponse?.data || []);
     } catch {
       addNotification("Failed to load bulk operation data", "error");
     } finally {
@@ -270,8 +288,8 @@ export function BulkOperations() {
           failed: stats.failed || 0,
         });
       } else if (selectedAction === "updateCategories") {
-        if (!bulkData?.categoryId) {
-          addNotification("Please select a target category", "error");
+        if (!bulkData?.categoryId && !String(bulkData?.categoryName || "").trim()) {
+          addNotification("Please select or enter a target category", "error");
           setLoading(false);
           return;
         }
@@ -279,6 +297,11 @@ export function BulkOperations() {
           itemIds.map((menuItemId) => ({
             menuItemId,
             categoryId: bulkData.categoryId,
+            categoryName: String(bulkData.categoryName || "").trim(),
+            categoryDescription: String(
+              bulkData.categoryDescription || "",
+            ).trim(),
+            kitchenStationId: bulkData.kitchenStationId || "",
           })),
         );
         const stats = response?.data || {};
@@ -353,24 +376,27 @@ export function BulkOperations() {
       case "updatePrices":
         return (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-            <select
+            <Select
               value={bulkData.sizeId || ""}
-              onChange={(event) =>
+              onValueChange={(value) =>
                 setBulkData((current) => ({
                   ...current,
-                  sizeId: event.target.value,
+                  sizeId: value,
                 }))
               }
-              className="rounded-lg border border-gray-300 px-3 py-2"
             >
-              <option value="">Select size</option>
-              {sizes.map((size) => (
-                <option key={size?._id} value={size?._id}>
-                  {size?.name}
-                </option>
-              ))}
-            </select>
-            <input
+              <SelectTrigger>
+                <SelectValue placeholder="Select size" />
+              </SelectTrigger>
+              <SelectContent>
+                {sizes.map((size) => (
+                  <SelectItem key={size?._id} value={size?._id}>
+                    {size?.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Input
               type="number"
               min="0"
               step="0.01"
@@ -381,10 +407,9 @@ export function BulkOperations() {
                   price: event.target.value,
                 }))
               }
-              className="rounded-lg border border-gray-300 px-3 py-2"
               placeholder="New price"
             />
-            <input
+            <Input
               type="text"
               value={bulkData.reason || ""}
               onChange={(event) =>
@@ -393,83 +418,153 @@ export function BulkOperations() {
                   reason: event.target.value,
                 }))
               }
-              className="rounded-lg border border-gray-300 px-3 py-2"
               placeholder="Reason (optional)"
             />
           </div>
         );
       case "updateAvailability":
         return (
-          <select
+          <Select
             value={String(bulkData.isAvailable ?? "")}
-            onChange={(event) =>
+            onValueChange={(value) =>
               setBulkData((current) => ({
                 ...current,
-                isAvailable: event.target.value === "true",
+                isAvailable: value === "true",
               }))
             }
-            className="w-full rounded-lg border border-gray-300 px-3 py-2"
           >
-            <option value="">Select availability</option>
-            <option value="true">Make available</option>
-            <option value="false">Make unavailable</option>
-          </select>
+            <SelectTrigger>
+              <SelectValue placeholder="Select availability" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="true">Make available</SelectItem>
+              <SelectItem value="false">Make unavailable</SelectItem>
+            </SelectContent>
+          </Select>
         );
       case "updateStatus":
         return (
-          <select
+          <Select
             value={String(bulkData.isActive ?? "")}
-            onChange={(event) =>
+            onValueChange={(value) =>
               setBulkData((current) => ({
                 ...current,
-                isActive: event.target.value === "true",
+                isActive: value === "true",
               }))
             }
-            className="w-full rounded-lg border border-gray-300 px-3 py-2"
           >
-            <option value="">Select status</option>
-            <option value="true">Activate</option>
-            <option value="false">Deactivate</option>
-          </select>
+            <SelectTrigger>
+              <SelectValue placeholder="Select status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="true">Activate</SelectItem>
+              <SelectItem value="false">Deactivate</SelectItem>
+            </SelectContent>
+          </Select>
         );
       case "updateCategories":
         return (
-          <select
-            value={bulkData.categoryId || ""}
-            onChange={(event) =>
-              setBulkData((current) => ({
-                ...current,
-                categoryId: event.target.value,
-              }))
-            }
-            className="w-full rounded-lg border border-gray-300 px-3 py-2"
-          >
-            <option value="">Select category</option>
-            {categories.map((category) => (
-              <option key={category?._id} value={category?._id}>
-                {category?.name}
-              </option>
-            ))}
-          </select>
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <div className="space-y-2">
+              <Label>Existing category</Label>
+              <Select
+                value={bulkData.categoryId || ""}
+                onValueChange={(value) =>
+                  setBulkData((current) => ({
+                    ...current,
+                    categoryId: value,
+                    ...(value
+                      ? {
+                          categoryName: "",
+                          categoryDescription: "",
+                          kitchenStationId: "",
+                        }
+                      : {}),
+                  }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.map((category) => (
+                    <SelectItem key={category?._id} value={category?._id}>
+                      {category?.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Or create by name</Label>
+              <Input
+                type="text"
+                value={bulkData.categoryName || ""}
+                onChange={(event) =>
+                  setBulkData((current) => ({
+                    ...current,
+                    categoryId: "",
+                    categoryName: event.target.value,
+                  }))
+                }
+                placeholder="Enter new category name"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Kitchen station for new category</Label>
+              <Select
+                value={bulkData.kitchenStationId || ""}
+                onValueChange={(value) =>
+                  setBulkData((current) => ({
+                    ...current,
+                    kitchenStationId: value,
+                  }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select station" />
+                </SelectTrigger>
+                <SelectContent>
+                  {stations.map((station) => (
+                    <SelectItem key={station?._id} value={station?._id}>
+                      {station?.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2 lg:col-span-2">
+              <Label>Category description</Label>
+              <Textarea
+                value={bulkData.categoryDescription || ""}
+                onChange={(event) =>
+                  setBulkData((current) => ({
+                    ...current,
+                    categoryDescription: event.target.value,
+                  }))
+                }
+                placeholder="Optional description for a new category"
+              />
+            </div>
+          </div>
         );
       case "import":
         return (
           <div className="space-y-3">
-            <input
+            <Input
               type="file"
               accept=".csv"
               disabled={isMonitoringMode}
               onChange={(event) => handleImport(event.target.files?.[0])}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 disabled:cursor-not-allowed disabled:bg-slate-100"
             />
-            <button
+            <Button
               type="button"
+              variant="outline"
               disabled={isMonitoringMode}
               onClick={() => menuService.downloadImportTemplate()}
-              className="text-sm font-medium text-primary-600 hover:text-primary-700 disabled:cursor-not-allowed disabled:opacity-60"
             >
               Download import template
-            </button>
+            </Button>
           </div>
         );
       default:
@@ -493,17 +588,12 @@ export function BulkOperations() {
             integration already connected to your catalog data.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={loadBulkData}
-          disabled={loadingData}
-          className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-        >
+        <Button type="button" variant="outline" onClick={loadBulkData} disabled={loadingData}>
           <RefreshCw
             className={`h-4 w-4 ${loadingData ? "animate-spin" : ""}`}
           />
           Refresh data
-        </button>
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -584,12 +674,13 @@ export function BulkOperations() {
             const Icon = action.icon;
             const active = selectedAction === action.id;
             return (
-              <button
+              <Button
                 key={action.id}
                 type="button"
                 onClick={() => setSelectedAction(action.id)}
                 disabled={isMonitoringMode}
-                className={`rounded-2xl border p-4 text-left transition disabled:cursor-not-allowed disabled:opacity-60 ${active ? "border-primary-500 bg-primary-50 shadow-sm" : "border-slate-200 bg-slate-50/60 hover:border-slate-300 hover:bg-white"}`}
+                variant="ghost"
+                className={`h-auto justify-start rounded-2xl border p-4 text-left transition disabled:cursor-not-allowed disabled:opacity-60 ${active ? "border-primary-500 bg-primary-50 shadow-sm hover:bg-primary-50" : "border-slate-200 bg-slate-50/60 hover:border-slate-300 hover:bg-white"}`}
               >
                 <div className="flex items-start gap-3">
                   <div
@@ -606,7 +697,7 @@ export function BulkOperations() {
                     </p>
                   </div>
                 </div>
-              </button>
+              </Button>
             );
           })}
         </div>
@@ -626,16 +717,16 @@ export function BulkOperations() {
                     menu items.
                   </p>
                 </div>
-                <button
+                <Button
                   type="button"
+                  variant="outline"
                   onClick={selectAllItems}
                   disabled={isMonitoringMode}
-                  className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {selectedItems.size === menuItems.length
                     ? "Deselect All"
                     : "Select All"}
-                </button>
+                </Button>
               </div>
 
               <div
@@ -647,12 +738,11 @@ export function BulkOperations() {
                     key={item?._id}
                     className="flex cursor-pointer items-start gap-3 border-b border-slate-100 px-4 py-3 last:border-b-0 hover:bg-slate-50"
                   >
-                    <input
-                      type="checkbox"
+                    <Checkbox
                       checked={selectedItems.has(item?._id)}
-                      onChange={() => toggleItemSelection(item?._id)}
+                      onCheckedChange={() => toggleItemSelection(item?._id)}
                       disabled={isMonitoringMode}
-                      className="mt-1 rounded border-slate-300 text-primary-600"
+                      className="mt-1"
                     />
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
@@ -833,13 +923,13 @@ export function BulkOperations() {
             ) : null}
 
             {selectedAction && selectedAction !== "import" ? (
-              <button
+              <Button
                 type="button"
                 onClick={executeBulkAction}
                 disabled={
                   isMonitoringMode || loading || !selectedItemList.length
                 }
-                className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-primary-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-60"
+                className="mt-6 w-full"
               >
                 {loading ? (
                   <RefreshCw className="h-4 w-4 animate-spin" />
@@ -851,7 +941,7 @@ export function BulkOperations() {
                       ?.name
                   }
                 </span>
-              </button>
+              </Button>
             ) : null}
           </div>
         </div>

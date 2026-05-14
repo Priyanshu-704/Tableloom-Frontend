@@ -1,16 +1,32 @@
 import { logger } from "../../../common/utils/logger.js";
-import React, { useState } from "react";
-import { Upload, Download, FileText, CheckCircle, XCircle } from "lucide-react";
+import React, { useRef, useState } from "react";
+import {
+  CheckCircle,
+  Download,
+  FileText,
+  FolderTree,
+  Upload,
+  XCircle,
+} from "lucide-react";
 import { menuService } from "../../../common/services";
 import { useAdmin } from "../../context/AdminContext";
 import { useMonitoringMode } from "../../hooks/useMonitoringMode";
+import { Button } from "../../../common/components/ui/button";
+import { Input } from "../../../common/components/ui/input";
+import { Label } from "../../../common/components/ui/label";
+
 export function ImportExport() {
   const isMonitoringMode = useMonitoringMode();
   const { addNotification } = useAdmin();
-  const [importFile, setImportFile] = useState(null);
+  const [menuImportFile, setMenuImportFile] = useState(null);
+  const [categoryImportFile, setCategoryImportFile] = useState(null);
   const [importResults, setImportResults] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [resultsLabel, setResultsLabel] = useState("Import Results");
+  const [loading, setLoading] = useState("");
+  const menuFileRef = useRef(null);
+  const categoryFileRef = useRef(null);
   const importRows = importResults?.rows || [];
+
   const getStatusClasses = (status) =>
     status === "success"
       ? "bg-green-100 text-green-700 border border-green-200"
@@ -24,15 +40,26 @@ export function ImportExport() {
     }
     return "bg-red-100 text-red-700 border border-red-200";
   };
+  const resetFileInput = (inputRef) => {
+    if (inputRef.current) {
+      inputRef.current.value = "";
+    }
+  };
+  const guardMonitoringMode = () => {
+    if (!isMonitoringMode) {
+      return false;
+    }
+    addNotification(
+      "Import and export actions are disabled in monitoring mode.",
+      "error",
+    );
+    return true;
+  };
   const handleExport = async () => {
-    if (isMonitoringMode) {
-      addNotification(
-        "Import and export actions are disabled in monitoring mode.",
-        "error",
-      );
+    if (guardMonitoringMode()) {
       return;
     }
-    setLoading(true);
+    setLoading("export");
     try {
       await menuService.exportMenuItems();
       addNotification("Menu exported successfully.", "success");
@@ -43,260 +70,356 @@ export function ImportExport() {
         "error",
       );
     } finally {
-      setLoading(false);
+      setLoading("");
     }
   };
-  const handleImport = async () => {
-    if (isMonitoringMode) {
-      addNotification(
-        "Import and export actions are disabled in monitoring mode.",
-        "error",
-      );
+  const handleMenuImport = async () => {
+    if (guardMonitoringMode()) {
       return;
     }
-    if (!importFile) {
-      addNotification("Please select a file to import", "error");
+    if (!menuImportFile) {
+      addNotification("Please select a menu CSV file to import", "error");
       return;
     }
-    setLoading(true);
+    setLoading("menu-import");
     try {
-      const response = await menuService.importMenuItems(importFile);
+      const response = await menuService.importMenuItems(menuImportFile);
       setImportResults(response?.data || null);
-      setImportFile(null);
+      setResultsLabel("Menu Import Results");
+      setMenuImportFile(null);
+      resetFileInput(menuFileRef);
       addNotification(
         response?.message || "Menu imported successfully.",
         "success",
       );
-      document.getElementById("import-file").value = "";
     } catch (error) {
-      logger.error("Import failed:", error);
+      logger.error("Menu import failed:", error);
       addNotification(
         error.response?.data?.message ||
-          "Import failed. Please check the file format.",
+          "Menu import failed. Please check the file format.",
         "error",
       );
     } finally {
-      setLoading(false);
+      setLoading("");
     }
   };
-  const downloadTemplate = async () => {
-    if (isMonitoringMode) {
+  const handleCategoryImport = async () => {
+    if (guardMonitoringMode()) {
+      return;
+    }
+    if (!categoryImportFile) {
+      addNotification("Please select a category CSV file to import", "error");
+      return;
+    }
+    setLoading("category-import");
+    try {
+      const response = await menuService.importCategories(categoryImportFile);
+      setImportResults(response?.data || null);
+      setResultsLabel("Category Import Results");
+      setCategoryImportFile(null);
+      resetFileInput(categoryFileRef);
       addNotification(
-        "Import and export actions are disabled in monitoring mode.",
+        response?.message || "Categories imported successfully.",
+        "success",
+      );
+    } catch (error) {
+      logger.error("Category import failed:", error);
+      addNotification(
+        error.response?.data?.message ||
+          "Category import failed. Please check the file format.",
         "error",
       );
+    } finally {
+      setLoading("");
+    }
+  };
+  const downloadMenuTemplate = async () => {
+    if (guardMonitoringMode()) {
       return;
     }
     try {
       await menuService.downloadImportTemplate();
-      addNotification("Import template downloaded successfully.", "success");
+      addNotification("Menu import template downloaded successfully.", "success");
     } catch (error) {
-      logger.error("Failed to download template:", error);
+      logger.error("Failed to download menu template:", error);
       addNotification(
-        error.response?.data?.message || "Failed to download import template.",
+        error.response?.data?.message || "Failed to download menu template.",
         "error",
       );
     }
   };
+  const downloadCategoryTemplate = async () => {
+    if (guardMonitoringMode()) {
+      return;
+    }
+    try {
+      await menuService.downloadCategoryImportTemplate();
+      addNotification(
+        "Category import template downloaded successfully.",
+        "success",
+      );
+    } catch (error) {
+      logger.error("Failed to download category template:", error);
+      addNotification(
+        error.response?.data?.message ||
+          "Failed to download category import template.",
+        "error",
+      );
+    }
+  };
+
   return (
-    <div className="p-6">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Import/Export Menu</h1>
-        <p className="text-gray-600">
-          Bulk import and export menu items using CSV files
+    <div className="space-y-6 p-6">
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight text-slate-900">
+          Import / Export
+        </h1>
+        <p className="mt-1 max-w-3xl text-sm text-slate-600">
+          Export menu data, bulk import menu items, and upload categories in
+          structured CSV files. Menu imports now auto-create missing category
+          and size names when needed.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-          <div className="mb-4 flex items-center space-x-3">
-            <Download className="h-6 w-6 text-green-600" />
-            <h2 className="text-lg font-semibold text-gray-900">Export Menu</h2>
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
+        <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="mb-4 flex items-center gap-3">
+            <div className="rounded-2xl bg-emerald-50 p-3 text-emerald-600">
+              <Download className="h-5 w-5" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold text-slate-900">
+                Export Menu
+              </h2>
+              <p className="text-sm text-slate-500">
+                Download the live catalog as CSV.
+              </p>
+            </div>
           </div>
+          <Button
+            type="button"
+            onClick={handleExport}
+            disabled={loading === "export"}
+            className="w-full"
+          >
+            <Download className="h-4 w-4" />
+            {loading === "export" ? "Exporting..." : "Export Menu CSV"}
+          </Button>
+        </section>
 
-          <p className="mb-4 text-gray-600">
-            Export your current menu items to a CSV file for backup or analysis.
-          </p>
-
-          {!isMonitoringMode ? (
-            <button
-              onClick={handleExport}
-              disabled={loading}
-              className="flex w-full items-center justify-center rounded-lg bg-green-600 px-4 py-2 text-white transition-colors hover:bg-green-700 disabled:opacity-50"
-            >
-              {loading ? (
-                <div className="mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-white"></div>
-              ) : (
-                <Download className="mr-2 h-4 w-4" />
-              )}
-              Export Menu as CSV
-            </button>
-          ) : null}
-        </div>
-
-        <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-          <div className="mb-4 flex items-center space-x-3">
-            <Upload className="h-6 w-6 text-blue-600" />
-            <h2 className="text-lg font-semibold text-gray-900">Import Menu</h2>
+        <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="mb-4 flex items-center gap-3">
+            <div className="rounded-2xl bg-blue-50 p-3 text-blue-600">
+              <Upload className="h-5 w-5" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold text-slate-900">
+                Import Menu Items
+              </h2>
+              <p className="text-sm text-slate-500">
+                Create or update menu items from CSV.
+              </p>
+            </div>
           </div>
 
           <div className="space-y-4">
-            <div>
-              <label className="mb-2 block text-sm font-medium text-gray-700">
-                Select CSV File
-              </label>
-              <input
-                id="import-file"
+            <div className="space-y-2">
+              <Label htmlFor="menu-import-file">Menu CSV File</Label>
+              <Input
+                id="menu-import-file"
+                ref={menuFileRef}
                 type="file"
                 accept=".csv"
-                onChange={(e) => setImportFile(e.target.files[0])}
                 disabled={isMonitoringMode}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-primary-500"
+                onChange={(event) =>
+                  setMenuImportFile(event.target.files?.[0] || null)
+                }
               />
             </div>
-
-            <div className="flex space-x-3">
-              {!isMonitoringMode ? (
-                <button
-                  onClick={downloadTemplate}
-                  className="flex flex-1 items-center justify-center rounded-lg bg-gray-600 px-4 py-2 text-white transition-colors hover:bg-gray-700"
-                >
-                  <FileText className="mr-2 h-4 w-4" />
-                  Download Template
-                </button>
-              ) : null}
-
-              {!isMonitoringMode ? (
-                <button
-                  onClick={handleImport}
-                  disabled={loading || !importFile}
-                  className="flex flex-1 items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700 disabled:opacity-50"
-                >
-                  {loading ? (
-                    <div className="mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-white"></div>
-                  ) : (
-                    <Upload className="mr-2 h-4 w-4" />
-                  )}
-                  Import File
-                </button>
-              ) : null}
+            <div className="rounded-2xl bg-slate-50 px-4 py-3 text-xs leading-5 text-slate-600">
+              Enter category and size by name in the CSV. If a category or size
+              does not exist yet, it will be created automatically. For new
+              categories, add a `station` or `kitchenStation` column, or the
+              first active station will be used.
+            </div>
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={downloadMenuTemplate}
+                className="flex-1"
+              >
+                <FileText className="h-4 w-4" />
+                Menu Template
+              </Button>
+              <Button
+                type="button"
+                onClick={handleMenuImport}
+                disabled={loading === "menu-import" || !menuImportFile}
+                className="flex-1"
+              >
+                <Upload className="h-4 w-4" />
+                {loading === "menu-import" ? "Importing..." : "Import Menu"}
+              </Button>
             </div>
           </div>
-        </div>
+        </section>
+
+        <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="mb-4 flex items-center gap-3">
+            <div className="rounded-2xl bg-amber-50 p-3 text-amber-600">
+              <FolderTree className="h-5 w-5" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold text-slate-900">
+                Import Categories
+              </h2>
+              <p className="text-sm text-slate-500">
+                Bulk create or update category records.
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="category-import-file">Category CSV File</Label>
+              <Input
+                id="category-import-file"
+                ref={categoryFileRef}
+                type="file"
+                accept=".csv"
+                disabled={isMonitoringMode}
+                onChange={(event) =>
+                  setCategoryImportFile(event.target.files?.[0] || null)
+                }
+              />
+            </div>
+            <div className="rounded-2xl bg-slate-50 px-4 py-3 text-xs leading-5 text-slate-600">
+              Use the category template to provide the category name,
+              description, and kitchen station name or ID. Existing categories
+              will be updated instead of duplicated.
+            </div>
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={downloadCategoryTemplate}
+                className="flex-1"
+              >
+                <FileText className="h-4 w-4" />
+                Category Template
+              </Button>
+              <Button
+                type="button"
+                onClick={handleCategoryImport}
+                disabled={loading === "category-import" || !categoryImportFile}
+                className="flex-1"
+              >
+                <Upload className="h-4 w-4" />
+                {loading === "category-import"
+                  ? "Importing..."
+                  : "Import Categories"}
+              </Button>
+            </div>
+          </div>
+        </section>
       </div>
 
-      {importResults && (
-        <div className="mt-6 rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-          <h3 className="mb-4 text-lg font-semibold text-gray-900">
-            Import Results
+      {importResults ? (
+        <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+          <h3 className="text-lg font-semibold text-slate-900">
+            {resultsLabel}
           </h3>
 
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-            <div className="flex items-center space-x-2 text-green-600">
+          <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3">
+            <div className="flex items-center gap-2 text-emerald-600">
               <CheckCircle className="h-5 w-5" />
               <span>Created: {importResults.created || 0}</span>
             </div>
-            <div className="flex items-center space-x-2 text-blue-600">
+            <div className="flex items-center gap-2 text-blue-600">
               <CheckCircle className="h-5 w-5" />
               <span>Updated: {importResults.updated || 0}</span>
             </div>
-            <div className="flex items-center space-x-2 text-red-600">
+            <div className="flex items-center gap-2 text-rose-600">
               <XCircle className="h-5 w-5" />
               <span>Failed: {importResults.failed || 0}</span>
             </div>
           </div>
 
-          {importRows.length > 0 && (
-            <div className="mt-6">
-              <h4 className="mb-3 font-medium text-gray-900">
-                Row-wise Results
-              </h4>
-              <div className="overflow-x-auto rounded-lg border border-gray-200">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
-                        Row
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
-                        Item
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
-                        Category
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
-                        Size
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
-                        Status
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
-                        Action
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
-                        Reason
-                      </th>
+          {importRows.length > 0 ? (
+            <div className="mt-6 overflow-x-auto rounded-2xl border border-slate-200">
+              <table className="min-w-full divide-y divide-slate-200">
+                <thead className="bg-slate-50">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      Row
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      Record
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      Category
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      Size
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      Station
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      Status
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      Action
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      Reason
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 bg-white">
+                  {importRows.map((row, index) => (
+                    <tr key={`${row.rowNumber}-${index}`} className="align-top">
+                      <td className="whitespace-nowrap px-4 py-3 text-sm text-slate-700">
+                        {row.rowNumber}
+                      </td>
+                      <td className="px-4 py-3 text-sm font-medium text-slate-900">
+                        {row.itemName || row.categoryName || "-"}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-slate-700">
+                        {row.category || row.categoryName || "-"}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-slate-700">
+                        {row.size || "-"}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-slate-700">
+                        {row.station || "-"}
+                      </td>
+                      <td className="px-4 py-3 text-sm">
+                        <span
+                          className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${getStatusClasses(row.status)}`}
+                        >
+                          {row.status || "failed"}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-sm">
+                        <span
+                          className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${getActionClasses(row.action)}`}
+                        >
+                          {row.action || "failed"}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-slate-600">
+                        {row.reason || "-"}
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100 bg-white">
-                    {importRows.map((row, index) => (
-                      <tr
-                        key={`${row.rowNumber}-${row.itemName || index}`}
-                        className="align-top"
-                      >
-                        <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-700">
-                          {row.rowNumber}
-                        </td>
-                        <td className="px-4 py-3 text-sm font-medium text-gray-900">
-                          {row.itemName || "-"}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-gray-700">
-                          {row.category || "-"}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-gray-700">
-                          {row.size || "-"}
-                        </td>
-                        <td className="px-4 py-3 text-sm">
-                          <span
-                            className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold capitalize ${getStatusClasses(row.status)}`}
-                          >
-                            {row.status || "failed"}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-sm">
-                          <span
-                            className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold capitalize ${getActionClasses(row.action)}`}
-                          >
-                            {row.action || "failed"}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-sm text-gray-700">
-                          {row.reason || "-"}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                  ))}
+                </tbody>
+              </table>
             </div>
-          )}
-
-          {importResults.errors && importResults.errors.length > 0 && (
-            <details className="mt-4 rounded-lg border border-red-200 bg-red-50 p-4">
-              <summary className="cursor-pointer text-sm font-medium text-red-700">
-                Raw Error List ({importResults.errors.length})
-              </summary>
-              <div className="mt-3 space-y-2">
-                {importResults.errors.map((error, index) => (
-                  <div key={index} className="text-sm text-red-700">
-                    {error}
-                  </div>
-                ))}
-              </div>
-            </details>
-          )}
-        </div>
-      )}
+          ) : null}
+        </section>
+      ) : null}
     </div>
   );
 }

@@ -23,6 +23,7 @@ import { useAdmin } from "../context/AdminContext";
 import { AdminModal } from "../components/common/AdminModal";
 import { AdminPagination } from "../components/common/AdminPagination";
 import { useMonitoringMode } from "../hooks/useMonitoringMode";
+import { superAdminTabs } from "../utils/navigationConfig";
 const initialForm = {
   restaurantName: "",
   slug: "",
@@ -39,23 +40,6 @@ const defaultTenantPagination = {
   total: 0,
   limit: TENANT_PAGE_SIZE,
 };
-const superAdminTabs = [
-  {
-    id: "registered",
-    label: "Registered Tenants",
-    description: "Active and verified restaurant workspaces",
-  },
-  {
-    id: "pending",
-    label: "Pending Approvals",
-    description: "Registrations waiting for review or approval",
-  },
-  {
-    id: "requests",
-    label: "Admin Requests",
-    description: "Review and respond to tenant admin requests",
-  },
-];
 const requestStatusTone = {
   open: "bg-amber-100 text-amber-700",
   in_progress: "bg-sky-100 text-sky-700",
@@ -117,6 +101,8 @@ export function TenantManagement() {
   const activeTab = ["pending", "requests"].includes(requestedTab)
     ? requestedTab
     : "registered";
+  const activeTabMeta =
+    superAdminTabs.find((tab) => tab.id === activeTab) || superAdminTabs[0];
   const loadTenantSection = async (section, page) => {
     try {
       const response = await tenantService.getTenants({
@@ -490,14 +476,13 @@ export function TenantManagement() {
         <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-sky-600">
-              Platform
+              Platform Workspace
             </p>
             <h1 className="mt-2 text-2xl font-semibold text-slate-900 sm:text-3xl">
-              Super Admin Panel
+              {activeTabMeta.label}
             </h1>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-              Register new restaurant workspaces, review pending verification,
-              and respond to tenant admin access requests from one place.
+              {activeTabMeta.description}
             </p>
           </div>
 
