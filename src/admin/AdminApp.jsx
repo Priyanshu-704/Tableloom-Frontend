@@ -1,5 +1,17 @@
-import React, { lazy, Suspense, useEffect, useState } from "react";
-import { Navigate, Outlet, Route, Routes } from "react-router-dom";
+import React, {
+  lazy,
+  Suspense,
+  useEffect,
+  useLayoutEffect,
+  useState,
+} from "react";
+import {
+  Navigate,
+  Outlet,
+  Route,
+  Routes,
+  useLocation,
+} from "react-router-dom";
 import { useAuth } from "../common/context/AuthContext";
 import {
   buildAdminPath,
@@ -226,6 +238,52 @@ const LoadingScreen = () => (
     </div>
   </div>
 );
+function AdminRouteScrollReset() {
+  const location = useLocation();
+
+  useLayoutEffect(() => {
+    if (typeof window === "undefined") {
+      return undefined;
+    }
+
+    const resetScrollPosition = () => {
+      window.scrollTo({
+        top: 0,
+        left: 0,
+        behavior: "auto",
+      });
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+      document.scrollingElement?.scrollTo({
+        top: 0,
+        left: 0,
+        behavior: "auto",
+      });
+
+      const adminScrollRoot = document.querySelector(
+        "[data-admin-scroll-root='true']",
+      );
+      if (adminScrollRoot instanceof HTMLElement) {
+        adminScrollRoot.scrollTo({
+          top: 0,
+          left: 0,
+          behavior: "auto",
+        });
+      }
+    };
+
+    resetScrollPosition();
+    const frameId = window.requestAnimationFrame(resetScrollPosition);
+    const timeoutId = window.setTimeout(resetScrollPosition, 0);
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+      window.clearTimeout(timeoutId);
+    };
+  }, [location.key, location.pathname, location.search]);
+
+  return null;
+}
 function AdminLayout() {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isDesktopSidebarCollapsed, setIsDesktopSidebarCollapsed] = useState(
@@ -264,7 +322,9 @@ function AdminLayout() {
           isDesktopCollapsed={isDesktopSidebarCollapsed}
         />
         <AdminNotificationDrawer />
+        <AdminRouteScrollReset />
         <main
+          data-admin-scroll-root="true"
           className={`mt-24 min-w-0 flex-1 pb-6 transition-[margin] duration-300 lg:pb-8 ${isDesktopSidebarCollapsed ? "lg:ml-24" : "lg:ml-72"}`}
         >
           <Outlet />
