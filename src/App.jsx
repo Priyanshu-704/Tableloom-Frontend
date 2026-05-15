@@ -125,24 +125,22 @@ function AppProviders() {
   const isSuperAdminRoute = isSuperAdminPath(location.pathname);
   return (
     <NetworkProvider>
-      <RouteScrollReset />
-      <NumberInputGuard />
-      <NetworkStatusBanner />
-      {isAdminRoute || isSuperAdminRoute ? (
-        <SettingsProvider>
+      <SettingsProvider>
+        <RouteScrollReset />
+        <NumberInputGuard />
+        <NetworkStatusBanner />
+        {isAdminRoute || isSuperAdminRoute ? (
           <AppContent />
-        </SettingsProvider>
-      ) : (
-        <LanguageProvider>
-          <SettingsProvider>
+        ) : (
+          <LanguageProvider>
             <NotificationProvider>
               <AppProvider>
                 <AppContent />
               </AppProvider>
             </NotificationProvider>
-          </SettingsProvider>
-        </LanguageProvider>
-      )}
+          </LanguageProvider>
+        )}
+      </SettingsProvider>
     </NetworkProvider>
   );
 }

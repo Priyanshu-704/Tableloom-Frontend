@@ -107,11 +107,7 @@ const PriceHistory = lazy(() =>
     default: m.PriceHistory,
   })),
 );
-const ImportExport = lazy(() =>
-  import("./components/menu/ImportExport").then((m) => ({
-    default: m.ImportExport,
-  })),
-);
+const ImportExportPage = lazy(() => import("./components/menu/ImportExport"));
 const TableManagement = lazy(() =>
   import("./pages/TableManagement").then((m) => ({
     default: m.TableManagement,
@@ -556,7 +552,7 @@ function AdminContent() {
                     allowedRoles={["manager", "admin"]}
                     requiredPermission={ACCESS_GROUPS.menuImportExport}
                   >
-                    <ImportExport />
+                    <ImportExportPage />
                   </ProtectedRouteWithPermission>
                 }
               />

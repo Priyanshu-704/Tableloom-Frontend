@@ -39,6 +39,8 @@ const priorityWeight = {
   medium: 2,
   low: 1,
 };
+const MAX_NOTIFICATION_FETCH_LIMIT = 500;
+const MAX_LIVE_NOTIFICATION_ITEMS = 500;
 const matchesServerFilters = (notification, filters) => {
   const status =
     notification.effectiveStatus || notification.status || "unread";
@@ -173,7 +175,7 @@ export function AdminNotificationCenterProvider({ children }) {
       }
       setNotifications((current) => {
         const next = current.filter((item) => item._id !== notification._id);
-        return [notification, ...next].slice(0, 100);
+        return [notification, ...next].slice(0, MAX_LIVE_NOTIFICATION_ITEMS);
       });
     },
     [isAllowedNotification, markLiveEventHandled],
@@ -206,7 +208,7 @@ export function AdminNotificationCenterProvider({ children }) {
           setLoading(true);
         }
         const params = {
-          limit: 100,
+          limit: MAX_NOTIFICATION_FETCH_LIMIT,
         };
         if (filters.status !== "all") {
           params.status = filters.status;
@@ -233,8 +235,12 @@ export function AdminNotificationCenterProvider({ children }) {
         setNotifications(nextNotifications);
         setStats({
           ...(statsResponse.data || {}),
-          unreadCount: nextNotifications.filter((item) => !item.isRead).length,
-          total: nextNotifications.length,
+          unreadCount:
+            Number(notificationsResponse.unreadCount) ||
+            nextNotifications.filter((item) => !item.isRead).length,
+          total:
+            Number(notificationsResponse.pagination?.total) ||
+            nextNotifications.length,
         });
       } catch (error) {
         logger.error("Failed to load notification center:", error);

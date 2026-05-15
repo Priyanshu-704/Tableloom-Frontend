@@ -12,5 +12,8 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [react(), tailwindcss()],
     base: normalizeBasePath(env.VITE_CONTEXT_PATH || "/"),
+    resolve: {
+      dedupe: ["react", "react-dom"],
+    },
   };
 });

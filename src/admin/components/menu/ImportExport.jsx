@@ -15,7 +15,7 @@ import { Button } from "../../../common/components/ui/button";
 import { Input } from "../../../common/components/ui/input";
 import { Label } from "../../../common/components/ui/label";
 
-export function ImportExport() {
+function ImportExport() {
   const isMonitoringMode = useMonitoringMode();
   const { addNotification } = useAdmin();
   const [menuImportFile, setMenuImportFile] = useState(null);
@@ -168,10 +168,13 @@ export function ImportExport() {
     }
   };
 
+  const actionButtonClassName =
+    "w-full min-w-0 flex-1 whitespace-normal text-center leading-5 sm:min-w-[12rem]";
+
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-6 p-4 sm:p-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight text-slate-900">
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
           Import / Export
         </h1>
         <p className="mt-1 max-w-3xl text-sm text-slate-600">
@@ -181,7 +184,7 @@ export function ImportExport() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 2xl:grid-cols-3">
         <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
           <div className="mb-4 flex items-center gap-3">
             <div className="rounded-2xl bg-emerald-50 p-3 text-emerald-600">
@@ -242,12 +245,12 @@ export function ImportExport() {
               categories, add a `station` or `kitchenStation` column, or the
               first active station will be used.
             </div>
-            <div className="flex flex-col gap-3 sm:flex-row">
+            <div className="flex flex-wrap gap-3">
               <Button
                 type="button"
                 variant="outline"
                 onClick={downloadMenuTemplate}
-                className="flex-1"
+                className={actionButtonClassName}
               >
                 <FileText className="h-4 w-4" />
                 Menu Template
@@ -256,7 +259,7 @@ export function ImportExport() {
                 type="button"
                 onClick={handleMenuImport}
                 disabled={loading === "menu-import" || !menuImportFile}
-                className="flex-1"
+                className={actionButtonClassName}
               >
                 <Upload className="h-4 w-4" />
                 {loading === "menu-import" ? "Importing..." : "Import Menu"}
@@ -299,12 +302,12 @@ export function ImportExport() {
               description, and kitchen station name or ID. Existing categories
               will be updated instead of duplicated.
             </div>
-            <div className="flex flex-col gap-3 sm:flex-row">
+            <div className="flex flex-wrap gap-3">
               <Button
                 type="button"
                 variant="outline"
                 onClick={downloadCategoryTemplate}
-                className="flex-1"
+                className={actionButtonClassName}
               >
                 <FileText className="h-4 w-4" />
                 Category Template
@@ -313,7 +316,7 @@ export function ImportExport() {
                 type="button"
                 onClick={handleCategoryImport}
                 disabled={loading === "category-import" || !categoryImportFile}
-                className="flex-1"
+                className={actionButtonClassName}
               >
                 <Upload className="h-4 w-4" />
                 {loading === "category-import"
@@ -423,3 +426,6 @@ export function ImportExport() {
     </div>
   );
 }
+
+export { ImportExport };
+export default ImportExport;

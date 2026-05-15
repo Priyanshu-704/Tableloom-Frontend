@@ -84,7 +84,13 @@ const defaultSettings = {
     updatedAt: null,
   },
 };
-const SettingsContext = createContext(null);
+const defaultSettingsContextValue = {
+  settings: defaultSettings,
+  loading: false,
+  refreshSettings: async () => defaultSettings,
+  applySettings: () => {},
+};
+const SettingsContext = createContext(defaultSettingsContextValue);
 const mergeSettings = (current = defaultSettings, incoming = {}) => ({
   ...current,
   ...(incoming || {}),
@@ -159,8 +165,5 @@ export function SettingsProvider({ children }) {
 // eslint-disable-next-line react-refresh/only-export-components
 export function useSettings() {
   const context = useContext(SettingsContext);
-  if (!context) {
-    throw new Error("useSettings must be used within SettingsProvider");
-  }
-  return context;
+  return context || defaultSettingsContextValue;
 }

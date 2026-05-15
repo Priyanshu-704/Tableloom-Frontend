@@ -1,5 +1,20 @@
-const CACHE_NAME = "tableloom-shell-v1";
-const APP_SHELL = ["./", "./index.html", "./manifest.webmanifest", "./favicon.svg", "./tableloom-mark.svg"];
+const CACHE_NAME = "tableloom-shell-v2";
+const APP_SHELL = [
+  "./",
+  "./index.html",
+  "./manifest.webmanifest",
+  "./favicon.svg",
+  "./tableloom-mark.svg",
+];
+const APP_SHELL_PATHS = new Set(
+  APP_SHELL.map((entry) => entry.replace(/^\.\//, "/")),
+);
+
+const isAppShellRequest = (requestUrl) =>
+  APP_SHELL_PATHS.has(requestUrl.pathname) ||
+  requestUrl.pathname === "/" ||
+  requestUrl.pathname.endsWith("/index.html");
+
 self.addEventListener("install", event => {
   event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(APP_SHELL)).then(() => self.skipWaiting()));
 });
@@ -23,14 +38,15 @@ self.addEventListener("fetch", event => {
   if (!isSameOrigin) {
     return;
   }
-  event.respondWith(caches.match(request).then(cachedResponse => {
-    const networkRequest = fetch(request).then(networkResponse => {
-      if (networkResponse && networkResponse.status === 200) {
-        const responseClone = networkResponse.clone();
-        caches.open(CACHE_NAME).then(cache => cache.put(request, responseClone));
-      }
-      return networkResponse;
-    }).catch(() => cachedResponse);
-    return cachedResponse || networkRequest;
-  }));
+  if (!isAppShellRequest(requestUrl)) {
+    event.respondWith(fetch(request).catch(() => caches.match(request)));
+    return;
+  }
+  event.respondWith(fetch(request).then(networkResponse => {
+    if (networkResponse && networkResponse.status === 200) {
+      const responseClone = networkResponse.clone();
+      caches.open(CACHE_NAME).then(cache => cache.put(request, responseClone));
+    }
+    return networkResponse;
+  }).catch(() => caches.match(request)));
 });
