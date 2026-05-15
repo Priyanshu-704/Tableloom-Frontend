@@ -641,7 +641,13 @@ function AdminContent() {
                 path="customers/bills"
                 element={
                   <ProtectedRouteWithPermission
-                    allowedRoles={["manager", "admin", "super_admin"]}
+                    allowedRoles={[
+                      "waiter",
+                      "cashier",
+                      "manager",
+                      "admin",
+                      "super_admin",
+                    ]}
                     requiredPermission={ACCESS_GROUPS.bills}
                   >
                     <BillManagement />

@@ -135,6 +135,8 @@ export const resolveAdminHomePath = (role = "") => {
       return buildAdminPath("/waiter-calls");
     case "chef":
       return buildAdminPath("/kitchen/dashboard");
+    case "cashier":
+      return buildAdminPath("/customers/bills");
     case "manager":
     case "admin":
     default:

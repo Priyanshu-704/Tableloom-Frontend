@@ -162,6 +162,11 @@ const HOME_CANDIDATES = [
     requiredPermissions: ACCESS_GROUPS.sessions,
   },
   {
+    path: buildAdminPath("/customers/bills"),
+    allowedRoles: ["waiter", "cashier", "manager", "admin"],
+    requiredPermissions: ACCESS_GROUPS.bills,
+  },
+  {
     path: buildAdminPath("/waiter-calls"),
     allowedRoles: ["waiter", "manager", "admin"],
     requiredPermissions: ACCESS_GROUPS.waiterCalls,
@@ -174,6 +179,7 @@ const ROLE_HOME_FALLBACKS = Object.freeze({
   manager: buildAdminPath("/dashboard"),
   chef: buildAdminPath("/kitchen/dashboard"),
   waiter: buildAdminPath("/waiter-calls"),
+  cashier: buildAdminPath("/customers/bills"),
 });
 
 const ALL_NOTIFICATION_TYPES = [
@@ -212,6 +218,10 @@ const NOTIFICATION_TYPES_BY_ROLE = Object.freeze({
     "staff_announcement",
     "shift_change",
     "task_assigned",
+  ],
+  cashier: [
+    "payment_request",
+    "payment_received",
   ],
   manager: ALL_NOTIFICATION_TYPES,
   admin: ALL_NOTIFICATION_TYPES,

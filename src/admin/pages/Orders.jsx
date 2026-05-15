@@ -132,13 +132,17 @@ export function Orders() {
   const canViewOrderStats = hasPermission("view_statistics");
   const canFullyUpdateOrderStatus =
     !isMonitoringMode && hasPermission("order_update_status");
+  const normalizedRole = String(user?.role || "").toLowerCase();
   const canMarkServedOnly =
     !isMonitoringMode &&
     !canFullyUpdateOrderStatus &&
     hasPermission("kitchen_mark_served");
   const canUpdateOrderStatus =
     canFullyUpdateOrderStatus || canMarkServedOnly;
-  const canCancelOrders = String(user?.role || "").toLowerCase() === "chef";
+  const canCancelOrders =
+    !isMonitoringMode &&
+    canFullyUpdateOrderStatus &&
+    ["chef", "manager", "admin"].includes(normalizedRole);
   const [orders, setOrders] = useState([]);
   const [statistics, setStatistics] = useState(null);
   const [loading, setLoading] = useState(false);
