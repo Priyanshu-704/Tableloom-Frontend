@@ -310,6 +310,18 @@ export function BillManagement() {
       stats.totalBills,
     ],
   );
+  const availableManualPaymentOptions = useMemo(() => {
+    const enabledMethods = settings?.paymentMethods || {};
+    const filteredOptions = MANUAL_PAYMENT_METHOD_OPTIONS.filter((option) => {
+      if (option.value === "wallet") {
+        return enabledMethods.digitalWallet;
+      }
+      return enabledMethods[option.value] === true;
+    });
+    return filteredOptions.length > 0
+      ? filteredOptions
+      : MANUAL_PAYMENT_METHOD_OPTIONS.filter((option) => option.value === "cash");
+  }, [settings?.paymentMethods]);
   const openPdf = (billId, type = "view") => {
     const url =
       type === "download"
@@ -328,8 +340,11 @@ export function BillManagement() {
     setPaymentModal({
       isOpen: true,
       bill,
-      paymentMethod:
-        bill.paymentMethod === "pending" ? "cash" : bill.paymentMethod,
+      paymentMethod: availableManualPaymentOptions.some(
+        (option) => option.value === bill.paymentMethod,
+      )
+        ? bill.paymentMethod
+        : availableManualPaymentOptions[0]?.value || "cash",
       transactionId: "",
       gateway: "offline",
     });
@@ -730,7 +745,7 @@ export function BillManagement() {
               }
               className="w-full rounded-lg border border-gray-300 px-3 py-2"
             >
-              {MANUAL_PAYMENT_METHOD_OPTIONS.map((option) => (
+              {availableManualPaymentOptions.map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label}
                 </option>

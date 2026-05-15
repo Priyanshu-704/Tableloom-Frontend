@@ -68,10 +68,20 @@ const defaultSettings = {
   },
   paymentMethods: {
     cash: true,
-    card: true,
-    upi: true,
+    online: false,
+    card: false,
+    upi: false,
     digitalWallet: false,
     splitBill: true,
+  },
+  paymentGateway: {
+    provider: "none",
+    status: "inactive",
+    enabled: false,
+    credentialsConfigured: false,
+    keyIdMask: "",
+    configuredAt: null,
+    updatedAt: null,
   },
 };
 const SettingsContext = createContext(null);
@@ -93,6 +103,10 @@ const mergeSettings = (current = defaultSettings, incoming = {}) => ({
   paymentMethods: {
     ...current.paymentMethods,
     ...(incoming?.paymentMethods || {}),
+  },
+  paymentGateway: {
+    ...current.paymentGateway,
+    ...(incoming?.paymentGateway || {}),
   },
 });
 export function SettingsProvider({ children }) {

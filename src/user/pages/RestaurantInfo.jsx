@@ -29,6 +29,7 @@ export function RestaurantInfo() {
   const paymentMethods = settings?.paymentMethods || {};
   const enabledPaymentMethods = [
     paymentMethods.cash ? "Cash" : null,
+    paymentMethods.online ? "Online Checkout" : null,
     paymentMethods.card ? "Card" : null,
     paymentMethods.upi ? "UPI" : null,
     paymentMethods.digitalWallet ? "Wallet" : null,

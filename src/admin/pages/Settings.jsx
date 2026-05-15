@@ -129,10 +129,20 @@ const DEFAULT_SETTINGS = {
   },
   paymentMethods: {
     cash: true,
+    online: true,
     card: true,
     upi: true,
     digitalWallet: false,
     splitBill: true,
+  },
+  paymentGateway: {
+    provider: "none",
+    status: "inactive",
+    enabled: false,
+    credentialsConfigured: false,
+    keyIdMask: "",
+    configuredAt: null,
+    updatedAt: null,
   },
   notifications: {
     newOrders: true,
@@ -164,6 +174,10 @@ const mergeSettings = (incoming = {}) => ({
     ...DEFAULT_SETTINGS.paymentMethods,
     ...(incoming?.paymentMethods || {}),
   },
+  paymentGateway: {
+    ...DEFAULT_SETTINGS.paymentGateway,
+    ...(incoming?.paymentGateway || {}),
+  },
   notifications: {
     ...DEFAULT_SETTINGS.notifications,
     ...(incoming?.notifications || {}),
@@ -189,6 +203,10 @@ export function Settings() {
   const [isSavingSection, setIsSavingSection] = useState("");
   const [adminSettings, setAdminSettings] = useState(DEFAULT_SETTINGS);
   const [logoFile, setLogoFile] = useState(null);
+  const [paymentGatewayForm, setPaymentGatewayForm] = useState({
+    keyId: "",
+    keySecret: "",
+  });
   const [profileForm, setProfileForm] = useState({
     name: "",
     email: "",
@@ -265,9 +283,17 @@ export function Settings() {
         const response = await settingsService.getAdminSettings();
         const nextSettings = mergeSettings(response?.data || {});
         setAdminSettings(nextSettings);
+        setPaymentGatewayForm({
+          keyId: "",
+          keySecret: "",
+        });
         setLogoFile(null);
       } catch {
         setAdminSettings(DEFAULT_SETTINGS);
+        setPaymentGatewayForm({
+          keyId: "",
+          keySecret: "",
+        });
       } finally {
         setIsLoadingSettings(false);
       }
@@ -396,8 +422,20 @@ export function Settings() {
     }
     try {
       setIsSavingSection(section);
+      const payload =
+        section === "payment"
+          ? {
+              ...adminSettings,
+              paymentGateway: {
+                ...(adminSettings?.paymentGateway || {}),
+                provider: "razorpay",
+                keyId: paymentGatewayForm.keyId.trim(),
+                keySecret: paymentGatewayForm.keySecret.trim(),
+              },
+            }
+          : adminSettings;
       const response = await settingsService.updateSettings(
-        adminSettings,
+        payload,
         logoFile,
       );
       if (!response?.success) {
@@ -409,6 +447,10 @@ export function Settings() {
       }
       const mergedSettings = mergeSettings(response?.data || adminSettings);
       setAdminSettings(mergedSettings);
+      setPaymentGatewayForm({
+        keyId: "",
+        keySecret: "",
+      });
       setLogoFile(null);
       applySettings(response?.publicSettings || mergedSettings);
       addNotification("Settings updated successfully", "success");
@@ -899,17 +941,24 @@ export function Settings() {
       </div>
     </div>
   );
-  const renderBooleanGrid = (section, titleMap) => (
+  const renderBooleanGrid = (section, titleMap, disabledFields = {}) => (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       {Object.entries(titleMap).map(([field, label]) => (
         <label
           key={field}
-          className="flex items-center gap-3 rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-700"
+          className={`flex items-center gap-3 rounded-xl border px-4 py-3 text-sm ${
+            disabledFields?.[field]
+              ? "border-gray-200 bg-gray-50 text-gray-400"
+              : "border-gray-200 text-gray-700"
+          }`}
         >
           <Checkbox
             checked={Boolean(adminSettings?.[section]?.[field])}
+            disabled={Boolean(disabledFields?.[field])}
             onCheckedChange={(checked) =>
-              updateNestedSettings(section, field, Boolean(checked))
+              disabledFields?.[field]
+                ? undefined
+                : updateNestedSettings(section, field, Boolean(checked))
             }
           />
           {label}
@@ -921,16 +970,120 @@ export function Settings() {
     <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
       {renderSectionHeader(
         "Payment Methods",
-        "Choose which checkout methods are available to your staff and customers.",
+        "Secure the tenant gateway first. Until Razorpay credentials are saved, checkout stays cash-only for this workspace.",
       )}
 
-      {renderBooleanGrid("paymentMethods", {
-        cash: "Cash",
-        card: "Card",
-        upi: "UPI",
-        digitalWallet: "Digital Wallet",
-        splitBill: "Split Bill",
-      })}
+      <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <p className="text-sm font-semibold text-slate-900">
+              Razorpay Gateway
+            </p>
+            <p className="mt-1 text-sm text-slate-600">
+              Credentials are stored encrypted on the backend and never sent
+              back in plain text.
+            </p>
+          </div>
+          <span
+            className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${
+              adminSettings?.paymentGateway?.enabled
+                ? "bg-emerald-100 text-emerald-700"
+                : "bg-amber-100 text-amber-800"
+            }`}
+          >
+            {adminSettings?.paymentGateway?.enabled
+              ? "Custom methods unlocked"
+              : "Cash only mode"}
+          </span>
+        </div>
+
+        <div className="mt-4 grid gap-4 md:grid-cols-2">
+          <div>
+            <label className="mb-2 block text-sm font-medium text-gray-700">
+              Razorpay Key ID
+            </label>
+            <Input
+              value={paymentGatewayForm.keyId}
+              onChange={(event) =>
+                setPaymentGatewayForm((current) => ({
+                  ...current,
+                  keyId: event.target.value,
+                }))
+              }
+              placeholder={
+                adminSettings?.paymentGateway?.keyIdMask
+                  ? `Saved: ${adminSettings.paymentGateway.keyIdMask}`
+                  : "rzp_live_xxxxx or rzp_test_xxxxx"
+              }
+              autoComplete="off"
+              disabled={isMonitoringMode}
+            />
+          </div>
+          <div>
+            <label className="mb-2 block text-sm font-medium text-gray-700">
+              Razorpay Key Secret
+            </label>
+            <Input
+              type="password"
+              value={paymentGatewayForm.keySecret}
+              onChange={(event) =>
+                setPaymentGatewayForm((current) => ({
+                  ...current,
+                  keySecret: event.target.value,
+                }))
+              }
+              placeholder={
+                adminSettings?.paymentGateway?.credentialsConfigured
+                  ? "Saved securely. Enter both fields to replace."
+                  : "Enter your Razorpay key secret"
+              }
+              autoComplete="new-password"
+              disabled={isMonitoringMode}
+            />
+          </div>
+        </div>
+
+        <div className="mt-4 rounded-xl border border-dashed border-slate-300 bg-white p-4 text-sm text-slate-600">
+          <p>
+            Current setup:{" "}
+            <span className="font-medium text-slate-900">
+              {adminSettings?.paymentGateway?.enabled
+                ? adminSettings?.paymentGateway?.keyIdMask || "Razorpay connected"
+                : "No active gateway credentials"}
+            </span>
+          </p>
+          <p className="mt-1">
+            Save both fields together to add or replace tenant credentials.
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-6">
+        {renderBooleanGrid(
+          "paymentMethods",
+          {
+            cash: "Cash",
+            online: "Online Checkout",
+            card: "Card",
+            upi: "UPI",
+            digitalWallet: "Digital Wallet",
+            splitBill: "Split Bill",
+          },
+          {
+            online: !adminSettings?.paymentGateway?.enabled,
+            card: !adminSettings?.paymentGateway?.enabled,
+            upi: !adminSettings?.paymentGateway?.enabled,
+            digitalWallet: !adminSettings?.paymentGateway?.enabled,
+          },
+        )}
+      </div>
+
+      {!adminSettings?.paymentGateway?.enabled ? (
+        <p className="mt-4 text-sm text-amber-700">
+          Customers and staff will only see cash until this tenant saves valid
+          gateway credentials.
+        </p>
+      ) : null}
 
       <div className="mt-6 flex justify-end">
         <Button

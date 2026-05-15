@@ -16,7 +16,6 @@ import { useNotification } from "../../common/NotificationContext";
 import { useSettings } from "../../common/context/SettingsContext";
 import billService from "../../common/services/billService";
 import { buildCustomerPath } from "../../common/utils/routes";
-import { RAZORPAY_KEY_ID } from "../../common/utils/env";
 import loadRazorpayCheckout from "../../common/utils/loadRazorpayCheckout";
 import { storeCompletedVisit } from "../utils/completedVisit";
 const PAYMENT_LABELS = {
@@ -100,7 +99,7 @@ export function BillRequest() {
       configuredMethods.digitalWallet ? "wallet" : null,
       configuredMethods.cash ? "cash" : null,
     ].filter(Boolean);
-    return options.length > 0 ? options : ["online", "card", "upi", "cash"];
+    return options.length > 0 ? options : ["cash"];
   }, [settings?.paymentMethods]);
   useEffect(() => {
     if (
@@ -305,7 +304,7 @@ export function BillRequest() {
       const orderPayload = orderResponse?.data?.order || null;
       const activeBill = orderResponse?.data?.bill || null;
       const activeSession = orderResponse?.data?.session || {};
-      const razorpayKey = orderResponse?.data?.keyId || RAZORPAY_KEY_ID || "";
+      const razorpayKey = orderResponse?.data?.keyId || "";
 
       if (!orderPayload?.id || !activeBill?._id) {
         notify("Payment order is incomplete. Please try again.", "error");
@@ -767,10 +766,11 @@ export function BillRequest() {
           <div className="mt-4 space-y-3">
             {paymentOptions.map((method) => {
               const isCash = method === "cash";
+              const dimCashDescription = isCash && paymentOptions.length > 1;
               return (
                 <label
                   key={method}
-                  className={`flex cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 ${selectedPayment === method ? "border-primary-600 bg-primary-50" : "border-gray-200"} ${isCash ? "opacity-70" : ""}`}
+                  className={`flex cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 ${selectedPayment === method ? "border-primary-600 bg-primary-50" : "border-gray-200"} ${dimCashDescription ? "opacity-70" : ""}`}
                 >
                   <input
                     type="radio"
