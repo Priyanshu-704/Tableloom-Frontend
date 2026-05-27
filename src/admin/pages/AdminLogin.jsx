@@ -85,7 +85,9 @@ export function AdminLogin() {
           ? "This login is reserved for the super admin. Restaurant admins and staff should sign in from their tenant workspace admin URL."
           : "Use your staff credentials to manage orders, tables, kitchen flow, and day-to-day operations."
       }
-      mobileAuthMode="preview"
+      lockViewport
+      compactMobile
+      mobileAuthMode="formOnly"
       mobilePrimaryActionLabel="Login To Admin Panel"
       mobileBackActionLabel="Back to overview"
       sideTitle={
@@ -113,15 +115,15 @@ export function AdminLogin() {
         },
       ]}
     >
-      <form className="space-y-6" onSubmit={handleSubmit}>
+      <form className="space-y-4 sm:space-y-6" onSubmit={handleSubmit}>
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+          <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 sm:px-4 sm:py-3">
             {error}
           </div>
         )}
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="mb-1.5 block text-sm font-medium text-gray-700 sm:mb-2">
             Email Address
           </label>
           <div className="relative">
@@ -135,7 +137,7 @@ export function AdminLogin() {
                   email: e.target.value,
                 }))
               }
-              className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-xl bg-white text-slate-900 shadow-sm outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+              className="w-full rounded-xl border border-slate-300 bg-white py-2.5 pl-10 pr-4 text-slate-900 shadow-sm outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100 sm:py-3"
               placeholder="Enter email address"
               required
             />
@@ -143,7 +145,7 @@ export function AdminLogin() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="mb-1.5 block text-sm font-medium text-gray-700 sm:mb-2">
             Password
           </label>
           <div className="relative">
@@ -157,7 +159,7 @@ export function AdminLogin() {
                   password: e.target.value,
                 }))
               }
-              className="w-full pl-10 pr-12 py-3 border border-slate-300 rounded-xl bg-white text-slate-900 shadow-sm outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+              className="w-full rounded-xl border border-slate-300 bg-white py-2.5 pl-10 pr-12 text-slate-900 shadow-sm outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100 sm:py-3"
               placeholder="Enter password"
               required
             />
@@ -186,7 +188,7 @@ export function AdminLogin() {
         </div>
 
         {isPlatformLogin ? (
-          <div className="text-center text-sm text-slate-500">
+          <div className="text-center text-sm leading-5 text-slate-500">
             New restaurant?{" "}
             <Link
               to={buildAdminPath("/tenant-registration")}
@@ -196,7 +198,7 @@ export function AdminLogin() {
             </Link>
           </div>
         ) : (
-          <div className="rounded-xl border border-sky-100 bg-sky-50 px-4 py-3 text-sm text-sky-800">
+          <div className="rounded-xl border border-sky-100 bg-sky-50 px-3 py-2 text-sm leading-5 text-sky-800 sm:px-4 sm:py-3">
             Use your restaurant-specific admin URL to sign in. Platform admin
             login is only for the super admin.
           </div>
@@ -205,7 +207,7 @@ export function AdminLogin() {
         <button
           type="submit"
           disabled={isLoading}
-          className="w-full bg-primary-600 hover:bg-primary-700 disabled:bg-gray-400 text-white font-semibold py-3 px-4 rounded-lg flex items-center justify-center"
+          className="flex w-full items-center justify-center rounded-lg bg-primary-600 px-4 py-2.5 font-semibold text-white hover:bg-primary-700 disabled:bg-gray-400 sm:py-3"
         >
           {isLoading ? (
             <>
