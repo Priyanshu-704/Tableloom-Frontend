@@ -22,7 +22,9 @@ import { AdminHeader } from "./components/layout/AdminHeader";
 import { Sidebar } from "./components/layout/Sidebar";
 import { SkeletonBlock } from "./components/common/AdminSkeleton";
 import { AdminNotificationCenterProvider } from "./context/AdminNotificationCenterContext";
+import { BranchProvider } from "./context/BranchContext";
 import { AdminNotificationDrawer } from "./components/notifications/AdminNotificationDrawer";
+import { SubscriptionBanner } from "./components/subscription/SubscriptionBanner";
 import {
   ACCESS_GROUPS,
   hasAccessRequirement,
@@ -195,6 +197,21 @@ const ContactSuperAdmin = lazy(() =>
     default: m.ContactSuperAdmin,
   })),
 );
+const BranchManagement = lazy(() =>
+  import("./pages/BranchManagement").then((m) => ({
+    default: m.BranchManagement,
+  })),
+);
+const MySubscription = lazy(() =>
+  import("./pages/MySubscription").then((m) => ({
+    default: m.MySubscription,
+  })),
+);
+const SubscriptionRenewal = lazy(() =>
+  import("./pages/SubscriptionRenewal").then((m) => ({
+    default: m.SubscriptionRenewal,
+  })),
+);
 const LoadingScreen = () => (
   <div className="min-h-screen bg-gray-50 p-6">
     <div className="mx-auto max-w-7xl space-y-6 px-4 py-4 sm:px-6 sm:py-6">
@@ -305,6 +322,7 @@ function AdminLayout() {
   }, [isDesktopSidebarCollapsed]);
   return (
     <div className="min-h-screen bg-gray-50">
+      <SubscriptionBanner />
       <AdminHeader
         isMobileSidebarOpen={isMobileSidebarOpen}
         onToggleMobileSidebar={() =>
@@ -380,6 +398,10 @@ function AdminContent() {
             </>
           ) : null}
 
+          {/* Always accessible — used from subscription expiry email links */}
+          <Route path="subscription-renewal" element={<SubscriptionRenewal />} />
+
+
           <Route element={<ProtectedRoute />}>
             <Route
               path="force-password-update"
@@ -395,6 +417,14 @@ function AdminContent() {
                     allowedRoles={["manager", "admin", "super_admin"]}
                   >
                     <Dashboard />
+                  </ProtectedRouteWithPermission>
+                }
+              />
+              <Route
+                path="subscription"
+                element={
+                  <ProtectedRouteWithPermission allowedRoles={["admin"]}>
+                    <MySubscription />
                   </ProtectedRouteWithPermission>
                 }
               />
@@ -430,6 +460,14 @@ function AdminContent() {
                 element={
                   <ProtectedRouteWithPermission allowedRoles={["admin"]}>
                     <ContactSuperAdmin />
+                  </ProtectedRouteWithPermission>
+                }
+              />
+              <Route
+                path="branches"
+                element={
+                  <ProtectedRouteWithPermission allowedRoles={["admin", "super_admin"]}>
+                    <BranchManagement />
                   </ProtectedRouteWithPermission>
                 }
               />
@@ -813,7 +851,9 @@ function AdminContent() {
 export function AdminApp() {
   return (
     <AdminNotificationCenterProvider>
-      <AdminContent />
+      <BranchProvider>
+        <AdminContent />
+      </BranchProvider>
     </AdminNotificationCenterProvider>
   );
 }

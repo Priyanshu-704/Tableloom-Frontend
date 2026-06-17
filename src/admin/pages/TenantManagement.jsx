@@ -10,6 +10,11 @@ import {
   Send,
   ShieldAlert,
   XCircle,
+  Mail,
+  RefreshCw,
+  AlertTriangle,
+  Clock,
+  Coins,
 } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supportService, tenantService } from "../../common/services";
@@ -95,14 +100,67 @@ export function TenantManagement() {
   const [rejectingTenantId, setRejectingTenantId] = useState("");
   const [updatingTenantId, setUpdatingTenantId] = useState("");
   const [updatingSupportId, setUpdatingSupportId] = useState("");
+  const [subscriptionReport, setSubscriptionReport] = useState(null);
+  const [loadingReport, setLoadingReport] = useState(false);
+  const [sendingEmails, setSendingEmails] = useState(false);
+
   const requestedTab = String(searchParams.get("tab") || "")
     .trim()
     .toLowerCase();
-  const activeTab = ["pending", "requests"].includes(requestedTab)
+  const activeTab = ["pending", "requests", "subscriptions"].includes(requestedTab)
     ? requestedTab
     : "registered";
   const activeTabMeta =
     superAdminTabs.find((tab) => tab.id === activeTab) || superAdminTabs[0];
+
+  const loadSubscriptionReport = async () => {
+    setLoadingReport(true);
+    try {
+      const response = await tenantService.getSubscriptionReport();
+      setSubscriptionReport(response?.data || null);
+    } catch (loadError) {
+      const message = loadError?.message || "Failed to load subscription report";
+      setError(message);
+      addNotification(message, "error");
+    } finally {
+      setLoadingReport(false);
+    }
+  };
+
+  const handleSendExpiredEmails = async () => {
+    if (isMonitoringMode) {
+      addNotification(
+        "Sending renewal emails is disabled in monitoring mode.",
+        "error",
+      );
+      return;
+    }
+    const confirmed = await confirmAction({
+      title: "Send Renewal Emails",
+      message: "Are you sure you want to send subscription renewal emails to all expired/suspended tenants? This will generate new renewal tokens and notify all main admin users.",
+      confirmLabel: "Send Emails",
+      tone: "warning",
+    });
+    if (!confirmed) {
+      return;
+    }
+    setSendingEmails(true);
+    resetFeedback();
+    try {
+      const response = await tenantService.sendExpiredSubscriptionEmails();
+      const message = response?.message || "Renewal emails sent successfully";
+      setSuccess(message);
+      addNotification(message, "success");
+      await loadSubscriptionReport();
+    } catch (emailError) {
+      const message = emailError?.message || "Failed to send renewal emails";
+      setError(message);
+      addNotification(message, "error");
+    } finally {
+      setSendingEmails(false);
+    }
+  };
+
   const loadTenantSection = async (section, page) => {
     try {
       const response = await tenantService.getTenants({
@@ -136,6 +194,7 @@ export function TenantManagement() {
       await Promise.all([
         loadTenantSection("registered", registeredPage),
         loadTenantSection("pending", pendingPage),
+        loadSubscriptionReport(),
       ]);
     } finally {
       setLoading(false);
@@ -486,7 +545,7 @@ export function TenantManagement() {
             </p>
           </div>
 
-          {activeTab !== "requests" && !isMonitoringMode ? (
+          {activeTab !== "requests" && activeTab !== "subscriptions" && !isMonitoringMode ? (
             <button
               className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
               onClick={openCreateTenantModal}
@@ -498,7 +557,7 @@ export function TenantManagement() {
           ) : null}
         </div>
 
-        <div className="mt-5 grid grid-cols-1 gap-3 md:grid-cols-3">
+        <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {superAdminTabs.map((tab) => (
             <button
               key={tab.id}
@@ -513,7 +572,9 @@ export function TenantManagement() {
                     ? registeredPagination.total
                     : tab.id === "pending"
                       ? pendingPagination.total
-                      : openSupportRequests}
+                      : tab.id === "requests"
+                        ? openSupportRequests
+                        : subscriptionReport?.summary?.expiredSubscriptions ?? 0}
                 </span>
               </div>
               <div className="mt-1 text-xs leading-5 opacity-80">
@@ -544,7 +605,7 @@ export function TenantManagement() {
         </div>
       ) : null}
 
-      {activeTab !== "requests" ? (
+      {activeTab !== "requests" && activeTab !== "subscriptions" ? (
         <div className="space-y-6">
           {activeTab === "pending" ? (
             <section className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
@@ -964,6 +1025,332 @@ export function TenantManagement() {
             </section>
           ) : null}
         </div>
+      ) : activeTab === "subscriptions" ? (
+        <section className="space-y-6">
+          {/* Summary Cards */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {/* Card 1: Turnover */}
+            <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-semibold text-slate-500">Platform Turnover</span>
+                <div className="rounded-2xl bg-purple-50 p-3 text-purple-600">
+                  <Coins className="h-5 w-5" />
+                </div>
+              </div>
+              <div className="mt-4">
+                <span className="text-2xl font-bold text-slate-900">
+                  {formatCurrency(
+                    subscriptionReport?.summary?.turnover?.amount || 0,
+                    subscriptionReport?.summary?.turnover?.currency || "INR"
+                  )}
+                </span>
+                <p className="mt-1 text-xs text-slate-500">
+                  From {subscriptionReport?.summary?.turnover?.purchaseCount || 0} subscriptions
+                </p>
+              </div>
+            </div>
+
+            {/* Card 2: Active */}
+            <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-semibold text-slate-500">Active Plans</span>
+                <div className="rounded-2xl bg-emerald-50 p-3 text-emerald-600">
+                  <CheckCircle2 className="h-5 w-5" />
+                </div>
+              </div>
+              <div className="mt-4">
+                <span className="text-2xl font-bold text-slate-900">
+                  {subscriptionReport?.summary?.activeSubscriptions ?? 0}
+                </span>
+                <p className="mt-1 text-xs text-slate-500">Currently active/trialing</p>
+              </div>
+            </div>
+
+            {/* Card 3: Expired */}
+            <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-semibold text-slate-500">Expired Plans</span>
+                <div className="rounded-2xl bg-rose-50 p-3 text-rose-600">
+                  <AlertTriangle className="h-5 w-5" />
+                </div>
+              </div>
+              <div className="mt-4">
+                <span className="text-2xl font-bold text-rose-600">
+                  {subscriptionReport?.summary?.expiredSubscriptions ?? 0}
+                </span>
+                <p className="mt-1 text-xs text-slate-500">Needs immediate renewal</p>
+              </div>
+            </div>
+
+            {/* Card 4: Expiring Soon */}
+            <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-semibold text-slate-500">Expiring Soon</span>
+                <div className="rounded-2xl bg-amber-50 p-3 text-amber-600">
+                  <Clock className="h-5 w-5" />
+                </div>
+              </div>
+              <div className="mt-4">
+                <span className="text-2xl font-bold text-amber-600">
+                  {subscriptionReport?.summary?.expiringSoonSubscriptions ?? 0}
+                </span>
+                <p className="mt-1 text-xs text-slate-500">Expires within 7 days</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Action Header Panel */}
+          <div className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h3 className="text-lg font-semibold text-slate-900">Subscription Control</h3>
+                <p className="mt-1 text-sm text-slate-500">
+                  Manage tenant billing cycles and send renewal reminders.
+                </p>
+              </div>
+              {!isMonitoringMode && (
+                <button
+                  type="button"
+                  disabled={sendingEmails || (subscriptionReport?.summary?.expiredSubscriptions ?? 0) === 0}
+                  onClick={handleSendExpiredEmails}
+                  className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-50"
+                >
+                  {sendingEmails ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Mail className="h-4 w-4" />
+                  )}
+                  {sendingEmails ? "Sending notifications..." : "Notify Expired Tenants"}
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Tenants List/Table */}
+          <div className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+            <div className="flex items-center gap-3">
+              <RefreshCw className="h-5 w-5 text-sky-600" />
+              <div>
+                <h2 className="text-xl font-semibold text-slate-900">All Subscriptions</h2>
+                <p className="mt-1 text-sm text-slate-500">
+                  Detailed view of active, expiring, and expired tenant plans.
+                </p>
+              </div>
+            </div>
+
+            {/* Mobile View */}
+            <div className="mt-4 max-h-128 space-y-3 overflow-y-auto overscroll-contain pr-1 lg:hidden">
+              {loadingReport ? (
+                <div className="rounded-2xl border border-slate-200 px-4 py-6 text-sm text-slate-500">
+                  Loading subscriptions...
+                </div>
+              ) : null}
+              {!loadingReport && (!subscriptionReport?.tenants || subscriptionReport.tenants.length === 0) ? (
+                <div className="rounded-2xl border border-dashed border-slate-200 px-4 py-6 text-sm text-slate-500">
+                  No subscriptions found.
+                </div>
+              ) : null}
+              {!loadingReport && subscriptionReport?.tenants?.map((row) => {
+                const daysRemaining = row.subscription?.daysRemaining;
+                const isExpired = row.subscription?.status === "expired" || (daysRemaining !== null && daysRemaining < 0);
+                const isExpiringSoon = !isExpired && daysRemaining !== null && daysRemaining <= 7 && daysRemaining >= 0;
+                
+                return (
+                  <div
+                    key={row.tenant?._id}
+                    className={`rounded-2xl border px-4 py-4 text-left transition ${
+                      isExpired
+                        ? "border-rose-200 bg-rose-50/30"
+                        : isExpiringSoon
+                        ? "border-amber-200 bg-amber-50/30"
+                        : "border-slate-200 hover:border-slate-300 hover:bg-slate-50"
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <div className="font-semibold text-slate-900">{row.tenant?.name}</div>
+                        <div className="text-xs font-mono text-slate-500 mt-1">
+                          /{row.tenant?.slug}/{row.tenant?.key}
+                        </div>
+                      </div>
+                      <span
+                        className={`rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider ${
+                          isExpired
+                            ? "bg-rose-100 text-rose-700"
+                            : isExpiringSoon
+                            ? "bg-amber-100 text-amber-700"
+                            : "bg-emerald-100 text-emerald-700"
+                        }`}
+                      >
+                        {isExpired ? "Expired" : isExpiringSoon ? "Expiring Soon" : row.subscription?.status || "Active"}
+                      </span>
+                    </div>
+
+                    <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-slate-600">
+                      <div className="rounded-xl bg-white/60 p-2 border border-slate-100">
+                        <span className="text-slate-400 block font-medium">Plan / Period</span>
+                        <span className="font-semibold text-slate-800 capitalize">
+                          {row.subscription?.planName} ({row.subscription?.billingPeriod})
+                        </span>
+                      </div>
+                      <div className="rounded-xl bg-white/60 p-2 border border-slate-100">
+                        <span className="text-slate-400 block font-medium">Time Left</span>
+                        <span className={`font-semibold ${isExpired ? "text-rose-600" : isExpiringSoon ? "text-amber-600" : "text-slate-800"}`}>
+                          {daysRemaining === null
+                            ? "N/A"
+                            : daysRemaining < 0
+                            ? "Expired"
+                            : `${daysRemaining} day${daysRemaining === 1 ? "" : "s"}`}
+                        </span>
+                      </div>
+                      <div className="rounded-xl bg-white/60 p-2 border border-slate-100">
+                        <span className="text-slate-400 block font-medium">Expires At</span>
+                        <span className="font-semibold text-slate-800">
+                          {row.subscription?.currentPeriodEnd
+                            ? new Date(row.subscription.currentPeriodEnd).toLocaleDateString()
+                            : "N/A"}
+                        </span>
+                      </div>
+                      <div className="rounded-xl bg-white/60 p-2 border border-slate-100">
+                        <span className="text-slate-400 block font-medium">Total Paid</span>
+                        <span className="font-semibold text-slate-800">
+                          {formatCurrency(row.totals?.paidAmount || 0, row.totals?.currency || "INR")}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+                      <div>
+                        <span className="text-slate-400 font-medium">Admin:</span>{" "}
+                        <span className="text-slate-700 font-semibold">{row.tenant?.adminName}</span>
+                      </div>
+                      {row.tenant?.adminEmail && (
+                        <a
+                          href={`mailto:${row.tenant.adminEmail}`}
+                          className="inline-flex items-center gap-1.5 text-sky-600 font-semibold hover:underline"
+                        >
+                          <Mail className="h-3.5 w-3.5" />
+                          Email Admin
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Desktop View */}
+            <div className="mt-4 hidden overflow-auto lg:block">
+              <table className="min-w-full divide-y divide-slate-200 text-sm">
+                <thead>
+                  <tr className="text-left text-slate-500">
+                    <th className="pb-3 pr-4 font-semibold">Restaurant</th>
+                    <th className="pb-3 pr-4 font-semibold">Plan / Cycle</th>
+                    <th className="pb-3 pr-4 font-semibold">Status</th>
+                    <th className="pb-3 pr-4 font-semibold">Expires At</th>
+                    <th className="pb-3 pr-4 font-semibold">Days Left</th>
+                    <th className="pb-3 pr-4 font-semibold">Total Revenue</th>
+                    <th className="pb-3 pr-4 font-semibold">Admin Contact</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {loadingReport ? (
+                    <tr>
+                      <td className="py-6 text-slate-500 text-center" colSpan="7">
+                        Loading subscriptions...
+                      </td>
+                    </tr>
+                  ) : null}
+                  {!loadingReport && (!subscriptionReport?.tenants || subscriptionReport.tenants.length === 0) ? (
+                    <tr>
+                      <td className="py-6 text-slate-500 text-center border border-dashed border-slate-100" colSpan="7">
+                        No subscriptions found.
+                      </td>
+                    </tr>
+                  ) : null}
+                  {!loadingReport && subscriptionReport?.tenants?.map((row) => {
+                    const daysRemaining = row.subscription?.daysRemaining;
+                    const isExpired = row.subscription?.status === "expired" || (daysRemaining !== null && daysRemaining < 0);
+                    const isExpiringSoon = !isExpired && daysRemaining !== null && daysRemaining <= 7 && daysRemaining >= 0;
+
+                    return (
+                      <tr
+                        key={row.tenant?._id}
+                        className={`hover:bg-slate-50/80 transition ${
+                          isExpired ? "bg-rose-50/20" : isExpiringSoon ? "bg-amber-50/20" : ""
+                        }`}
+                      >
+                        <td className="py-4 pr-4">
+                          <div className="font-medium text-slate-900">{row.tenant?.name}</div>
+                          <div className="text-xs text-slate-400 font-mono mt-0.5">
+                            /{row.tenant?.slug}/{row.tenant?.key}
+                          </div>
+                        </td>
+                        <td className="py-4 pr-4">
+                          <div className="font-medium text-slate-900 capitalize">
+                            {row.subscription?.planName}
+                          </div>
+                          <div className="text-xs text-slate-500 capitalize">
+                            {row.subscription?.billingPeriod}
+                          </div>
+                        </td>
+                        <td className="py-4 pr-4">
+                          <span
+                            className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold leading-5 ${
+                              isExpired
+                                ? "bg-rose-100 text-rose-700"
+                                : isExpiringSoon
+                                ? "bg-amber-100 text-amber-700"
+                                : "bg-emerald-100 text-emerald-700"
+                            }`}
+                          >
+                            {isExpired ? "Expired" : isExpiringSoon ? "Expiring Soon" : row.subscription?.status || "Active"}
+                          </span>
+                        </td>
+                        <td className="py-4 pr-4 text-slate-700 font-medium">
+                          {row.subscription?.currentPeriodEnd
+                            ? new Date(row.subscription.currentPeriodEnd).toLocaleDateString()
+                            : "N/A"}
+                        </td>
+                        <td className="py-4 pr-4">
+                          <span
+                            className={`font-semibold ${
+                              isExpired ? "text-rose-600" : isExpiringSoon ? "text-amber-600" : "text-slate-800"
+                            }`}
+                          >
+                            {daysRemaining === null
+                              ? "N/A"
+                              : daysRemaining < 0
+                              ? "Expired"
+                              : `${daysRemaining} day${daysRemaining === 1 ? "" : "s"}`}
+                          </span>
+                        </td>
+                        <td className="py-4 pr-4 text-slate-900 font-medium">
+                          {formatCurrency(row.totals?.paidAmount || 0, row.totals?.currency || "INR")}
+                          <div className="text-xs text-slate-400 mt-0.5">
+                            {row.totals?.purchaseCount || 0} purchase{row.totals?.purchaseCount === 1 ? "" : "s"}
+                          </div>
+                        </td>
+                        <td className="py-4 pr-4">
+                          <div className="font-medium text-slate-900">{row.tenant?.adminName}</div>
+                          {row.tenant?.adminEmail && (
+                            <a
+                              href={`mailto:${row.tenant.adminEmail}`}
+                              className="inline-flex items-center gap-1 text-xs font-semibold text-sky-600 hover:underline mt-0.5"
+                            >
+                              <Mail className="h-3 w-3" />
+                              {row.tenant.adminEmail}
+                            </a>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
       ) : (
         <section className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

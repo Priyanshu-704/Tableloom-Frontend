@@ -63,7 +63,7 @@ const getCardClassName = ({ lockViewport, compactMobile }) =>
   );
 
 const getContentClassName = (contentScrollable) =>
-  contentScrollable ? "min-h-0 flex-1 overflow-visible lg:overflow-y-auto lg:pr-1" : "";
+  contentScrollable ? "min-h-0 flex-1 overflow-y-auto pr-1" : "";
 
 function AuthShellBackground() {
   return (

@@ -12,11 +12,13 @@ import { useAdminNotificationCenter } from "../../context/AdminNotificationCente
 import { AccountPopover } from "./AccountPopover";
 import { useSettings } from "../../../common/context/SettingsContext";
 import { useAuth } from "../../../common/context/AuthContext";
+import { useBranch } from "../../context/BranchContext";
 import { isSuperAdminMonitoringPath } from "../../../common/utils/routes";
 import {
   getVisibleAdminNavigationSections,
   resolveActiveAdminNavigation,
 } from "../../utils/navigationConfig";
+import { BranchSwitcher } from "../branches/BranchSwitcher";
 export function AdminHeader({
   isMobileSidebarOpen = false,
   onToggleMobileSidebar,
@@ -26,6 +28,7 @@ export function AdminHeader({
   const { hasPermission, permissions, user } = useAuth();
   const location = useLocation();
   const { settings } = useSettings();
+  const { branches, branchLimit } = useBranch();
   const {
     isDrawerOpen,
     openDrawer,
@@ -51,8 +54,10 @@ export function AdminHeader({
         user,
         permissions,
         isMonitoringMode,
+        branches,
+        branchLimit,
       }),
-    [isMonitoringMode, permissions, user],
+    [isMonitoringMode, permissions, user, branches, branchLimit],
   );
   const activeNavigation = useMemo(
     () =>
@@ -183,6 +188,9 @@ export function AdminHeader({
           </div>
 
           <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+            {/* Branch Switcher — visible only for admins with multi-branch plans */}
+            <BranchSwitcher />
+
             <button
               type="button"
               onClick={onToggleDesktopSidebar}

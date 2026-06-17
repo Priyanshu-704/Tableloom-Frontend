@@ -40,6 +40,10 @@ const normalizeApiError = (error, fallbackMessage = "Something went wrong") => {
     data: backendData?.data ?? null,
     meta: backendData?.meta ?? null,
     errors: backendData?.errors ?? null,
+    code: backendData?.code ?? null,
+    renewalToken: backendData?.renewalToken ?? null,
+    tenantSlug: backendData?.tenantSlug ?? null,
+    tenantKey: backendData?.tenantKey ?? null,
   };
 };
 const handleApiError = (error, fallbackMessage = "Something went wrong") => {

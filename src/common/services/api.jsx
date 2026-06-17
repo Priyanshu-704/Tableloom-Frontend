@@ -157,10 +157,28 @@ api.interceptors.request.use(
       config.headers.Authorization = `Bearer ${accessToken}`;
     }
     Object.assign(config.headers, getTenantHeaders());
+
+    // Inject active branch header so the backend resolveBranch middleware
+    // can scope every request.  The BranchContext writes this value to
+    // sessionStorage whenever the user switches branch.
+    if (!config.headers["x-branch-id"]) {
+      try {
+        const branchHeader = String(
+          window.sessionStorage.getItem("branch.activeHeader") || "",
+        ).trim();
+        if (branchHeader) {
+          config.headers["x-branch-id"] = branchHeader;
+        }
+      } catch {
+        /* sessionStorage not available */
+      }
+    }
+
     return config;
   },
   (error) => Promise.reject(error),
 );
+
 api.interceptors.response.use(
   (response) => {
     saveOfflineApiResponse(response?.config, response);

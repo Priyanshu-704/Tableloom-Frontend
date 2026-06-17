@@ -5,6 +5,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useAdmin } from "../../context/AdminContext";
 import { useAuth } from "../../../common/context/AuthContext";
 import { useSettings } from "../../../common/context/SettingsContext";
+import { useBranch } from "../../context/BranchContext";
 import { isSuperAdminMonitoringPath } from "../../../common/utils/routes";
 import {
   getVisibleAdminNavigationSections,
@@ -32,6 +33,7 @@ export function Sidebar({
   const location = useLocation();
   const { user, permissions } = useAuth();
   const { settings } = useSettings();
+  const { branches, branchLimit } = useBranch();
   const isMonitoringMode = isSuperAdminMonitoringPath(
     location.pathname,
     user?.role,
@@ -42,8 +44,10 @@ export function Sidebar({
         user,
         permissions,
         isMonitoringMode,
+        branches,
+        branchLimit,
       }),
-    [isMonitoringMode, permissions, user],
+    [isMonitoringMode, permissions, user, branches, branchLimit],
   );
   const [openSections, setOpenSections] = useState(() => {
     if (typeof window === "undefined") {

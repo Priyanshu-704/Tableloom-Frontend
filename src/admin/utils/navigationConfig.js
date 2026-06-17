@@ -9,6 +9,7 @@ import {
   CookingPot,
   DatabaseBackup,
   Download,
+  GitBranch,
   LifeBuoy,
   List,
   LayoutDashboard,
@@ -26,6 +27,7 @@ import {
   Users,
   Utensils,
 } from "lucide-react";
+
 import {
   buildAdminPath,
   buildPlatformAdminPath,
@@ -47,6 +49,11 @@ export const superAdminTabs = [
     id: "requests",
     label: "Admin Requests",
     description: "Review and respond to tenant admin requests",
+  },
+  {
+    id: "subscriptions",
+    label: "Subscriptions",
+    description: "Monitor plans, expirations, and notify tenants",
   },
 ];
 
@@ -111,6 +118,16 @@ export const adminNavigationSections = [
         path: buildPlatformAdminPath("/tenant-management?tab=requests"),
         isActive: (location) =>
           isTenantManagementTabActive(location, "requests"),
+        roles: ["super_admin"],
+      },
+      {
+        id: "subscriptions",
+        label: "Subscriptions",
+        description: "Monitor plans, expirations, and notify tenants",
+        icon: RefreshCw,
+        path: buildPlatformAdminPath("/tenant-management?tab=subscriptions"),
+        isActive: (location) =>
+          isTenantManagementTabActive(location, "subscriptions"),
         roles: ["super_admin"],
       },
     ],
@@ -331,6 +348,14 @@ export const adminNavigationSections = [
         path: buildAdminPath("/support"),
         roles: ["admin"],
       },
+      {
+        id: "branches",
+        label: "Branch Management",
+        description: "Manage restaurant locations",
+        icon: GitBranch,
+        path: buildAdminPath("/branches"),
+        allowedRoles: ["admin"],
+      },
     ],
   },
   {
@@ -392,6 +417,8 @@ export const getVisibleAdminNavigationSections = ({
   user,
   permissions,
   isMonitoringMode = false,
+  branches = [],
+  branchLimit = null,
 } = {}) => {
   if (!user) {
     return [];
@@ -401,6 +428,12 @@ export const getVisibleAdminNavigationSections = ({
       const items = section.items.filter((item) => {
         if (item.hidden) {
           return false;
+        }
+        if (item.id === "branches") {
+          const planRestricted = branchLimit !== null && branchLimit !== undefined && Number(branchLimit) <= 1;
+          if (branches.length <= 1 && planRestricted) {
+            return false;
+          }
         }
         if (Array.isArray(item.roles) && !item.roles.includes(user.role)) {
           return false;

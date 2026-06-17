@@ -7,6 +7,7 @@ import { AdminAuthShell } from "../components/layout/AdminAuthShell";
 import {
   buildAdminPath,
   extractTenantFromPath,
+  withAppBasePath,
 } from "../../common/utils/routes";
 import { resolveAccessibleAdminHomePath } from "../utils/accessControl";
 export function AdminLogin() {
@@ -17,6 +18,7 @@ export function AdminLogin() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [renewalLink, setRenewalLink] = useState("");
   const navigate = useNavigate();
   const { login, permissions } = useAuth();
   const { settings } = useSettings();
@@ -33,6 +35,7 @@ export function AdminLogin() {
     }
     setIsLoading(true);
     setError("");
+    setRenewalLink("");
     try {
       const response = await login(credentials.email, credentials.password);
       if (response.success) {
@@ -66,7 +69,12 @@ export function AdminLogin() {
         setError(response.message || "Login failed");
       }
     } catch (error) {
-      setError(error.message || "Login failed. Please try again.");
+      if (error.code === "SUBSCRIPTION_INACTIVE" && error.renewalToken && error.tenantSlug && error.tenantKey) {
+        setError(error.message || "This restaurant subscription has expired.");
+        setRenewalLink(withAppBasePath(`/${error.tenantSlug}/${error.tenantKey}/subscription-renewal?token=${error.renewalToken}`));
+      } else {
+        setError(error.message || "Login failed. Please try again.");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -87,6 +95,7 @@ export function AdminLogin() {
       }
       lockViewport
       compactMobile
+      contentScrollable
       mobileAuthMode="formOnly"
       mobilePrimaryActionLabel="Login To Admin Panel"
       mobileBackActionLabel="Back to overview"
@@ -117,8 +126,16 @@ export function AdminLogin() {
     >
       <form className="space-y-4 sm:space-y-6" onSubmit={handleSubmit}>
         {error && (
-          <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 sm:px-4 sm:py-3">
-            {error}
+          <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 sm:px-4 sm:py-3 flex flex-col gap-2">
+            <div>{error}</div>
+            {renewalLink && (
+              <Link
+                to={renewalLink}
+                className="mt-1 inline-flex items-center justify-center rounded-md bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700 transition"
+              >
+                Renew Subscription Now
+              </Link>
+            )}
           </div>
         )}
 

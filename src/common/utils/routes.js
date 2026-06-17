@@ -74,8 +74,34 @@ export const buildTenantPath = (
   if (!tenant?.tenantSlug || !tenant?.tenantKey) {
     return prependAppBasePath(normalizedPath);
   }
+
+  const isCustomerRoute =
+    !normalizedPath.startsWith("/admin") &&
+    !normalizedPath.includes("/subscription-renewal");
+
+  let branchPrefix = "";
+  let tablePrefix = "";
+
+  if (isCustomerRoute) {
+    const currentPath = window.location.pathname;
+    const branchMatch = currentPath.match(/\/branch\/([^/]+)/);
+    const tableMatch = currentPath.match(/\/table\/([^/]+)/);
+    if (branchMatch) {
+      branchPrefix = `/branch/${branchMatch[1]}`;
+    }
+    if (tableMatch) {
+      tablePrefix = `/table/${tableMatch[1]}`;
+    }
+  }
+
+  if (normalizedPath === "/" && isCustomerRoute) {
+    return prependAppBasePath(
+      `/${tenant.tenantSlug}/${tenant.tenantKey}${branchPrefix}${tablePrefix}`,
+    );
+  }
+
   return prependAppBasePath(
-    `/${tenant.tenantSlug}/${tenant.tenantKey}${normalizedPath === "/" ? "" : normalizedPath}`,
+    `/${tenant.tenantSlug}/${tenant.tenantKey}${branchPrefix}${tablePrefix}${normalizedPath === "/" ? "" : normalizedPath}`,
   );
 };
 export const buildAppPath = (path = "/") => buildTenantPath(path);

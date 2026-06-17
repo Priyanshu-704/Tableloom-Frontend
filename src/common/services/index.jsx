@@ -18,3 +18,4 @@ export { default as inventoryService } from "./inventoryService";
 export { default as tenantService } from "./tenantService";
 export { default as supportService } from "./supportService";
 export { default as reportService } from "./reportService";
+export { default as branchService } from "./branchService";

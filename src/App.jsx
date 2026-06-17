@@ -104,6 +104,20 @@ function AppContent() {
           }
         />
         <Route
+          path={withAppBasePath("/:tenantSlug/:tenantKey/subscription-renewal")}
+          element={
+            <AdminProvider>
+              <AuthProvider>
+                <AdminApp />
+              </AuthProvider>
+            </AdminProvider>
+          }
+        />
+        <Route
+          path={withAppBasePath("/:tenantSlug/:tenantKey/branch/:branchSlug/table/:tableNumber/*")}
+          element={<CustomerApp />}
+        />
+        <Route
           path={withAppBasePath("/:tenantSlug/:tenantKey/table/:tableNumber/*")}
           element={<CustomerApp />}
         />
