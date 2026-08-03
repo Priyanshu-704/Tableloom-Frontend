@@ -25,7 +25,7 @@ const getShellClassName = ({ lockViewport, compactMobile }) =>
 
 const getLayoutClassName = ({ lockViewport, compactMobile }) =>
   joinClasses(
-    "relative mx-auto grid min-h-screen w-full max-w-7xl items-start gap-8 px-4 py-8 sm:px-6 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,560px)] lg:gap-12 lg:px-8 lg:py-12",
+    "relative mx-auto grid min-h-screen w-full max-w-7xl items-center content-center gap-8 px-4 py-8 sm:px-6 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,560px)] lg:gap-12 lg:px-8 lg:py-12",
     lockViewport && "lg:h-screen",
     lockViewport &&
       compactMobile &&
@@ -34,7 +34,7 @@ const getLayoutClassName = ({ lockViewport, compactMobile }) =>
 
 const getSidePanelClassName = ({ lockViewport, isHiddenOnMobile }) =>
   joinClasses(
-    "order-2 lg:order-1 lg:pt-6",
+    "order-2 lg:order-1 lg:py-6",
     lockViewport && "min-h-0 lg:overflow-hidden",
     isHiddenOnMobile ? "hidden lg:block" : "block",
   );
@@ -45,7 +45,7 @@ const getCardWrapClassName = ({
   isHiddenOnMobile,
 }) =>
   joinClasses(
-    "order-1 mx-auto w-full max-w-xl lg:order-2 lg:max-w-none lg:justify-self-end lg:self-start",
+    "order-1 mx-auto w-full max-w-xl lg:order-2 lg:max-w-none lg:justify-self-end lg:self-center",
     lockViewport && "min-h-0",
     lockViewport && compactMobile && "max-w-md",
     isHiddenOnMobile ? "hidden lg:block" : "block",
@@ -150,6 +150,7 @@ function AuthShellHeader({
   showBackAction,
   mobileBackActionLabel,
   onBackToPreview,
+  hideSidePanel,
 }) {
   return (
     <div className={compactMobile ? "mb-4 sm:mb-6 lg:mb-8" : "mb-8"}>
@@ -157,8 +158,8 @@ function AuthShellHeader({
         logoSrc={logoSrc}
         name={brandName}
         className={joinClasses(
-          compactMobile ? "mb-3 hidden sm:flex" : "mb-6",
-          "lg:hidden",
+          compactMobile ? "mb-3 flex" : "mb-6 flex",
+          hideSidePanel ? "flex" : "lg:hidden",
         )}
       />
 
@@ -222,6 +223,7 @@ export function AdminAuthShell({
   sideTitle = "Keep service moving without the dashboard feeling heavy.",
   sideDescription = "Manage tables, orders, staff, and live service updates from one calm workspace.",
   highlights = [],
+  hideSidePanel = false,
 }) {
   const [showMobileForm, setShowMobileForm] = useState(
     mobileAuthMode !== "preview",
@@ -233,16 +235,21 @@ export function AdminAuthShell({
   const hideFormCardOnMobile = showMobilePreview;
 
   const shellClassName = getShellClassName({ lockViewport, compactMobile });
-  const layoutClassName = getLayoutClassName({ lockViewport, compactMobile });
+  const layoutClassName = hideSidePanel
+    ? "relative mx-auto flex min-h-screen w-full max-w-4xl flex-col justify-center px-4 py-8 sm:px-6 lg:px-8 lg:py-12"
+    : getLayoutClassName({ lockViewport, compactMobile });
+
   const sidePanelClassName = getSidePanelClassName({
     lockViewport,
     isHiddenOnMobile: hideSidePanelOnMobile,
   });
-  const cardWrapClassName = getCardWrapClassName({
-    lockViewport,
-    compactMobile,
-    isHiddenOnMobile: hideFormCardOnMobile,
-  });
+  const cardWrapClassName = hideSidePanel
+    ? "w-full mx-auto"
+    : getCardWrapClassName({
+        lockViewport,
+        compactMobile,
+        isHiddenOnMobile: hideFormCardOnMobile,
+      });
   const cardClassName = getCardClassName({ lockViewport, compactMobile });
   const contentClassName = getContentClassName(contentScrollable);
 
@@ -255,19 +262,21 @@ export function AdminAuthShell({
       <AuthShellBackground />
 
       <div className={layoutClassName}>
-        <div className={sidePanelClassName}>
-          <AuthShellSidePanel
-            brandName={brandName}
-            logoSrc={logoSrc}
-            sideLabel={sideLabel}
-            sideTitle={sideTitle}
-            sideDescription={sideDescription}
-            highlights={highlights}
-            showMobilePreview={showMobilePreview}
-            mobilePrimaryActionLabel={mobilePrimaryActionLabel}
-            onShowMobileForm={() => setShowMobileForm(true)}
-          />
-        </div>
+        {!hideSidePanel && (
+          <div className={sidePanelClassName}>
+            <AuthShellSidePanel
+              brandName={brandName}
+              logoSrc={logoSrc}
+              sideLabel={sideLabel}
+              sideTitle={sideTitle}
+              sideDescription={sideDescription}
+              highlights={highlights}
+              showMobilePreview={showMobilePreview}
+              mobilePrimaryActionLabel={mobilePrimaryActionLabel}
+              onShowMobileForm={() => setShowMobileForm(true)}
+            />
+          </div>
+        )}
 
         <div className={cardWrapClassName}>
           <div className={cardClassName}>
@@ -281,6 +290,7 @@ export function AdminAuthShell({
               showBackAction={mobileAuthMode === "preview" && showMobileForm}
               mobileBackActionLabel={mobileBackActionLabel}
               onBackToPreview={() => setShowMobileForm(false)}
+              hideSidePanel={hideSidePanel}
             />
 
             <div className={contentClassName}>{children}</div>

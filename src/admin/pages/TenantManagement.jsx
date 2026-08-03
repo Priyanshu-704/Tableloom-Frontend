@@ -430,16 +430,58 @@ export function TenantManagement() {
   );
   const getPreviousPage = (items, currentPage) =>
     items.length === 1 && currentPage > 1 ? currentPage - 1 : currentPage;
+  const [formErrors, setFormErrors] = useState({});
+
+  const validateTenantForm = (formData) => {
+    const errors = {};
+    if (!formData.restaurantName?.trim()) {
+      errors.restaurantName = "Restaurant Name is required";
+    }
+    if (!formData.slug?.trim()) {
+      errors.slug = "Workspace Slug is required";
+    } else if (!/^[a-z0-9-]+$/.test(formData.slug.trim())) {
+      errors.slug = "Slug can only contain lowercase letters, numbers, and hyphens";
+    }
+    if (!formData.key?.trim()) {
+      errors.key = "Workspace Key is required";
+    } else if (!/^[a-z0-9-]+$/.test(formData.key.trim())) {
+      errors.key = "Key can only contain lowercase letters, numbers, and hyphens";
+    }
+    if (!formData.adminName?.trim()) {
+      errors.adminName = "Admin Name is required";
+    }
+    if (!formData.adminEmail?.trim()) {
+      errors.adminEmail = "Admin Email is required";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.adminEmail.trim())) {
+      errors.adminEmail = "Enter a valid email address";
+    }
+    if (formData.phone?.trim() && formData.phone.trim().length !== 10) {
+      errors.phone = "Phone number must be exactly 10 digits";
+    }
+    return errors;
+  };
+
   const handleChange = (field, value) => {
+    const nextValue =
+      field === "slug"
+        ? normalizeTenantSlugInput(value)
+        : field === "key"
+          ? normalizeTenantKeyInput(value)
+          : field === "phone"
+            ? String(value || "").replace(/\D/g, "").slice(0, 10)
+            : value;
+
     setForm((current) => ({
       ...current,
-      [field]:
-        field === "slug"
-          ? normalizeTenantSlugInput(value)
-          : field === "key"
-            ? normalizeTenantKeyInput(value)
-            : value,
+      [field]: nextValue,
     }));
+
+    if (formErrors[field]) {
+      setFormErrors((current) => ({
+        ...current,
+        [field]: "",
+      }));
+    }
   };
   const resetFeedback = () => {
     setError("");
@@ -447,6 +489,7 @@ export function TenantManagement() {
   };
   const resetTenantForm = () => {
     setForm(initialForm);
+    setFormErrors({});
   };
   const openCreateTenantModal = () => {
     resetFeedback();
@@ -470,6 +513,12 @@ export function TenantManagement() {
       );
       return;
     }
+    const validationErrors = validateTenantForm(form);
+    if (Object.keys(validationErrors).length > 0) {
+      setFormErrors(validationErrors);
+      return;
+    }
+    setFormErrors({});
     setSubmitting(true);
     resetFeedback();
     try {
@@ -488,8 +537,20 @@ export function TenantManagement() {
       }
     } catch (createError) {
       const message = createError?.message || "Failed to create tenant";
-      setError(message);
-      addNotification(message, "error");
+      const rawMsg = String(message).toLowerCase();
+      const parsedErrors = {};
+      if (rawMsg.includes("restaurantname")) parsedErrors.restaurantName = "Restaurant Name is required";
+      if (rawMsg.includes("slug")) parsedErrors.slug = rawMsg.includes("exist") ? "Workspace slug is already taken" : "Workspace Slug is required";
+      if (rawMsg.includes("key")) parsedErrors.key = rawMsg.includes("exist") ? "Workspace key is already taken" : "Workspace Key is required";
+      if (rawMsg.includes("adminname")) parsedErrors.adminName = "Admin Name is required";
+      if (rawMsg.includes("adminemail")) parsedErrors.adminEmail = rawMsg.includes("exist") ? "Admin Email is already registered" : "Admin Email is required";
+
+      if (Object.keys(parsedErrors).length > 0) {
+        setFormErrors(parsedErrors);
+      } else {
+        setError(message);
+        addNotification(message, "error");
+      }
     } finally {
       setSubmitting(false);
     }
@@ -2410,69 +2471,126 @@ export function TenantManagement() {
 
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="block text-sm font-semibold text-slate-800">
-                Restaurant Name
+                Restaurant Name <span className="text-rose-500">*</span>
                 <input
-                  className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+                  className={`mt-2 w-full rounded-2xl border px-4 py-3 text-sm text-slate-700 outline-none transition ${
+                    formErrors.restaurantName
+                      ? "border-rose-300 bg-rose-50/20 focus:border-rose-500 focus:ring-4 focus:ring-rose-100"
+                      : "border-slate-200 focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+                  }`}
                   placeholder="Example: Tableloom Restaurant"
                   value={form.restaurantName}
                   onChange={(event) =>
                     handleChange("restaurantName", event.target.value)
                   }
                 />
+                {formErrors.restaurantName && (
+                  <p className="mt-1.5 flex items-center gap-1 text-xs font-medium text-rose-600">
+                    <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                    {formErrors.restaurantName}
+                  </p>
+                )}
               </label>
 
               <label className="block text-sm font-semibold text-slate-800">
                 Contact Phone Number
                 <input
-                  className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
-                  placeholder="Example: +91 98765 43210"
+                  type="tel"
+                  inputMode="numeric"
+                  maxLength={10}
+                  className={`mt-2 w-full rounded-2xl border px-4 py-3 text-sm text-slate-700 outline-none transition ${
+                    formErrors.phone
+                      ? "border-rose-300 bg-rose-50/20 focus:border-rose-500 focus:ring-4 focus:ring-rose-100"
+                      : "border-slate-200 focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+                  }`}
+                  placeholder="Example: 9876543210"
                   value={form.phone}
                   onChange={(event) =>
                     handleChange("phone", event.target.value)
                   }
                 />
+                {formErrors.phone && (
+                  <p className="mt-1.5 flex items-center gap-1 text-xs font-medium text-rose-600">
+                    <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                    {formErrors.phone}
+                  </p>
+                )}
               </label>
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="block text-sm font-semibold text-slate-800">
-                Workspace Slug
+                Workspace Slug <span className="text-rose-500">*</span>
                 <input
-                  className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+                  className={`mt-2 w-full rounded-2xl border px-4 py-3 text-sm text-slate-700 outline-none transition ${
+                    formErrors.slug
+                      ? "border-rose-300 bg-rose-50/20 focus:border-rose-500 focus:ring-4 focus:ring-rose-100"
+                      : "border-slate-200 focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+                  }`}
                   placeholder="Example: tableloom-restaurant"
                   value={form.slug}
                   onChange={(event) => handleChange("slug", event.target.value)}
                 />
+                {formErrors.slug && (
+                  <p className="mt-1.5 flex items-center gap-1 text-xs font-medium text-rose-600">
+                    <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                    {formErrors.slug}
+                  </p>
+                )}
               </label>
 
               <label className="block text-sm font-semibold text-slate-800">
-                Workspace Key
+                Workspace Key <span className="text-rose-500">*</span>
                 <input
-                  className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+                  className={`mt-2 w-full rounded-2xl border px-4 py-3 text-sm text-slate-700 outline-none transition ${
+                    formErrors.key
+                      ? "border-rose-300 bg-rose-50/20 focus:border-rose-500 focus:ring-4 focus:ring-rose-100"
+                      : "border-slate-200 focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+                  }`}
                   placeholder="Example: main-01"
                   value={form.key}
                   onChange={(event) => handleChange("key", event.target.value)}
                 />
+                {formErrors.key && (
+                  <p className="mt-1.5 flex items-center gap-1 text-xs font-medium text-rose-600">
+                    <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                    {formErrors.key}
+                  </p>
+                )}
               </label>
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="block text-sm font-semibold text-slate-800">
-                Admin Name
+                Admin Name <span className="text-rose-500">*</span>
                 <input
-                  className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+                  className={`mt-2 w-full rounded-2xl border px-4 py-3 text-sm text-slate-700 outline-none transition ${
+                    formErrors.adminName
+                      ? "border-rose-300 bg-rose-50/20 focus:border-rose-500 focus:ring-4 focus:ring-rose-100"
+                      : "border-slate-200 focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+                  }`}
                   placeholder="Example: Ayesha Khan"
                   value={form.adminName}
                   onChange={(event) =>
                     handleChange("adminName", event.target.value)
                   }
                 />
+                {formErrors.adminName && (
+                  <p className="mt-1.5 flex items-center gap-1 text-xs font-medium text-rose-600">
+                    <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                    {formErrors.adminName}
+                  </p>
+                )}
               </label>
 
               <label className="block text-sm font-semibold text-slate-800">
-                Admin Email
+                Admin Email <span className="text-rose-500">*</span>
                 <input
-                  className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+                  className={`mt-2 w-full rounded-2xl border px-4 py-3 text-sm text-slate-700 outline-none transition ${
+                    formErrors.adminEmail
+                      ? "border-rose-300 bg-rose-50/20 focus:border-rose-500 focus:ring-4 focus:ring-rose-100"
+                      : "border-slate-200 focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+                  }`}
                   placeholder="Example: admin@yourrestaurant.com"
                   type="email"
                   value={form.adminEmail}
@@ -2480,6 +2598,12 @@ export function TenantManagement() {
                     handleChange("adminEmail", event.target.value)
                   }
                 />
+                {formErrors.adminEmail && (
+                  <p className="mt-1.5 flex items-center gap-1 text-xs font-medium text-rose-600">
+                    <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                    {formErrors.adminEmail}
+                  </p>
+                )}
               </label>
             </div>
 

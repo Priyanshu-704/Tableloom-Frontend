@@ -53,92 +53,86 @@ export function ForgotPassword() {
   return (
     <AdminAuthShell
       settings={settings}
-      eyebrow={success ? "Email Sent" : "Password Reset"}
+      eyebrow={success ? "Email Sent" : "Password Recovery"}
       title={success ? "Check your inbox" : "Reset your password"}
       description={
         success
-          ? "A reset link has been generated for your account. You can head back to login after opening the email."
-          : "Enter the email address linked to your staff account and we’ll send you a secure password reset link."
+          ? "A reset link has been sent to your email address. Follow the instructions to reset your password."
+          : "Enter your registered email address and we'll send you a secure password reset link."
       }
-      mobileAuthMode="formOnly"
-      sideTitle="Recovery should feel reassuring, not confusing."
+      sideLabel="Security Recovery"
+      sideTitle="Recovery should feel reassuring & safe."
       sideDescription="These screens guide staff back into the system quickly while keeping password recovery clear and secure."
       highlights={[
         {
-          title: "Secure links",
-          description:
-            "Reset links are short-lived so temporary emails do not stay valid for long.",
+          title: "🛡️ Time-Sensitive Links",
+          description: "Reset links expire automatically so temporary tokens do not remain valid.",
         },
         {
-          title: "Fast recovery",
-          description:
-            "Staff can return to service without needing manual admin intervention.",
+          title: "🚀 Fast Recovery",
+          description: "Staff can return to active service quickly without manual admin intervention.",
         },
       ]}
+      mobileAuthMode="formOnly"
     >
       {success ? (
-        <div className="text-center space-y-6">
-          <div className="flex justify-center">
-            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
-              <CheckCircle className="h-10 w-10" />
-            </div>
+        <div className="text-center py-2 space-y-5">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-100 shadow-2xs">
+            <CheckCircle className="h-7 w-7" />
           </div>
 
           <div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">
-              Email Sent Successfully!
+            <h3 className="text-base font-bold text-slate-900 mb-1">
+              Reset Link Sent
             </h3>
 
-            <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl mb-4">
+            <div className="rounded-2xl border border-emerald-200 bg-emerald-50/80 p-3 text-xs font-semibold text-emerald-800 shadow-2xs mb-2">
               {successMessage}
             </div>
 
-            <p className="text-gray-600 mb-2">
-              We've sent password reset instructions to:
-            </p>
-            <p className="font-medium text-primary-600 text-lg mb-4">{email}</p>
+            <p className="font-bold text-sky-700 text-sm">{email}</p>
           </div>
 
-          <div className="space-y-4 pt-4">
+          <div className="space-y-2.5 pt-2">
             <button
               onClick={() => navigate(buildAdminPath("/login"))}
-              className="w-full bg-primary-600 hover:bg-primary-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors"
+              className="w-full rounded-2xl bg-gradient-to-r from-sky-600 to-blue-600 px-4 py-3.5 text-xs font-bold text-white shadow-md transition hover:from-sky-500 hover:to-blue-500 active:scale-[0.99]"
             >
               Return to Login
             </button>
 
             <button
               onClick={handleTryAnotherEmail}
-              className="w-full border border-primary-600 text-primary-600 hover:bg-primary-50 font-medium py-3 px-4 rounded-lg transition-colors"
+              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-xs font-bold text-slate-700 transition hover:bg-slate-50"
             >
               Send to Another Email
             </button>
 
-            <div className="text-sm text-gray-500 pt-2">
-              Didn't receive the email? Check your spam folder or{" "}
+            <p className="text-xs text-slate-500 pt-2">
+              Didn't receive the email? Check spam or{" "}
               <button
                 onClick={handleTryAnotherEmail}
-                className="text-primary-600 hover:text-primary-800 font-medium"
+                className="font-bold text-sky-600 hover:underline"
               >
-                try another email address
+                try another address
               </button>
-            </div>
+            </p>
           </div>
         </div>
       ) : (
-        <form className="space-y-6" onSubmit={handleSubmit}>
+        <form className="space-y-4" onSubmit={handleSubmit}>
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+            <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-xs font-semibold text-rose-700 shadow-2xs">
               {error}
             </div>
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
               Email Address
             </label>
             <div className="relative">
-              <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+              <Mail className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-slate-400 h-4 w-4" />
               <input
                 type="email"
                 value={email}
@@ -146,25 +140,25 @@ export function ForgotPassword() {
                   setEmail(e.target.value);
                   setError("");
                 }}
-                className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-xl bg-white text-slate-900 shadow-sm outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
-                placeholder="Enter your registered email"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50/70 py-2.5 pl-10 pr-4 text-sm font-medium text-slate-800 placeholder:text-slate-400 outline-none transition focus:border-sky-500 focus:bg-white focus:ring-4 focus:ring-sky-500/15"
+                placeholder="admin@restaurant.com"
                 required
                 disabled={isLoading}
               />
             </div>
-            <p className="text-sm text-gray-500 mt-2">
-              We'll send a reset link to this email
+            <p className="text-xs text-slate-400 mt-1">
+              A single-use security reset link will be dispatched immediately.
             </p>
           </div>
 
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full bg-primary-600 hover:bg-primary-700 disabled:bg-gray-400 text-white font-semibold py-3 px-4 rounded-lg transition-colors flex items-center justify-center"
+            className="w-full rounded-2xl bg-gradient-to-r from-sky-600 via-blue-600 to-indigo-600 px-4 py-3.5 text-sm font-bold text-white shadow-lg shadow-sky-600/25 transition-all hover:from-sky-500 hover:to-indigo-500 disabled:opacity-60 active:scale-[0.99] flex items-center justify-center gap-2"
           >
             {isLoading ? (
               <>
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                 Sending Reset Link...
               </>
             ) : (
@@ -172,21 +166,15 @@ export function ForgotPassword() {
             )}
           </button>
 
-          <div className="text-center">
+          <div className="text-center pt-1">
             <Link
               to={buildAdminPath("/login")}
-              className="text-sm text-primary-600 hover:text-primary-800 font-medium"
+              className="text-xs font-bold text-slate-500 hover:text-slate-800 hover:underline"
             >
               Remember your password? Sign in
             </Link>
           </div>
         </form>
-      )}
-      {!success && (
-        <div className="text-center mt-6 text-sm text-gray-500">
-          <p>You'll receive an email with a password reset link.</p>
-          <p>The link will expire in 1 hour for security.</p>
-        </div>
       )}
     </AdminAuthShell>
   );

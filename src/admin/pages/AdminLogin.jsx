@@ -82,56 +82,53 @@ export function AdminLogin() {
   return (
     <AdminAuthShell
       settings={settings}
-      eyebrow={isPlatformLogin ? "Platform Admin" : "Admin Portal"}
+      eyebrow={isPlatformLogin ? "Super Admin Access" : "Admin Portal"}
       title={
         isPlatformLogin
-          ? "Sign in to the platform admin panel"
-          : "Sign in to your restaurant workspace"
+          ? "Platform Admin Sign In"
+          : "Sign in to your workspace"
       }
       description={
         isPlatformLogin
-          ? "This login is reserved for the super admin. Restaurant admins and staff should sign in from their tenant workspace admin URL."
-          : "Use your staff credentials to manage orders, tables, kitchen flow, and day-to-day operations."
+          ? "This portal is reserved for super admin access. Restaurant staff should log in via their workspace URL."
+          : "Enter your staff credentials to manage live orders, table status, and restaurant operations."
       }
-      lockViewport
-      compactMobile
-      contentScrollable
-      mobileAuthMode="formOnly"
-      mobilePrimaryActionLabel="Login To Admin Panel"
-      mobileBackActionLabel="Back to overview"
+      sideLabel="Admin Access"
       sideTitle={
         isPlatformLogin
-          ? "Platform oversight starts from a separate, protected admin login."
-          : "A cleaner service dashboard starts with a calmer sign-in flow."
+          ? "Platform oversight & tenant workspace governance."
+          : "Manage live service with speed & total control."
       }
       sideDescription={
         isPlatformLogin
-          ? "Use this page only for super admin access. Tenant admins, managers, chefs, and waiters should use their own restaurant workspace admin panel."
-          : "This admin space is designed for staff speed: quick access, clearer focus, and fewer distractions during service."
+          ? "Centralized super admin control panel for provisioning tenants, infrastructure monitoring, and global platform settings."
+          : "Streamline table management, order routing, kitchen stations, and billing from one unified admin workspace."
       }
       highlights={[
         {
-          title: "Live operations",
+          title: "⚡ Live Operations",
           description: isPlatformLogin
-            ? "Super admin access is separated from tenant staff sign-in for safer workspace control."
-            : "Track orders, table status, and kitchen updates without leaving the workflow.",
+            ? "Super admin access is isolated from tenant staff sign-ins for safer platform control."
+            : "Track live orders, table occupancy, and kitchen updates without leaving the flow.",
         },
         {
-          title: "Role-aware access",
+          title: "🔒 Role-Aware Access",
           description: isPlatformLogin
-            ? "Tenant users should log in only from their own workspace admin URL."
-            : "Admins, managers, waiters, and chefs land in the right area after sign in.",
+            ? "Tenant admins and staff log in via their unique restaurant workspace URLs."
+            : "Role-tailored dashboards for admins, managers, waiters, and kitchen staff.",
         },
       ]}
+      contentScrollable
+      mobileAuthMode="formOnly"
     >
-      <form className="space-y-4 sm:space-y-6" onSubmit={handleSubmit}>
+      <form className="space-y-4" onSubmit={handleSubmit}>
         {error && (
-          <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 sm:px-4 sm:py-3 flex flex-col gap-2">
+          <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-xs font-semibold text-rose-700 shadow-2xs flex flex-col gap-2">
             <div>{error}</div>
             {renewalLink && (
               <Link
                 to={renewalLink}
-                className="mt-1 inline-flex items-center justify-center rounded-md bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700 transition"
+                className="mt-1 inline-flex items-center justify-center rounded-xl bg-rose-600 px-3 py-2 text-xs font-bold text-white hover:bg-rose-700 transition shadow-sm"
               >
                 Renew Subscription Now
               </Link>
@@ -140,11 +137,11 @@ export function AdminLogin() {
         )}
 
         <div>
-          <label className="mb-1.5 block text-sm font-medium text-gray-700 sm:mb-2">
+          <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
             Email Address
           </label>
           <div className="relative">
-            <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+            <User className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-slate-400 h-4 w-4" />
             <input
               type="email"
               value={credentials.email}
@@ -154,19 +151,27 @@ export function AdminLogin() {
                   email: e.target.value,
                 }))
               }
-              className="w-full rounded-xl border border-slate-300 bg-white py-2.5 pl-10 pr-4 text-slate-900 shadow-sm outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100 sm:py-3"
-              placeholder="Enter email address"
+              className="w-full rounded-xl border border-slate-200 bg-slate-50/70 py-2.5 pl-10 pr-4 text-sm font-medium text-slate-800 placeholder:text-slate-400 outline-none transition focus:border-sky-500 focus:bg-white focus:ring-4 focus:ring-sky-500/15"
+              placeholder="admin@restaurant.com"
               required
             />
           </div>
         </div>
 
         <div>
-          <label className="mb-1.5 block text-sm font-medium text-gray-700 sm:mb-2">
-            Password
-          </label>
+          <div className="flex items-center justify-between mb-1.5">
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+              Password
+            </label>
+            <Link
+              to={buildAdminPath("/forgot-password")}
+              className="text-xs font-bold text-sky-600 hover:text-sky-700 hover:underline"
+            >
+              Forgot password?
+            </Link>
+          </div>
           <div className="relative">
-            <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+            <Lock className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-slate-400 h-4 w-4" />
             <input
               type={showPassword ? "text" : "password"}
               value={credentials.password}
@@ -176,15 +181,15 @@ export function AdminLogin() {
                   password: e.target.value,
                 }))
               }
-              className="w-full rounded-xl border border-slate-300 bg-white py-2.5 pl-10 pr-12 text-slate-900 shadow-sm outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100 sm:py-3"
-              placeholder="Enter password"
+              className="w-full rounded-xl border border-slate-200 bg-slate-50/70 py-2.5 pl-10 pr-10 text-sm font-medium text-slate-800 placeholder:text-slate-400 outline-none transition focus:border-sky-500 focus:bg-white focus:ring-4 focus:ring-sky-500/15"
+              placeholder="••••••••"
               required
             />
 
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-slate-900"
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
             >
               {showPassword ? (
                 <Eye className="w-4 h-4" />
@@ -195,44 +200,34 @@ export function AdminLogin() {
           </div>
         </div>
 
-        <div className="text-right">
-          <Link
-            to={buildAdminPath("/forgot-password")}
-            className="text-sm text-primary-600 hover:text-primary-800 font-medium"
-          >
-            Forgot your password?
-          </Link>
-        </div>
-
         {isPlatformLogin ? (
-          <div className="text-center text-sm leading-5 text-slate-500">
+          <div className="text-center text-xs font-medium text-slate-500 pt-1">
             New restaurant?{" "}
             <Link
               to={buildAdminPath("/tenant-registration")}
-              className="font-medium text-sky-700 hover:text-sky-800"
+              className="font-bold text-sky-600 hover:text-sky-700 hover:underline"
             >
-              Register your tenant
+              Register your workspace
             </Link>
           </div>
         ) : (
-          <div className="rounded-xl border border-sky-100 bg-sky-50 px-3 py-2 text-sm leading-5 text-sky-800 sm:px-4 sm:py-3">
-            Use your restaurant-specific admin URL to sign in. Platform admin
-            login is only for the super admin.
+          <div className="rounded-2xl border border-sky-200 bg-sky-50/70 p-3 text-xs font-medium text-sky-900 shadow-2xs">
+            💡 Sign in using your restaurant's custom admin URL.
           </div>
         )}
 
         <button
           type="submit"
           disabled={isLoading}
-          className="flex w-full items-center justify-center rounded-lg bg-primary-600 px-4 py-2.5 font-semibold text-white hover:bg-primary-700 disabled:bg-gray-400 sm:py-3"
+          className="w-full rounded-2xl bg-gradient-to-r from-sky-600 via-blue-600 to-indigo-600 px-4 py-3.5 text-sm font-bold text-white shadow-lg shadow-sky-600/25 transition-all hover:from-sky-500 hover:to-indigo-500 disabled:opacity-60 active:scale-[0.99] flex items-center justify-center gap-2"
         >
           {isLoading ? (
             <>
-              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
               Signing In...
             </>
           ) : (
-            "Sign In"
+            "Sign In to Admin Portal"
           )}
         </button>
       </form>
