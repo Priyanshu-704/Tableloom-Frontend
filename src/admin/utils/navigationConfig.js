@@ -1,4 +1,5 @@
 import {
+  Activity,
   BarChart3,
   Bell,
   Boxes,
@@ -55,6 +56,11 @@ export const superAdminTabs = [
     label: "Subscriptions",
     description: "Monitor plans, expirations, and notify tenants",
   },
+  {
+    id: "health",
+    label: "System Health",
+    description: "Platform uptime, API latency & database metrics",
+  },
 ];
 
 const isTenantManagementTabActive = (location, tab) => {
@@ -92,7 +98,7 @@ export const adminNavigationSections = [
     items: [
       {
         id: "tenant-management",
-        label: "Registered Tenants",
+        label: "Tenant Management",
         description: "Tenants, verification, and workspace oversight",
         icon: Building2,
         path: buildPlatformAdminPath("/tenant-management"),
@@ -128,6 +134,16 @@ export const adminNavigationSections = [
         path: buildPlatformAdminPath("/tenant-management?tab=subscriptions"),
         isActive: (location) =>
           isTenantManagementTabActive(location, "subscriptions"),
+        roles: ["super_admin"],
+      },
+      {
+        id: "system-health",
+        label: "System Health",
+        description: "Platform infrastructure status and performance metrics",
+        icon: Activity,
+        path: buildPlatformAdminPath("/tenant-management?tab=health"),
+        isActive: (location) =>
+          isTenantManagementTabActive(location, "health"),
         roles: ["super_admin"],
       },
     ],

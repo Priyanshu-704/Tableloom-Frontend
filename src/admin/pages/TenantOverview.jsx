@@ -48,31 +48,33 @@ const renderRows = (items = [], columns = []) => {
         ))}
       </div>
 
-      <div className="hidden overflow-x-auto md:block">
-        <table className="min-w-full divide-y divide-slate-200 text-sm">
-          <thead>
-            <tr className="text-left text-slate-500">
-              {columns.map((column) => (
-                <th key={column.key} className="pb-3 pr-4">
-                  {column.label}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {items.map((item) => (
-              <tr key={item._id || item.id || JSON.stringify(item)}>
+      <div className="hidden rounded-2xl border border-slate-200/80 bg-white overflow-hidden shadow-2xs md:block">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse table-auto text-sm">
+            <thead>
+              <tr className="border-b border-slate-200 bg-slate-50/80 text-[11px] font-bold uppercase tracking-wider text-slate-500">
                 {columns.map((column) => (
-                  <td key={column.key} className="py-3 pr-4 text-slate-700">
-                    {column.render
-                      ? column.render(item)
-                      : (item?.[column.key] ?? "-")}
-                  </td>
+                  <th key={column.key} className="px-4 py-3">
+                    {column.label}
+                  </th>
                 ))}
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {items.map((item) => (
+                <tr key={item._id || item.id || JSON.stringify(item)} className="hover:bg-slate-50/80 transition-colors">
+                  {columns.map((column) => (
+                    <td key={column.key} className="px-4 py-3.5 text-slate-700">
+                      {column.render
+                        ? column.render(item)
+                        : (item?.[column.key] ?? "-")}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </>
   );
