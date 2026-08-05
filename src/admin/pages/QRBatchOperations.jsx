@@ -1,5 +1,5 @@
 import { logger } from "../../common/utils/logger.js";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import {
   Download,
   RefreshCw,
@@ -9,20 +9,32 @@ import {
   FileText,
   Grid,
   Settings,
+  Search,
+  Check,
+  X,
+  Info,
+  MapPin,
+  Users,
+  QrCode,
+  Sparkles,
 } from "lucide-react";
 import tableService from "../../common/services/TableService";
 import Select from "../components/common/Select";
 import { useAdmin } from "../context/AdminContext";
 import { withTenantQueryParams } from "../../common/utils/qrImage";
 import { useAuth } from "../../common/context/AuthContext";
-export function QRBatchOperations({ tables, onClose, onSuccess }) {
+
+export function QRBatchOperations({ tables = [], onClose, onSuccess }) {
   const { addNotification } = useAdmin();
   const { hasPermission } = useAuth();
   const canDownloadQr = hasPermission("table.qr_download");
   const canRegenerateQr = hasPermission("table.qr_regenerate");
+
   const [loading, setLoading] = useState(false);
+  const [fetchingTables, setFetchingTables] = useState(false);
+  const [fetchedTables, setFetchedTables] = useState([]);
   const [selectedTables, setSelectedTables] = useState([]);
-  const [selectAll, setSelectAll] = useState(false);
+  const [filterSearch, setFilterSearch] = useState("");
   const [operation, setOperation] = useState(
     canDownloadQr ? "download" : canRegenerateQr ? "regenerate" : "print",
   );
@@ -34,20 +46,94 @@ export function QRBatchOperations({ tables, onClose, onSuccess }) {
     current: 0,
     total: 0,
   });
-  const tablesWithQR = tables
-    .filter((t) => t.qrCode)
-    .map((t) => ({
-      ...t,
-      qrCode: withTenantQueryParams(t.qrCode),
-    }));
-  const selectedTableData = tablesWithQR.filter((t) =>
-    selectedTables.includes(t.id),
-  );
+
+  // Load all tables if passed array is empty or incomplete
+  useEffect(() => {
+    let isMounted = true;
+    if (!tables || tables.length === 0) {
+      setFetchingTables(true);
+      tableService
+        .getTables({ limit: 100 })
+        .then((response) => {
+          if (!isMounted) return;
+          if (response?.success && response.data) {
+            const transformed = response.data.map((t) => ({
+              id: t._id,
+              number: t.tableNumber,
+              tableName: t.tableName,
+              capacity: t.capacity,
+              status: t.status,
+              location: t.location,
+              qrCode: withTenantQueryParams(t.qrCode),
+              qrUrl: t.qrUrl,
+            }));
+            setFetchedTables(transformed);
+          }
+        })
+        .catch((error) => {
+          logger.error("Failed to load tables for batch operations:", error);
+        })
+        .finally(() => {
+          if (isMounted) setFetchingTables(false);
+        });
+    } else {
+      setFetchedTables(tables);
+    }
+    return () => {
+      isMounted = false;
+    };
+  }, [tables]);
+
+  const sourceTables = tables && tables.length > 0 ? tables : fetchedTables;
+
+  const tablesWithQR = useMemo(() => {
+    return (sourceTables || [])
+      .filter((t) => Boolean(t.id || t._id || t.number || t.tableNumber))
+      .map((t) => {
+        const id = t.id || t._id;
+        const number = t.number || t.tableNumber;
+        const qrUrl = t.qrUrl || "";
+        const qrCode =
+          t.qrCode ||
+          (qrUrl
+            ? `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(qrUrl)}`
+            : "");
+        return {
+          ...t,
+          id,
+          number,
+          qrCode: withTenantQueryParams(qrCode),
+          qrUrl,
+        };
+      });
+  }, [sourceTables]);
+
+  const filteredTables = useMemo(() => {
+    if (!filterSearch.trim()) return tablesWithQR;
+    const query = filterSearch.toLowerCase().trim();
+    return tablesWithQR.filter(
+      (t) =>
+        String(t.number).toLowerCase().includes(query) ||
+        String(t.tableName || "").toLowerCase().includes(query) ||
+        String(t.location || "").toLowerCase().includes(query),
+    );
+  }, [filterSearch, tablesWithQR]);
+
+  const selectedTableData = useMemo(() => {
+    return tablesWithQR.filter((t) => selectedTables.includes(t.id));
+  }, [selectedTables, tablesWithQR]);
+
+  const allFilteredSelected = useMemo(() => {
+    if (filteredTables.length === 0) return false;
+    return filteredTables.every((t) => selectedTables.includes(t.id));
+  }, [filteredTables, selectedTables]);
+
   const operationOptions = [
     canDownloadQr
       ? {
           id: "download",
-          label: "Download",
+          label: "Download QR",
+          subtitle: "Save PNG image files",
           icon: Download,
         }
       : null,
@@ -55,57 +141,57 @@ export function QRBatchOperations({ tables, onClose, onSuccess }) {
       ? {
           id: "regenerate",
           label: "Regenerate",
+          subtitle: "Refresh tokens & links",
           icon: RefreshCw,
         }
       : null,
     canDownloadQr || canRegenerateQr
       ? {
           id: "print",
-          label: "Print",
+          label: "Print Sheets",
+          subtitle: "Export table tent cards",
           icon: Printer,
         }
       : null,
   ].filter(Boolean);
+
   const getPreviewWidth = (size) => {
     switch (size) {
       case "small":
-        return "150px";
+        return "140px";
       case "large":
-        return "350px";
+        return "280px";
       default:
-        return "250px";
+        return "200px";
     }
   };
-  const handleSelectAll = () => {
-    if (selectAll) {
-      setSelectedTables([]);
+
+  const handleToggleSelectAll = () => {
+    if (allFilteredSelected) {
+      const filteredIds = new Set(filteredTables.map((t) => t.id));
+      setSelectedTables((prev) => prev.filter((id) => !filteredIds.has(id)));
     } else {
-      setSelectedTables(tablesWithQR.map((t) => t.id));
+      const filteredIds = filteredTables.map((t) => t.id);
+      setSelectedTables((prev) => Array.from(new Set([...prev, ...filteredIds])));
     }
-    setSelectAll(!selectAll);
   };
+
   const handleSelectTable = (tableId) => {
     if (selectedTables.includes(tableId)) {
-      setSelectedTables(selectedTables.filter((id) => id !== tableId));
-      setSelectAll(false);
+      setSelectedTables((prev) => prev.filter((id) => id !== tableId));
     } else {
-      setSelectedTables([...selectedTables, tableId]);
+      setSelectedTables((prev) => [...prev, tableId]);
     }
   };
+
   const handleBatchDownload = async () => {
     setLoading(true);
-    setProgress({
-      current: 0,
-      total: selectedTables.length,
-    });
+    setProgress({ current: 0, total: selectedTables.length });
     try {
       for (let i = 0; i < selectedTables.length; i++) {
         const tableId = selectedTables[i];
         await tableService.downloadQRCode(tableId);
-        setProgress({
-          current: i + 1,
-          total: selectedTables.length,
-        });
+        setProgress({ current: i + 1, total: selectedTables.length });
       }
       onSuccess?.(`Successfully downloaded ${selectedTables.length} QR codes`);
     } catch (error) {
@@ -116,26 +202,18 @@ export function QRBatchOperations({ tables, onClose, onSuccess }) {
       );
     } finally {
       setLoading(false);
-      setProgress({
-        current: 0,
-        total: 0,
-      });
+      setProgress({ current: 0, total: 0 });
     }
   };
+
   const handleBatchRegenerate = async () => {
     setLoading(true);
-    setProgress({
-      current: 0,
-      total: selectedTables.length,
-    });
+    setProgress({ current: 0, total: selectedTables.length });
     try {
       for (let i = 0; i < selectedTables.length; i++) {
         const tableId = selectedTables[i];
         await tableService.regenerateQRCode(tableId);
-        setProgress({
-          current: i + 1,
-          total: selectedTables.length,
-        });
+        setProgress({ current: i + 1, total: selectedTables.length });
       }
       onSuccess?.(`Successfully regenerated ${selectedTables.length} QR codes`);
       setConfirmRegenerate(false);
@@ -147,12 +225,10 @@ export function QRBatchOperations({ tables, onClose, onSuccess }) {
       );
     } finally {
       setLoading(false);
-      setProgress({
-        current: 0,
-        total: 0,
-      });
+      setProgress({ current: 0, total: 0 });
     }
   };
+
   const handleBatchPrint = () => {
     const printWindow = window.open("", "_blank");
     if (!printWindow) {
@@ -165,9 +241,10 @@ export function QRBatchOperations({ tables, onClose, onSuccess }) {
           <title>Batch QR Codes Print</title>
           <style>
             body { 
-              font-family: Arial, sans-serif; 
+              font-family: system-ui, -apple-system, sans-serif; 
               margin: 0;
               padding: 20px;
+              background: #fff;
             }
             .page {
               page-break-after: always;
@@ -181,17 +258,22 @@ export function QRBatchOperations({ tables, onClose, onSuccess }) {
             .qr-item {
               text-align: center;
               padding: 20px;
-              border: 1px solid #ddd;
-              border-radius: 8px;
+              border: 1px solid #e2e8f0;
+              border-radius: 12px;
               page-break-inside: avoid;
+              background: #fafafa;
             }
             img { max-width: 200px; height: auto; }
-            .table-number { font-size: 18px; font-weight: bold; margin: 10px 0; }
+            .table-number { font-size: 20px; font-weight: bold; margin: 10px 0; color: #0f172a; }
             .instructions { 
-              margin-top: 10px; 
-              font-size: 12px; 
-              color: #666;
+              margin-top: 12px; 
+              font-size: 11px; 
+              color: #475569;
               text-align: left;
+              background: #fff;
+              padding: 10px;
+              border-radius: 8px;
+              border: 1px solid #e2e8f0;
             }
             @media print {
               .page { page-break-after: always; }
@@ -207,54 +289,52 @@ export function QRBatchOperations({ tables, onClose, onSuccess }) {
               <div class="${printLayout === "multiple" ? "grid" : ""}">
                 ${
                   printLayout === "multiple"
-                    ? `
-                  ${selectedTableData
-                    .slice(index, index + 4)
-                    .map(
-                      (t) => `
-                    <div class="qr-item">
-                      <div class="table-number">Table ${t.number}</div>
-                      ${t.tableName ? `<div style="color: #666; margin-bottom: 10px;">${t.tableName}</div>` : ""}
-                      <img src="${t.qrCode}" alt="QR Code for Table ${t.number}" />
-                      <div style="margin-top: 10px; font-size: 12px; color: #999;">
-                        Scan to view menu & place order
-                      </div>
-                      ${
-                        includeInstructions
-                          ? `
-                        <div class="instructions">
-                          <strong>Instructions:</strong>
-                          <ol style="margin-top: 5px; padding-left: 20px;">
-                            <li>Open camera app</li>
-                            <li>Scan QR code</li>
-                            <li>Browse menu & order</li>
-                          </ol>
+                    ? selectedTableData
+                        .slice(index, index + 4)
+                        .map(
+                          (t) => `
+                        <div class="qr-item">
+                          <div class="table-number">Table ${t.number}</div>
+                          ${t.tableName ? `<div style="color: #64748b; font-size: 13px; margin-bottom: 8px;">${t.tableName}</div>` : ""}
+                          <img src="${t.qrCode || `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(t.qrUrl || "")}`}" alt="QR Code for Table ${t.number}" />
+                          <div style="margin-top: 8px; font-size: 11px; color: #64748b; font-weight: 600;">
+                            Scan to view menu & place order
+                          </div>
+                          ${
+                            includeInstructions
+                              ? `
+                            <div class="instructions">
+                              <strong>Quick Steps:</strong>
+                              <ol style="margin-top: 4px; padding-left: 16px;">
+                                <li>Open smartphone camera</li>
+                                <li>Point camera at QR code</li>
+                                <li>Tap notification link to order</li>
+                              </ol>
+                            </div>
+                          `
+                              : ""
+                          }
                         </div>
-                      `
-                          : ""
-                      }
-                    </div>
-                  `,
-                    )
-                    .join("")}
-                `
+                      `,
+                        )
+                        .join("")
                     : `
                   <div class="qr-item">
                     <div class="table-number">Table ${table.number}</div>
-                    ${table.tableName ? `<div style="color: #666; margin-bottom: 10px;">${table.tableName}</div>` : ""}
-                    <img src="${table.qrCode}" alt="QR Code for Table ${table.number}" />
-                    <div style="margin-top: 10px; font-size: 12px; color: #999;">
+                    ${table.tableName ? `<div style="color: #64748b; font-size: 14px; margin-bottom: 10px;">${table.tableName}</div>` : ""}
+                    <img src="${table.qrCode || `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(table.qrUrl || "")}`}" alt="QR Code for Table ${table.number}" />
+                    <div style="margin-top: 10px; font-size: 12px; color: #64748b; font-weight: 600;">
                       Scan to view menu & place order
                     </div>
                     ${
                       includeInstructions
                         ? `
                       <div class="instructions">
-                        <strong>Instructions:</strong>
-                        <ol style="margin-top: 5px; padding-left: 20px;">
-                          <li>Open camera app</li>
-                          <li>Scan QR code</li>
-                          <li>Browse menu & order</li>
+                        <strong>Quick Steps:</strong>
+                        <ol style="margin-top: 6px; padding-left: 18px;">
+                          <li>Open smartphone camera</li>
+                          <li>Point camera at QR code</li>
+                          <li>Tap notification link to order</li>
                         </ol>
                       </div>
                     `
@@ -267,7 +347,6 @@ export function QRBatchOperations({ tables, onClose, onSuccess }) {
             </div>
           `,
             )
-            .filter((_, index) => printLayout !== "multiple" || index % 4 === 0)
             .join("")}
         </body>
       </html>
@@ -277,287 +356,290 @@ export function QRBatchOperations({ tables, onClose, onSuccess }) {
       printWindow.focus();
       printWindow.print();
     };
-    const imageLoadPromises = Array.from(printWindow.document.images).map(
-      (image) => {
-        if (image.complete) {
-          return Promise.resolve();
-        }
-        return new Promise((resolve) => {
-          image.addEventListener("load", resolve, {
-            once: true,
-          });
-          image.addEventListener("error", resolve, {
-            once: true,
-          });
-        });
-      },
-    );
-    Promise.all(imageLoadPromises)
-      .then(() => {
-        onSuccess?.(
-          `Print window opened for ${selectedTableData.length} QR codes`,
-        );
-        window.setTimeout(triggerPrint, 150);
-      })
-      .catch(() => {
-        onSuccess?.(
-          `Print window opened for ${selectedTableData.length} QR codes`,
-        );
-        window.setTimeout(triggerPrint, 150);
-      });
+    window.setTimeout(triggerPrint, 250);
   };
+
   const handleExecute = () => {
-    switch (operation) {
-      case "download":
-        handleBatchDownload();
-        break;
-      case "regenerate":
-        setConfirmRegenerate(true);
-        break;
-      case "print":
-        handleBatchPrint();
-        break;
+    if (selectedTables.length === 0) return;
+    if (operation === "download") {
+      handleBatchDownload();
+    } else if (operation === "regenerate") {
+      setConfirmRegenerate(true);
+    } else if (operation === "print") {
+      handleBatchPrint();
     }
   };
-  useEffect(() => {
-    if (operationOptions.some((item) => item.id === operation)) {
-      return;
-    }
-    setOperation(
-      canDownloadQr ? "download" : canRegenerateQr ? "regenerate" : "print",
-    );
-  }, [canDownloadQr, canRegenerateQr, operation, operationOptions]);
+
   return (
-    <div className="p-6">
-      <div className="mb-6">
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Select Operation
-        </label>
-        <div className="grid grid-cols-3 gap-3">
+    <div className="space-y-6">
+      {/* Step 1: Select Operation */}
+      <div>
+        <div className="flex items-center justify-between">
+          <label className="text-xs font-extrabold uppercase tracking-wider text-slate-500">
+            Step 1: Choose Action
+          </label>
+        </div>
+
+        <div className="mt-2.5 grid grid-cols-1 gap-3 sm:grid-cols-3">
           {operationOptions.map((op) => {
             const Icon = op.icon;
+            const isSelected = operation === op.id;
             return (
               <button
                 key={op.id}
-                onClick={() => setOperation(op.id)}
-                className={`p-4 border-2 rounded-lg flex flex-col items-center space-y-2 transition-colors ${operation === op.id ? "border-primary-600 bg-primary-50" : "border-gray-200 hover:border-gray-300"}`}
+                onClick={() => {
+                  setOperation(op.id);
+                  setConfirmRegenerate(false);
+                }}
+                className={`group flex flex-col items-start rounded-2xl border p-4 text-left transition-all duration-200 ${
+                  isSelected
+                    ? "border-slate-900 bg-slate-900 text-white shadow-md ring-2 ring-slate-900/20"
+                    : "border-slate-200/80 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50/60 shadow-2xs"
+                }`}
+                type="button"
               >
-                <Icon
-                  className={`h-6 w-6 ${operation === op.id ? "text-primary-600" : "text-gray-500"}`}
-                />
-                <span
-                  className={`text-sm font-medium ${operation === op.id ? "text-primary-700" : "text-gray-700"}`}
-                >
-                  {op.label}
-                </span>
+                <div className="flex w-full items-center justify-between">
+                  <div
+                    className={`flex h-9 w-9 items-center justify-center rounded-xl transition ${
+                      isSelected
+                        ? "bg-white/15 text-white"
+                        : "bg-slate-100 text-slate-600 group-hover:bg-slate-200"
+                    }`}
+                  >
+                    <Icon className="h-4.5 w-4.5" />
+                  </div>
+                  {isSelected && (
+                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-sky-500 text-white">
+                      <Check className="h-3 w-3 stroke-[3]" />
+                    </span>
+                  )}
+                </div>
+
+                <div className="mt-3">
+                  <p className={`text-xs font-bold ${isSelected ? "text-white" : "text-slate-900"}`}>
+                    {op.label}
+                  </p>
+                  <p className={`mt-0.5 text-[11px] ${isSelected ? "text-slate-300" : "text-slate-500"}`}>
+                    {op.subtitle}
+                  </p>
+                </div>
               </button>
             );
           })}
         </div>
       </div>
 
-      <div className="mb-6">
-        <div className="flex items-center justify-between mb-2">
-          <label className="text-sm font-medium text-gray-700">
-            Select Tables ({selectedTables.length} selected)
+      {/* Step 2: Table Selection */}
+      <div>
+        <div className="flex items-center justify-between">
+          <label className="text-xs font-extrabold uppercase tracking-wider text-slate-500">
+            Step 2: Select Target Tables ({selectedTables.length} of {tablesWithQR.length})
           </label>
           <button
-            onClick={handleSelectAll}
-            className="text-sm text-primary-600 hover:text-primary-700"
+            onClick={handleToggleSelectAll}
+            className="text-xs font-bold text-sky-600 hover:text-sky-700 transition"
+            type="button"
           >
-            {selectAll ? "Deselect All" : "Select All"}
+            {allFilteredSelected ? "Deselect All" : "Select All"}
           </button>
         </div>
 
-        <div className="border border-gray-200 rounded-lg max-h-60 overflow-y-auto">
-          {tablesWithQR.map((table) => (
-            <label
-              key={table.id}
-              className="flex items-center space-x-3 px-4 py-2 hover:bg-gray-50 cursor-pointer border-b last:border-b-0"
-            >
-              <input
-                type="checkbox"
-                checked={selectedTables.includes(table.id)}
-                onChange={() => handleSelectTable(table.id)}
-                className="h-4 w-4 text-primary-600 rounded border-gray-300 focus:ring-primary-500"
-              />
-              <div className="flex-1 flex items-center justify-between">
-                <div>
-                  <span className="font-medium text-gray-900">
-                    Table {table.number}
-                  </span>
-                  {table.tableName && (
-                    <span className="ml-2 text-sm text-gray-500">
-                      ({table.tableName})
-                    </span>
-                  )}
-                </div>
-                <span className="text-xs text-gray-500">{table.location}</span>
-              </div>
-            </label>
-          ))}
+        {/* Filter Input */}
+        {tablesWithQR.length > 3 ? (
+          <div className="relative mt-2">
+            <Search className="absolute left-3.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Search by table number or location zone..."
+              value={filterSearch}
+              onChange={(e) => setFilterSearch(e.target.value)}
+              className="w-full rounded-xl border border-slate-200/80 bg-slate-50/50 pl-9 pr-3 py-2 text-xs text-slate-900 placeholder-slate-400 focus:border-slate-900 focus:bg-white focus:outline-hidden"
+            />
+          </div>
+        ) : null}
 
-          {tablesWithQR.length === 0 && (
-            <div className="px-4 py-8 text-center text-gray-500">
-              No tables with QR codes found
+        {/* Table Selection Cards List */}
+        <div className="mt-2.5 max-h-60 overflow-y-auto rounded-2xl border border-slate-200/80 bg-white divide-y divide-slate-100 shadow-2xs">
+          {fetchingTables ? (
+            <div className="p-6 text-center text-xs font-medium text-slate-500 flex items-center justify-center gap-2">
+              <RefreshCw className="h-4 w-4 animate-spin text-slate-400" />
+              <span>Loading tables from workspace...</span>
+            </div>
+          ) : filteredTables.length > 0 ? (
+            filteredTables.map((t) => {
+              const isChecked = selectedTables.includes(t.id);
+              return (
+                <label
+                  key={t.id}
+                  className={`flex items-center justify-between px-4 py-3 cursor-pointer transition ${
+                    isChecked ? "bg-sky-50/60" : "hover:bg-slate-50/80"
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="checkbox"
+                      checked={isChecked}
+                      onChange={() => handleSelectTable(t.id)}
+                      className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500 cursor-pointer"
+                    />
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-slate-900">
+                          Table {t.number}
+                        </span>
+                        {t.tableName ? (
+                          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
+                            {t.tableName}
+                          </span>
+                        ) : null}
+                      </div>
+                      <div className="mt-0.5 flex items-center gap-1 text-[11px] text-slate-500">
+                        <MapPin className="h-3 w-3 text-slate-400" />
+                        <span>{t.location || "Main Hall"}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 bg-slate-100/80 px-2.5 py-1 rounded-full">
+                    <Users className="h-3 w-3 text-slate-500" />
+                    <span>{t.capacity || "4"} seats</span>
+                  </div>
+                </label>
+              );
+            })
+          ) : (
+            <div className="p-8 text-center text-xs font-medium text-slate-500">
+              No matching tables found in workspace.
             </div>
           )}
         </div>
       </div>
 
-      <div className="mb-6 space-y-4">
-        <h3 className="font-medium text-gray-900">Settings</h3>
+      {/* Step 3: Print & Export Preferences */}
+      <div className="space-y-3 rounded-2xl border border-slate-200/80 bg-slate-50/60 p-4">
+        <label className="text-xs font-extrabold uppercase tracking-wider text-slate-500">
+          Step 3: Layout Options
+        </label>
 
-        <Select
-          label="QR Code Size"
-          value={qrSize}
-          onChange={setQrSize}
-          options={[
-            {
-              value: "small",
-              label: "Small (150x150)",
-            },
-            {
-              value: "medium",
-              label: "Medium (250x250)",
-            },
-            {
-              value: "large",
-              label: "Large (350x350)",
-            },
-          ]}
-        />
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Select
+            label="QR Code Size"
+            value={qrSize}
+            onChange={setQrSize}
+            options={[
+              { value: "small", label: "Small (150x150)" },
+              { value: "medium", label: "Medium (220x220)" },
+              { value: "large", label: "Large (300x300)" },
+            ]}
+          />
 
-        {operation === "print" && (
-          <>
+          {operation === "print" ? (
             <Select
               label="Print Layout"
               value={printLayout}
               onChange={setPrintLayout}
               options={[
-                {
-                  value: "single",
-                  label: "Single per page",
-                },
-                {
-                  value: "multiple",
-                  label: "Multiple per page",
-                },
+                { value: "single", label: "Single per page" },
+                { value: "multiple", label: "Multiple per page (Grid)" },
               ]}
             />
+          ) : null}
+        </div>
 
-            <label className="flex items-center space-x-3">
-              <input
-                type="checkbox"
-                checked={includeInstructions}
-                onChange={(e) => setIncludeInstructions(e.target.checked)}
-                className="h-4 w-4 text-primary-600 rounded border-gray-300 focus:ring-primary-500"
-              />
-              <span className="text-sm text-gray-700">
-                Include usage instructions
-              </span>
-            </label>
-          </>
-        )}
+        {operation === "print" ? (
+          <label className="flex items-center gap-2.5 pt-1 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={includeInstructions}
+              onChange={(e) => setIncludeInstructions(e.target.checked)}
+              className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+            />
+            <span className="text-xs font-semibold text-slate-700">
+              Include 4-step quick scanning guide for guests
+            </span>
+          </label>
+        ) : null}
       </div>
 
-      {operation === "print" && (
-        <div className="mb-6">
-          <div className="mb-3 flex items-center justify-between">
-            <h3 className="font-medium text-gray-900">Print Preview</h3>
-            <span className="text-sm text-gray-500">
-              {selectedTableData.length} selected
-            </span>
+      {/* Step 4: Live Print Preview Box (when Print is selected) */}
+      {operation === "print" && selectedTableData.length > 0 ? (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <label className="text-xs font-extrabold uppercase tracking-wider text-slate-500">
+              Print Sheet Preview ({selectedTableData.length} cards)
+            </label>
           </div>
-          <div className="max-h-80 overflow-y-auto rounded-lg border border-gray-200 bg-gray-50 p-4">
-            {selectedTableData.length > 0 ? (
-              <div
-                className={`grid gap-4 ${printLayout === "multiple" ? "grid-cols-1 md:grid-cols-2" : "grid-cols-1"}`}
-              >
-                {selectedTableData.map((table) => (
-                  <div
-                    key={`print-preview-${table.id}`}
-                    className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm"
-                  >
-                    <div className="mb-3">
-                      <div className="font-medium text-gray-900">
-                        Table {table.number}
-                      </div>
-                      <div className="text-sm text-gray-500">
-                        {table.tableName || table.location || "Ready to print"}
-                      </div>
-                    </div>
-                    <div className="flex min-h-55 items-center justify-center rounded-lg border border-dashed border-gray-200 bg-gray-50 p-4">
-                      {table.qrCode ? (
-                        <img
-                          src={table.qrCode}
-                          alt={`QR Code for Table ${table.number}`}
-                          className="h-auto max-w-full"
-                          style={{
-                            width: getPreviewWidth(qrSize),
-                          }}
-                        />
-                      ) : (
-                        <div className="text-sm text-gray-400">
-                          QR preview not available
-                        </div>
-                      )}
-                    </div>
+
+          <div className="max-h-56 overflow-y-auto rounded-2xl border border-slate-200/80 bg-slate-100/50 p-3">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+              {selectedTableData.map((t) => (
+                <div
+                  key={`preview-${t.id}`}
+                  className="rounded-xl border border-slate-200 bg-white p-3 text-center shadow-2xs space-y-2"
+                >
+                  <p className="text-xs font-bold text-slate-900">Table {t.number}</p>
+                  <div className="flex items-center justify-center p-2 rounded-lg bg-slate-50 border border-dashed border-slate-200">
+                    <img
+                      src={t.qrCode || `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(t.qrUrl || "")}`}
+                      alt={`Table ${t.number}`}
+                      className="h-16 w-16 object-contain"
+                    />
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div className="py-10 text-center text-sm text-gray-500">
-                Select tables to preview their QR codes before printing.
-              </div>
-            )}
+                  <p className="text-[10px] text-slate-500 truncate">{t.location || "Main Hall"}</p>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
-      )}
+      ) : null}
 
+      {/* Progress Bar */}
       {loading && (
-        <div className="mb-6">
-          <div className="flex justify-between text-sm text-gray-600 mb-1">
-            <span>Processing...</span>
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs space-y-2">
+          <div className="flex justify-between text-xs font-bold text-slate-700">
+            <span>Executing batch {operation}...</span>
             <span>
-              {progress.current} / {progress.total}
+              {progress.current} of {progress.total}
             </span>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-2">
+          <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100">
             <div
-              className="bg-primary-600 h-2 rounded-full transition-all duration-300"
+              className="h-full bg-sky-600 transition-all duration-300 rounded-full"
               style={{
-                width: `${(progress.current / progress.total) * 100}%`,
+                width: `${(progress.current / (progress.total || 1)) * 100}%`,
               }}
-            ></div>
+            />
           </div>
         </div>
       )}
 
+      {/* Warning Box for Batch Regenerate */}
       {confirmRegenerate && (
-        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-          <div className="flex items-start space-x-3">
-            <AlertTriangle className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 space-y-3">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
             <div>
-              <p className="font-medium text-red-800">
-                Warning: Regenerate QR Codes
+              <p className="font-bold text-amber-900 text-xs sm:text-sm">
+                Confirm Batch QR Regeneration
               </p>
-              <p className="text-sm text-red-700 mt-1">
-                This will invalidate existing QR codes for{" "}
-                {selectedTables.length} tables. All printed QR codes will stop
-                working. This action cannot be undone.
+              <p className="mt-0.5 text-xs text-amber-800 leading-relaxed">
+                This will replace the QR codes and URL tokens for{" "}
+                <strong>{selectedTables.length} selected tables</strong>. Existing printed media will stop working immediately.
               </p>
-              <div className="mt-3 flex space-x-3">
+
+              <div className="mt-3 flex gap-2">
                 <button
                   onClick={handleBatchRegenerate}
                   disabled={loading}
-                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
+                  className="rounded-xl bg-amber-600 px-4 py-2 text-xs font-bold text-white transition hover:bg-amber-700 disabled:opacity-50 shadow-2xs"
+                  type="button"
                 >
                   {loading ? "Regenerating..." : "Yes, Regenerate All"}
                 </button>
                 <button
                   onClick={() => setConfirmRegenerate(false)}
-                  className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                  className="rounded-xl border border-amber-300 bg-white px-4 py-2 text-xs font-semibold text-amber-900 transition hover:bg-amber-100"
+                  type="button"
                 >
                   Cancel
                 </button>
@@ -567,33 +649,34 @@ export function QRBatchOperations({ tables, onClose, onSuccess }) {
         </div>
       )}
 
-      <div className="flex justify-end space-x-3">
+      {/* Modal Actions */}
+      <div className="flex justify-end gap-2.5 pt-3 border-t border-slate-200/80">
         <button
           onClick={onClose}
-          className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
+          className="rounded-xl border border-slate-300/80 bg-white px-4 py-2.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-100 shadow-2xs"
+          type="button"
         >
           Cancel
         </button>
         <button
           onClick={handleExecute}
           disabled={selectedTables.length === 0 || loading || confirmRegenerate}
-          className="flex items-center space-x-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-5 py-2.5 text-xs font-bold text-white shadow-2xs transition hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed"
+          type="button"
         >
           {loading ? (
             <>
-              <RefreshCw className="h-4 w-4 animate-spin" />
+              <RefreshCw className="h-3.5 w-3.5 animate-spin" />
               <span>Processing...</span>
             </>
           ) : (
             <>
-              {operation === "download" && <Download className="h-4 w-4" />}
-              {operation === "regenerate" && <RefreshCw className="h-4 w-4" />}
-              {operation === "print" && <Printer className="h-4 w-4" />}
+              {operation === "download" && <Download className="h-3.5 w-3.5" />}
+              {operation === "regenerate" && <RefreshCw className="h-3.5 w-3.5" />}
+              {operation === "print" && <Printer className="h-3.5 w-3.5" />}
               <span>
-                {operation === "download" &&
-                  `Download (${selectedTables.length})`}
-                {operation === "regenerate" &&
-                  `Regenerate (${selectedTables.length})`}
+                {operation === "download" && `Download (${selectedTables.length})`}
+                {operation === "regenerate" && `Regenerate (${selectedTables.length})`}
                 {operation === "print" && `Print (${selectedTables.length})`}
               </span>
             </>
