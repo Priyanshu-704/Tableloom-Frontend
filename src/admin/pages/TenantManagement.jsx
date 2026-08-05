@@ -818,20 +818,6 @@ export function TenantManagement() {
           {error}
         </div>
       ) : null}
-      {success ? (
-        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-          {success}
-        </div>
-      ) : null}
-      {credentials ? (
-        <div className="rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-800">
-          Admin email: <strong>{credentials.email}</strong>
-          <br />
-          {credentials.emailSent
-            ? "Credentials were sent by email. Temporary passwords are no longer displayed in the admin panel."
-            : "Credential email could not be delivered. Use the password reset flow for this admin email instead of sharing a temporary password."}
-        </div>
-      ) : null}
 
       {activeTab === "pending" ? (
         <section className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-6 space-y-5">

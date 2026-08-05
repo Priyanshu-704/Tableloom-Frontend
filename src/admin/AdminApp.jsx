@@ -343,7 +343,7 @@ function AdminLayout() {
         <AdminRouteScrollReset />
         <main
           data-admin-scroll-root="true"
-          className={`mt-24 min-w-0 flex-1 pb-6 transition-[margin] duration-300 lg:pb-8 ${isDesktopSidebarCollapsed ? "lg:ml-24" : "lg:ml-72"}`}
+          className={`mt-20 min-w-0 flex-1 pb-6 transition-[margin] duration-300 lg:pb-8 ${isDesktopSidebarCollapsed ? "lg:ml-24" : "lg:ml-72"}`}
         >
           <Outlet />
         </main>

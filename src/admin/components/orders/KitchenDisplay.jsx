@@ -237,6 +237,23 @@ export default function KitchenDisplay({
       }
     }
   }, [filters.sortBy, filters.status, selectedStation]);
+  const handleRefresh = useCallback(async () => {
+    try {
+      setLoading(true);
+      await loadStations();
+      await loadKitchenData({ silent: true });
+      await loadDelayMonitorStatus();
+      if (onRefreshOrders) {
+        await onRefreshOrders();
+      }
+      addNotificationRef.current("Kitchen dashboard refreshed", "success");
+    } catch (error) {
+      logger.error("Failed to refresh kitchen data:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, [loadStations, loadKitchenData, loadDelayMonitorStatus, onRefreshOrders]);
+
   useEffect(() => {
     loadKitchenData();
   }, [loadKitchenData]);
@@ -407,17 +424,24 @@ export default function KitchenDisplay({
               onChange={(event) => setSelectedStation(event.target.value)}
               className="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white"
             >
-              {stations.map((station) => (
-                <option key={station._id} value={station._id}>
-                  {station.name}
+              {stations.length === 0 ? (
+                <option value="" disabled>
+                  No items available
                 </option>
-              ))}
+              ) : (
+                stations.map((station) => (
+                  <option key={station._id} value={station._id}>
+                    {station.name}
+                  </option>
+                ))
+              )}
             </select>
 
             <button
               type="button"
-              onClick={loadKitchenData}
-              className="inline-flex items-center gap-2 rounded-lg border border-slate-700 px-4 py-2 text-slate-200 transition-colors hover:bg-slate-800"
+              onClick={handleRefresh}
+              disabled={loading}
+              className="inline-flex items-center gap-2 rounded-lg border border-slate-700 px-4 py-2 text-slate-200 transition-colors hover:bg-slate-800 disabled:opacity-50"
             >
               <RefreshCw
                 className={`h-4 w-4 ${loading ? "animate-spin" : ""}`}
