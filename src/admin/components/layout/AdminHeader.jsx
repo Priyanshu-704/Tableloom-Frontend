@@ -142,57 +142,6 @@ export function AdminHeader({
                   <Menu className="h-5 w-5" />
                 )}
               </button>
-              <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-2xl bg-white/10 ring-1 ring-white/10">
-                <img
-                  src={
-                    settings?.restaurant?.logoThumbnail ||
-                    settings?.restaurant?.logo ||
-                    "/tableloom-mark.svg"
-                  }
-                  alt={settings?.restaurant?.name || "Tableloom"}
-                  className="h-6 w-6 object-contain"
-                  loading="lazy"
-                />
-              </div>
-              {isMonitoringMode ? (
-                <span className="inline-flex items-center gap-1 rounded-full border border-amber-300/30 bg-amber-400/15 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-amber-100">
-                  <Eye className="h-3.5 w-3.5" />
-                  Monitor
-                </span>
-              ) : null}
-            </div>
-
-            <div className="hidden lg:block">
-              <div className="flex flex-wrap items-center gap-2.5">
-                <h1 className="truncate text-lg font-bold text-white xl:text-xl">
-                  {headerTitle}
-                </h1>
-                <span className="inline-flex items-center rounded-full border border-sky-400/30 bg-sky-500/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.16em] text-sky-200">
-                  {workspaceLabel}
-                </span>
-                {sectionLabel &&
-                  sectionLabel.toLowerCase() !== workspaceLabel.toLowerCase() &&
-                  sectionLabel !== "Platform Navigation" &&
-                  sectionLabel !== "Admin Navigation" && (
-                    <span className="inline-flex items-center rounded-full border border-white/10 bg-white/6 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-300">
-                      {sectionLabel}
-                    </span>
-                  )}
-                {isMonitoringMode ? (
-                  <span className="inline-flex items-center gap-1 rounded-full border border-amber-300/30 bg-amber-400/15 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.16em] text-amber-200">
-                    <Eye className="h-3.5 w-3.5" />
-                    Monitoring Mode
-                  </span>
-                ) : null}
-              </div>
-              <p className="mt-1 truncate text-xs text-slate-300">
-                {subtitle}
-                {subtitle !== workspaceSubtitle && (
-                  <span className="text-slate-400 font-normal ml-2">
-                    ({workspaceSubtitle})
-                  </span>
-                )}
-              </p>
             </div>
           </div>
 

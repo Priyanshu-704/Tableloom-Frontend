@@ -1239,12 +1239,12 @@ export function TenantManagement() {
                   <table className="w-full text-left border-collapse table-fixed">
                     <thead>
                       <tr className="border-b border-slate-200 bg-slate-50/80 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                        <th className="w-[23%] px-5 py-3.5">Restaurant</th>
-                        <th className="w-[17%] px-5 py-3.5">Route / Workspace</th>
-                        <th className="w-[12%] px-5 py-3.5">Subscription</th>
+                        <th className="w-[24%] px-5 py-3.5">Restaurant</th>
+                        <th className="w-[28%] px-5 py-3.5">Route / Workspace</th>
+                        <th className="w-[14%] px-5 py-3.5">Subscription</th>
                         <th className="w-[11%] px-5 py-3.5">Status</th>
-                        <th className="w-[15%] px-5 py-3.5">Payment</th>
-                        <th className="w-[22%] px-5 py-3.5 text-right pr-6">Action</th>
+                        <th className="w-[13%] px-5 py-3.5">Payment</th>
+                        <th className="w-[10%] px-5 py-3.5 text-right pr-6">Action</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 text-sm">
@@ -1325,13 +1325,13 @@ export function TenantManagement() {
                               <div
                                 onClick={() => copyTenantRoute(tenant)}
                                 title="Click to copy route"
-                                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200/80 bg-slate-100/70 px-2.5 py-1 font-mono text-xs text-slate-700 hover:bg-slate-200/70 transition cursor-pointer group/pill"
+                                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200/80 bg-slate-100/70 px-2.5 py-1 font-mono text-xs text-slate-700 hover:bg-slate-200/70 transition cursor-pointer group/pill max-w-full"
                               >
-                                <span>{getTenantWorkspacePath(tenant)}</span>
+                                <span className="truncate">{getTenantWorkspacePath(tenant)}</span>
                                 {copiedTenantId === tenant._id ? (
-                                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
                                 ) : (
-                                  <Copy className="h-3.5 w-3.5 text-slate-400 group-hover/pill:text-slate-600" />
+                                  <Copy className="h-3.5 w-3.5 text-slate-400 group-hover/pill:text-slate-600 shrink-0" />
                                 )}
                               </div>
                             </td>
@@ -1385,7 +1385,7 @@ export function TenantManagement() {
 
                             {/* Actions */}
                             <td className="px-5 py-4 align-middle text-right pr-6">
-                              <div className="flex items-center justify-end gap-2">
+                              <div className="flex items-center justify-end gap-1.5">
                                 {isTenantVerified(tenant) && (
                                   <button
                                     type="button"
@@ -1393,10 +1393,11 @@ export function TenantManagement() {
                                       e.stopPropagation();
                                       openTenantAdmin(tenant);
                                     }}
-                                    className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition shadow-2xs"
+                                    title="Monitor Workspace"
+                                    aria-label="Monitor Workspace"
+                                    className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-100 hover:text-slate-900 transition shadow-2xs"
                                   >
-                                    <ExternalLink className="h-3.5 w-3.5" />
-                                    Monitor
+                                    <ExternalLink className="h-4 w-4" />
                                   </button>
                                 )}
 
@@ -1408,18 +1409,19 @@ export function TenantManagement() {
                                       e.stopPropagation();
                                       handleTenantStatusChange(tenant);
                                     }}
-                                    className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold transition ${
+                                    title={tenant.status === "active" ? "Deactivate Tenant" : "Activate Tenant"}
+                                    aria-label={tenant.status === "active" ? "Deactivate Tenant" : "Activate Tenant"}
+                                    className={`inline-flex h-8 w-8 items-center justify-center rounded-xl transition shadow-2xs ${
                                       tenant.status === "active"
-                                        ? "border border-rose-200 text-rose-700 hover:bg-rose-50"
-                                        : "border border-emerald-200 text-emerald-700 hover:bg-emerald-50"
+                                        ? "border border-rose-200 bg-white text-rose-600 hover:bg-rose-50"
+                                        : "border border-emerald-200 bg-white text-emerald-600 hover:bg-emerald-50"
                                     }`}
                                   >
                                     {updatingTenantId === tenant._id ? (
-                                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                      <Loader2 className="h-4 w-4 animate-spin" />
                                     ) : (
-                                      <Power className="h-3.5 w-3.5" />
+                                      <Power className="h-4 w-4" />
                                     )}
-                                    {tenant.status === "active" ? "Deactivate" : "Activate"}
                                   </button>
                                 )}
                               </div>
@@ -1490,15 +1492,16 @@ export function TenantManagement() {
                         </div>
                       </div>
 
-                      <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                      <div className="flex items-center justify-end gap-1.5 pt-2 border-t border-slate-100">
                         {isTenantVerified(tenant) && (
                           <button
                             type="button"
                             onClick={() => openTenantAdmin(tenant)}
-                            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700"
+                            title="Monitor Workspace"
+                            aria-label="Monitor Workspace"
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-100 hover:text-slate-900 transition shadow-2xs"
                           >
-                            <ExternalLink className="h-3.5 w-3.5" />
-                            Monitor
+                            <ExternalLink className="h-4 w-4" />
                           </button>
                         )}
                         {!isMonitoringMode && isTenantVerified(tenant) && (
@@ -1506,14 +1509,19 @@ export function TenantManagement() {
                             type="button"
                             disabled={updatingTenantId === tenant._id}
                             onClick={() => handleTenantStatusChange(tenant)}
-                            className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold ${
+                            title={tenant.status === "active" ? "Deactivate Tenant" : "Activate Tenant"}
+                            aria-label={tenant.status === "active" ? "Deactivate Tenant" : "Activate Tenant"}
+                            className={`inline-flex h-8 w-8 items-center justify-center rounded-xl transition shadow-2xs ${
                               tenant.status === "active"
-                                ? "border border-rose-200 text-rose-700 bg-rose-50"
-                                : "border border-emerald-200 text-emerald-700 bg-emerald-50"
+                                ? "border border-rose-200 bg-white text-rose-600 hover:bg-rose-50"
+                                : "border border-emerald-200 bg-white text-emerald-600 hover:bg-emerald-50"
                             }`}
                           >
-                            <Power className="h-3.5 w-3.5" />
-                            {tenant.status === "active" ? "Deactivate" : "Activate"}
+                            {updatingTenantId === tenant._id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Power className="h-4 w-4" />
+                            )}
                           </button>
                         )}
                       </div>
