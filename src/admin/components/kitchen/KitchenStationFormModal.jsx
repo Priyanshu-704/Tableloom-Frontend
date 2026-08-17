@@ -44,7 +44,7 @@ export function KitchenStationFormModal({
         <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="md:col-span-2">
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Station Name *
+              Station Name <span className="text-red-500 font-bold ml-0.5">*</span>
             </label>
             <input
               type="text"
@@ -60,7 +60,7 @@ export function KitchenStationFormModal({
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Station Type *
+              Station Type <span className="text-red-500 font-bold ml-0.5">*</span>
             </label>
             <select
               value={formData.stationType}
@@ -102,7 +102,7 @@ export function KitchenStationFormModal({
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Capacity
+              Capacity <span className="text-red-500 font-bold ml-0.5">*</span>
             </label>
             <input
               type="number"
@@ -156,7 +156,7 @@ export function KitchenStationFormModal({
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Prep Time Min
+              Prep Time Min <span className="text-red-500 font-bold ml-0.5">*</span>
             </label>
             <input
               type="number"
@@ -177,7 +177,7 @@ export function KitchenStationFormModal({
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Prep Time Max
+              Prep Time Max <span className="text-red-500 font-bold ml-0.5">*</span>
             </label>
             <input
               type="number"
@@ -197,8 +197,9 @@ export function KitchenStationFormModal({
           </div>
 
           <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Prep Time Average
+            <label className="flex items-center justify-between text-sm font-medium text-gray-700 mb-1">
+              <span>Prep Time Average</span>
+              <span className="text-[11px] font-semibold text-sky-700 bg-sky-50 px-2 py-0.5 rounded-full border border-sky-200">Auto-Calculated</span>
             </label>
             <input
               type="number"
@@ -207,7 +208,7 @@ export function KitchenStationFormModal({
               onChange={(event) =>
                 onPreparationTimeChange("average", event.target.value)
               }
-              className={`w-full border rounded-lg px-3 py-2 ${formErrors["preparationTimes.average"] ? "border-red-300" : "border-gray-300"}`}
+              className={`w-full border rounded-lg px-3 py-2 bg-slate-50 font-medium ${formErrors["preparationTimes.average"] ? "border-red-300" : "border-gray-300"}`}
               placeholder="Average minutes"
             />
             {formErrors["preparationTimes.average"] && (

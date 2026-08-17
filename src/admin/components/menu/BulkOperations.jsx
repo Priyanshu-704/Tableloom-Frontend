@@ -571,7 +571,7 @@ export function BulkOperations() {
         return null;
     }
   };
-  if (loadingData) {
+  if (loadingData && !menuItems.length) {
     return (
       <AdminPageSkeleton stats={4} filters={0} cards={5} cardHeight="h-56" />
     );

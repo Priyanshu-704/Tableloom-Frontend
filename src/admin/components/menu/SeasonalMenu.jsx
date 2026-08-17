@@ -311,7 +311,7 @@ export function SeasonalMenu() {
       setSavingId("");
     }
   };
-  if (loading) {
+  if (loading && !items.length) {
     return (
       <AdminPageSkeleton stats={4} filters={2} cards={6} cardHeight="h-48" />
     );

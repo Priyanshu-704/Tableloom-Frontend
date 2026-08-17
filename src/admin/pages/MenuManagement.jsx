@@ -307,7 +307,7 @@ export function MenuManagement() {
       );
     }
   };
-  if (loading) {
+  if (loading && !menuItems.length) {
     return (
       <AdminPageSkeleton stats={4} filters={4} cards={6} cardHeight="h-48" />
     );

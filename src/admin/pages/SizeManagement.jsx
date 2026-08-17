@@ -239,7 +239,11 @@ export function SizeManagement() {
                     </div>
                     <p className="text-sm text-gray-600">Code: {size.code}</p>
                     <span
-                      className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${size.isActive ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}
+                      className={`inline-flex items-center justify-center w-20 py-0.5 rounded-full text-[11px] font-semibold uppercase tracking-wider text-center ${
+                        size.isActive
+                          ? "bg-emerald-50 text-emerald-700 border border-emerald-200/80"
+                          : "bg-rose-50 text-rose-700 border border-rose-200/80"
+                      }`}
                     >
                       {size.isActive ? "Active" : "Inactive"}
                     </span>
@@ -275,47 +279,46 @@ export function SizeManagement() {
             ))}
           </div>
 
-          <div className="hidden overflow-hidden rounded-lg border border-gray-200 bg-white md:block">
-            <table className="w-full">
-              <thead className="border-b border-gray-200 bg-gray-50">
+          <div className="hidden overflow-hidden rounded-2xl border border-slate-200/80 bg-white md:block shadow-2xs">
+            <table className="w-full text-left border-collapse table-fixed">
+              <thead className="border-b border-slate-200 bg-slate-50/80 text-[11px] font-bold uppercase tracking-wider text-slate-500">
                 <tr>
-                  <th className="p-4 text-left font-semibold text-gray-900">
-                    Name
-                  </th>
-                  <th className="p-4 text-left font-semibold text-gray-900">
-                    Code
-                  </th>
-                  <th className="p-4 text-left font-semibold text-gray-900">
-                    Status
-                  </th>
-                  <th className="p-4 text-right font-semibold text-gray-900">
-                    Actions
-                  </th>
+                  <th className="w-[45%] px-5 py-3.5">Name</th>
+                  <th className="w-[20%] px-5 py-3.5">Code</th>
+                  <th className="w-[20%] px-5 py-3.5">Status</th>
+                  <th className="w-[15%] px-5 py-3.5 text-right pr-6">Actions</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-slate-100 text-sm">
                 {filteredSizes.map((size) => (
-                  <tr key={size._id} className="border-b border-gray-100">
-                    <td className="p-4">
-                      <div className="flex items-center gap-2 text-gray-900">
-                        <Ruler className="h-4 w-4 text-gray-400" />
-                        {size.name}
+                  <tr key={size._id} className="group hover:bg-slate-50/80 transition-colors">
+                    <td className="px-5 py-4 align-middle">
+                      <div className="flex items-center gap-2.5 font-semibold text-slate-900">
+                        <Ruler className="h-4 w-4 text-slate-400 shrink-0" />
+                        <span>{size.name}</span>
                       </div>
                     </td>
-                    <td className="p-4 text-gray-700">{size.code}</td>
-                    <td className="p-4">
+                    <td className="px-5 py-4 align-middle text-slate-600 font-mono text-xs">
+                      <span className="rounded-md bg-slate-100 px-2.5 py-1 border border-slate-200">{size.code}</span>
+                    </td>
+                    <td className="px-5 py-4 align-middle">
                       <span
-                        className={`px-2 py-1 rounded-full text-xs font-medium ${size.isActive ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}
+                        className={`inline-flex items-center justify-center w-20 py-0.5 rounded-full text-[11px] font-semibold uppercase tracking-wider text-center ${
+                          size.isActive
+                            ? "bg-emerald-50 text-emerald-700 border border-emerald-200/80"
+                            : "bg-rose-50 text-rose-700 border border-rose-200/80"
+                        }`}
                       >
                         {size.isActive ? "Active" : "Inactive"}
                       </span>
                     </td>
-                    <td className="p-4">
-                      <div className="flex items-center justify-end gap-2">
+                    <td className="px-5 py-4 align-middle text-right pr-6">
+                      <div className="flex items-center justify-end gap-1.5">
                         <PermissionGuard permission="menu.size_edit" disableInMonitoring>
                           <button
+                            type="button"
                             onClick={() => handleOpenEdit(size)}
-                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-100 hover:text-slate-900 transition shadow-2xs"
                             title="Edit size"
                           >
                             <Edit className="h-4 w-4" />
@@ -323,9 +326,14 @@ export function SizeManagement() {
                         </PermissionGuard>
                         <PermissionGuard permission="menu.size_toggle_status" disableInMonitoring>
                           <button
+                            type="button"
                             onClick={() => handleToggleStatus(size._id)}
-                            className="p-2 text-orange-600 hover:bg-orange-50 rounded-lg"
-                            title="Toggle status"
+                            className={`inline-flex h-8 w-8 items-center justify-center rounded-xl transition shadow-2xs ${
+                              size.isActive
+                                ? "border border-rose-200 bg-white text-rose-600 hover:bg-rose-50"
+                                : "border border-emerald-200 bg-white text-emerald-600 hover:bg-emerald-50"
+                            }`}
+                            title={size.isActive ? "Deactivate size" : "Activate size"}
                           >
                             {size.isActive ? (
                               <EyeOff className="h-4 w-4" />

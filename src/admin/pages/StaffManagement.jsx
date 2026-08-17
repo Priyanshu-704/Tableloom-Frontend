@@ -90,7 +90,6 @@ export function StaffManagement() {
       return;
     }
     try {
-      setIsLoading(true);
       const result = await userService.registerStaff(staffData);
       if (result.success) {
         await loadStaffMembers();
@@ -114,8 +113,6 @@ export function StaffManagement() {
         "error",
       );
       throw error;
-    } finally {
-      setIsLoading(false);
     }
   };
   const updateStaffRole = async (staffId, newRole) => {
@@ -123,7 +120,6 @@ export function StaffManagement() {
       return;
     }
     try {
-      setIsLoading(true);
       const result = await userService.updateUserRole(staffId, newRole);
       if (result.success) {
         setStaffMembers((prev) =>
@@ -151,8 +147,6 @@ export function StaffManagement() {
       logger.error("Error updating staff role:", error);
       addNotification(error.message || "Failed to update staff role", "error");
       throw error;
-    } finally {
-      setIsLoading(false);
     }
   };
   const toggleStaffStatus = async (staffId, isActive) => {
@@ -340,7 +334,7 @@ export function StaffManagement() {
     chefs: staffMembers.filter((s) => s.role === "chef").length,
     waiters: staffMembers.filter((s) => s.role === "waiter").length,
   };
-  if (isLoading || contextLoading) {
+  if ((isLoading || contextLoading) && !staffMembers.length) {
     return (
       <AdminPageSkeleton stats={3} filters={1} cards={6} cardHeight="h-48" />
     );

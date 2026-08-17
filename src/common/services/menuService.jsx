@@ -364,6 +364,18 @@ export const menuService = {
       handleApiError(error, "Failed to toggle coupon status");
     }
   },
+  deleteCoupon: async (couponId) => {
+    try {
+      const response = await axiosInstance.delete(`/menu/coupons/${couponId}`);
+      return (
+        response?.data ?? {
+          success: true,
+        }
+      );
+    } catch (error) {
+      handleApiError(error, "Failed to delete coupon");
+    }
+  },
   createMenuItem: async (menuItemData = {}, imageFile = null) => {
     try {
       const response = await axiosInstance.post(

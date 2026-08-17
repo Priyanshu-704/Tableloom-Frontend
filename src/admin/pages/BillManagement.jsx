@@ -433,7 +433,7 @@ export function BillManagement() {
       amount: 0,
     });
   };
-  if (loading) {
+  if (loading && !bills.length) {
     return (
       <AdminPageSkeleton stats={5} filters={4} cards={6} cardHeight="h-56" />
     );

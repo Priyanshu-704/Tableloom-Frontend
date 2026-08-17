@@ -458,7 +458,7 @@ function BranchCard({ branch, onEdit, onStatusChange }) {
 /* ─────────────── Main Page ─────────────── */
 
 export function BranchManagement() {
-  const { addNotification } = useAdmin();
+  const { addNotification, confirmAction } = useAdmin();
   const {
     branches,
     branchSummary,
@@ -495,12 +495,25 @@ export function BranchManagement() {
   }, [reload, addNotification]);
 
   const handleStatusChange = async (branch) => {
-    const nextStatus = branch.status === "active" ? "inactive" : "active";
+    const isActivating = branch.status !== "active";
+    const nextStatus = isActivating ? "active" : "inactive";
+
+    const confirmed = await confirmAction({
+      title: `${isActivating ? "Activate" : "Deactivate"} Branch`,
+      message: `Are you sure you want to ${isActivating ? "activate" : "deactivate"} branch "${branch.name}"?`,
+      confirmLabel: isActivating ? "Activate" : "Deactivate",
+      tone: isActivating ? "warning" : "warning",
+    });
+    if (!confirmed) return;
+
     try {
       setStatusSaving(true);
       await branchService.updateBranchStatus(branch._id, nextStatus);
       await reload({ silent: true });
-      addNotification(`Branch ${nextStatus === "active" ? "activated" : "deactivated"}.`, "success");
+      addNotification(
+        `Branch "${branch.name}" ${isActivating ? "activated" : "deactivated"} successfully.`,
+        "success",
+      );
     } catch (err) {
       logger.error("[BranchManagement] status change error:", err);
       addNotification(
