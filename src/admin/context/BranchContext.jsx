@@ -7,6 +7,7 @@ import React, {
   useRef,
   useState,
 } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../common/context/AuthContext";
 import branchService from "../../common/services/branchService";
 import {
@@ -37,6 +38,8 @@ const deriveUserBranchScope = (user = {}) => {
 
 export function BranchProvider({ children }) {
   const { user, isAuthenticated } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
 
   const [branches, setBranches] = useState([]);
   const [activeBranch, setActiveBranch] = useState(null);
@@ -47,6 +50,7 @@ export function BranchProvider({ children }) {
 
   const tenantId = user?.tenantId || null;
   const mode = deriveUserBranchScope(user);
+  const userAssignedBranchId = user?.homeBranchId || user?.branchId || null;
 
   // Whether this user is allowed to load/switch branches at all
   const canLoadBranches = isAuthenticated && mode !== "global";
@@ -58,10 +62,73 @@ export function BranchProvider({ children }) {
   // Prevent duplicate concurrent fetches
   const loadingRef = useRef(false);
 
-  /** Restore persisted selection from localStorage */
+  /** Helper to get branch URL slug */
+  const getBranchUrlSlug = (branch) => branch?.slug || branch?._id || "";
+
+  /** Helper to sync route URL when switching branch */
+  const syncRouteWithBranch = useCallback(
+    (targetBranch, isAll = false) => {
+      const currentPath = location.pathname;
+      const branchMatch = currentPath.match(/\/branch\/([^/]+)/);
+
+      let newPath = currentPath;
+      if (isAll) {
+        if (branchMatch) {
+          newPath = currentPath.replace(/\/branch\/[^/]+/, "");
+        }
+      } else if (targetBranch) {
+        const slug = getBranchUrlSlug(targetBranch);
+        if (slug) {
+          if (branchMatch) {
+            newPath = currentPath.replace(/\/branch\/[^/]+/, `/branch/${slug}`);
+          } else {
+            newPath = currentPath.replace(
+              /(\/[^/]+\/[^/]+)(\/admin.*)?$/,
+              `$1/branch/${slug}$2`,
+            );
+          }
+        }
+      }
+
+      if (newPath !== currentPath) {
+        navigate(newPath, { replace: true });
+      }
+    },
+    [location.pathname, navigate],
+  );
+
+  /** Restore persisted selection from localStorage or URL route */
   const restoreSelection = useCallback(
     (loadedBranches) => {
       if (!tenantId || !loadedBranches.length) return;
+
+      // Branch-scoped user: lock strictly to assigned branch
+      if (mode === "own" && userAssignedBranchId) {
+        const ownBranch = loadedBranches.find(
+          (b) => String(b._id) === String(userAssignedBranchId),
+        ) || loadedBranches[0];
+        setActiveBranch(ownBranch || null);
+        setIsAllBranches(false);
+        if (ownBranch) {
+          try { window.sessionStorage.setItem("branch.activeHeader", String(ownBranch._id)); } catch {}
+        }
+        return;
+      }
+
+      // Main Admin: check URL route for /branch/:branchSlug
+      const branchMatch = location.pathname.match(/\/branch\/([^/]+)/);
+      if (branchMatch && branchMatch[1]) {
+        const routeSlug = branchMatch[1];
+        const routeMatchedBranch = loadedBranches.find(
+          (b) => b.slug === routeSlug || String(b._id) === routeSlug,
+        );
+        if (routeMatchedBranch) {
+          setActiveBranch(routeMatchedBranch);
+          setIsAllBranches(false);
+          try { window.sessionStorage.setItem("branch.activeHeader", String(routeMatchedBranch._id)); } catch {}
+          return;
+        }
+      }
 
       const stored = getStoredBranchSelection(tenantId);
       if (!stored) {
@@ -95,7 +162,7 @@ export function BranchProvider({ children }) {
       setIsAllBranches(false);
       if (first) try { window.sessionStorage.setItem("branch.activeHeader", String(first._id)); } catch {}
     },
-    [tenantId, canUseAllBranches],
+    [tenantId, canUseAllBranches, mode, userAssignedBranchId, location.pathname],
   );
 
   /** Load branches + subscription summary from API */
@@ -112,7 +179,7 @@ export function BranchProvider({ children }) {
           branchService.getBranchSummary().catch(() => null),
         ]);
 
-        const loaded = Array.isArray(listRes?.data) ? listRes.data : [];
+        let loaded = Array.isArray(listRes?.data) ? listRes.data : [];
         // Sort: main branch first, then alphabetically
         loaded.sort((a, b) => {
           if (a.type === "main" && b.type !== "main") return -1;
@@ -120,13 +187,21 @@ export function BranchProvider({ children }) {
           return String(a.name).localeCompare(String(b.name));
         });
 
+        // Filter for branch-scoped user (own branch only)
+        if (mode === "own" && userAssignedBranchId) {
+          const ownBranch = loaded.find(
+            (b) => String(b._id) === String(userAssignedBranchId),
+          );
+          loaded = ownBranch ? [ownBranch] : loaded.slice(0, 1);
+        }
+
         setBranches(loaded);
 
         if (summaryRes?.data) {
           setBranchSummary(summaryRes.data);
         }
 
-        // Restore persisted selection (or fallback to first branch)
+        // Restore persisted selection
         restoreSelection(loaded);
       } catch (err) {
         logger.error("[BranchContext] Failed to load branches:", err);
@@ -136,36 +211,47 @@ export function BranchProvider({ children }) {
         if (!silent) setIsLoading(false);
       }
     },
-    [canLoadBranches, restoreSelection],
+    [canLoadBranches, restoreSelection, mode, userAssignedBranchId],
   );
 
   /** Select a specific branch by id */
   const selectBranch = useCallback(
-    (branchId) => {
-      const found = branches.find((b) => String(b._id) === String(branchId));
+    (branchId, syncUrl = true) => {
+      // Reject selecting other branches if restricted to own branch
+      if (mode === "own" && userAssignedBranchId && String(branchId) !== String(userAssignedBranchId)) {
+        return;
+      }
+
+      const found = branches.find(
+        (b) => String(b._id) === String(branchId) || b.slug === branchId,
+      );
       if (!found) return;
       setActiveBranch(found);
       setIsAllBranches(false);
-      // Persist for API interceptor
       try { window.sessionStorage.setItem("branch.activeHeader", String(found._id)); } catch {}
       if (tenantId) {
         setStoredBranchSelection(tenantId, { branchId: String(found._id), isAllBranches: false });
       }
+      if (syncUrl && canUseAllBranches) {
+        syncRouteWithBranch(found, false);
+      }
     },
-    [branches, tenantId],
+    [branches, tenantId, mode, userAssignedBranchId, canUseAllBranches, syncRouteWithBranch],
   );
 
   /** Select "all branches" mode (admin only) */
-  const selectAllBranches = useCallback(() => {
+  const selectAllBranches = useCallback((syncUrl = true) => {
     if (!canUseAllBranches) return;
     setActiveBranch(null);
     setIsAllBranches(true);
-    // Persist for API interceptor
     try { window.sessionStorage.setItem("branch.activeHeader", "all"); } catch {}
     if (tenantId) {
       setStoredBranchSelection(tenantId, { isAllBranches: true });
     }
-  }, [canUseAllBranches, tenantId]);
+    if (syncUrl) {
+      syncRouteWithBranch(null, true);
+    }
+  }, [canUseAllBranches, tenantId, syncRouteWithBranch]);
 
   /** Return the header value to send with API requests */
   const getBranchHeader = useCallback(() => {
@@ -185,6 +271,23 @@ export function BranchProvider({ children }) {
     }
     loadBranches();
   }, [isAuthenticated, tenantId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Auto-sync active branch when route URL changes
+  useEffect(() => {
+    if (!branches.length || mode === "own") return;
+    const branchMatch = location.pathname.match(/\/branch\/([^/]+)/);
+    if (branchMatch && branchMatch[1]) {
+      const routeSlug = branchMatch[1];
+      const match = branches.find(
+        (b) => b.slug === routeSlug || String(b._id) === routeSlug,
+      );
+      if (match && String(match._id) !== String(activeBranch?._id)) {
+        setActiveBranch(match);
+        setIsAllBranches(false);
+        try { window.sessionStorage.setItem("branch.activeHeader", String(match._id)); } catch {}
+      }
+    }
+  }, [location.pathname, branches, activeBranch, mode]);
 
   const value = useMemo(
     () => ({

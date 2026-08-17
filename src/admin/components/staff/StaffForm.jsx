@@ -4,6 +4,7 @@ import { Shield, ChevronDown, ChevronUp } from "lucide-react";
 import permissionService from "../../../common/services/permissionService";
 import { userService } from "../../../common/services";
 import { useAuth } from "../../../common/context/AuthContext";
+import { useBranch } from "../../context/BranchContext";
 import { AdminModal } from "../common/AdminModal";
 import { AdminFormSkeleton } from "../common/AdminSkeleton";
 const roleOptions = [
@@ -19,13 +20,13 @@ const roleOptions = [
   },
   {
     value: "manager",
-    label: "Manager",
-    description: "Can manage staff, menu, and tables",
+    label: "Manager / Branch Admin",
+    description: "Can manage branch staff, menu, and tables",
   },
   {
     value: "admin",
     label: "Administrator",
-    description: "Full system access and staff management",
+    description: "Full system access and multi-branch management",
   },
 ];
 const STEP = {
@@ -33,11 +34,13 @@ const STEP = {
   PERMISSIONS: 2,
 };
 export function StaffForm({ onSubmit, onClose, editingUser = null }) {
+  const { branches, activeBranch } = useBranch();
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     phone: "",
     role: "waiter",
+    branchId: activeBranch?._id || branches[0]?._id || "",
     permissions: [],
   });
   const [step, setStep] = useState(STEP.BASIC);
@@ -386,6 +389,26 @@ export function StaffForm({ onSubmit, onClose, editingUser = null }) {
                     placeholder="Enter phone number"
                   />
                 </div>
+
+                {branches.length > 0 && (
+                  <div className="md:col-span-2">
+                    <label className="mb-1 block text-sm font-medium text-gray-700">
+                      Assigned Branch <span className="text-red-500 font-bold ml-0.5">*</span>
+                    </label>
+                    <select
+                      name="branchId"
+                      value={formData.branchId}
+                      onChange={handleChange}
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white"
+                    >
+                      {branches.map((b) => (
+                        <option key={b._id} value={b._id}>
+                          {b.name} {b.type === "main" ? "(Main Branch)" : ""}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
               </div>
             </div>
 

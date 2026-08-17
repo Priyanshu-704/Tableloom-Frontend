@@ -294,6 +294,18 @@ export const userService = {
       handleApiError(error, "Failed to update user role");
     }
   },
+  updateStaff: async (userId, data) => {
+    try {
+      const response = await axiosInstance.put(`/users/${userId}`, data);
+      return (
+        response?.data ?? {
+          success: true,
+        }
+      );
+    } catch (error) {
+      handleApiError(error, "Failed to update staff member");
+    }
+  },
   getCurrentUser,
   isAuthenticated: () => {
     const user = getCurrentUser();

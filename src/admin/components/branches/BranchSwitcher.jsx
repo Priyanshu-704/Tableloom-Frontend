@@ -29,12 +29,31 @@ export function BranchSwitcher() {
     selectBranch,
   } = useBranch();
 
-  // Don't render if user scope is "own" (single branch) or loading fails
+  // Don't render if loading branches not allowed
+  if (!canLoadBranches) {
+    return null;
+  }
+
+  // Branch-scoped admin/staff or single branch plan: display non-interactive branch badge
   if (
-    !canLoadBranches ||
+    !canUseAllBranches ||
+    mode === "own" ||
+    branches.length <= 1 ||
     (branchLimit !== null && branchLimit !== undefined && Number(branchLimit || 0) <= 1)
   ) {
-    return null;
+    if (!activeBranch) return null;
+    return (
+      <div
+        className="hidden items-center gap-2 rounded-xl border border-slate-200 bg-white/90 px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-2xs backdrop-blur-xs sm:flex"
+        title="Your Assigned Branch"
+      >
+        <Building2 className="h-4 w-4 text-sky-600 shrink-0" />
+        <span className="truncate max-w-[10rem]">{branchLabel(activeBranch)}</span>
+        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-600 border border-slate-200">
+          {activeBranch.type === "main" ? "Main" : "Branch"}
+        </span>
+      </div>
+    );
   }
 
   const value = isAllBranches ? "all" : activeBranch?._id || "";
@@ -42,10 +61,10 @@ export function BranchSwitcher() {
   const handleChange = (event) => {
     const nextValue = event.target.value;
     if (nextValue === "all") {
-      selectAllBranches();
+      selectAllBranches(true);
       return;
     }
-    selectBranch(nextValue);
+    selectBranch(nextValue, true);
   };
 
   return (
@@ -54,13 +73,13 @@ export function BranchSwitcher() {
       aria-label="Switch branch"
     >
       {/* Icon prefix */}
-      <span className="pointer-events-none absolute left-3 flex items-center gap-1 text-gray-400">
+      <span className="pointer-events-none absolute left-3 flex items-center gap-1 text-slate-400">
         {isLoading ? (
           <Loader2 className="h-4 w-4 animate-spin" />
         ) : isAllBranches ? (
-          <GitBranch className="h-4 w-4" />
+          <GitBranch className="h-4 w-4 text-sky-600" />
         ) : (
-          <Building2 className="h-4 w-4" />
+          <Building2 className="h-4 w-4 text-sky-600" />
         )}
       </span>
 
@@ -71,11 +90,11 @@ export function BranchSwitcher() {
         onChange={handleChange}
         disabled={isLoading}
         className="
-          w-full appearance-none rounded-xl border border-gray-200
-          bg-white/80 py-2 pl-9 pr-8 text-sm font-medium
-          text-gray-700 shadow-sm backdrop-blur-sm
-          transition focus:border-primary-400 focus:outline-none
-          focus:ring-2 focus:ring-primary-200
+          w-full appearance-none rounded-xl border border-slate-200
+          bg-white/90 py-2 pl-9 pr-8 text-xs font-semibold
+          text-slate-700 shadow-2xs backdrop-blur-xs
+          transition focus:border-sky-400 focus:outline-hidden
+          focus:ring-2 focus:ring-sky-200
           disabled:cursor-not-allowed disabled:opacity-60
         "
       >
@@ -94,7 +113,7 @@ export function BranchSwitcher() {
       </select>
 
       {/* Chevron suffix */}
-      <span className="pointer-events-none absolute right-3 text-gray-400">
+      <span className="pointer-events-none absolute right-3 text-slate-400">
         <ChevronDown className="h-4 w-4" />
       </span>
     </label>

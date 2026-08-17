@@ -56,9 +56,15 @@ export const extractTenantFromPath = (pathname = "") => {
   ) {
     return null;
   }
+  let branchSlug = null;
+  const branchIdx = segments.indexOf("branch");
+  if (branchIdx !== -1 && segments[branchIdx + 1]) {
+    branchSlug = segments[branchIdx + 1];
+  }
   return {
     tenantSlug: segments[0],
     tenantKey: segments[1],
+    branchSlug,
   };
 };
 export const getTenantBasePath = (pathname = window.location.pathname) => {
@@ -75,23 +81,29 @@ export const buildTenantPath = (
     return prependAppBasePath(normalizedPath);
   }
 
+  const currentPath = window.location.pathname;
+  const branchMatch = currentPath.match(/\/branch\/([^/]+)/);
+  const tableMatch = currentPath.match(/\/table\/([^/]+)/);
+
+  let branchPrefix = branchMatch ? `/branch/${branchMatch[1]}` : "";
+  let tablePrefix = "";
+
   const isCustomerRoute =
     !normalizedPath.startsWith("/admin") &&
     !normalizedPath.includes("/subscription-renewal");
 
-  let branchPrefix = "";
-  let tablePrefix = "";
+  if (isCustomerRoute && tableMatch) {
+    tablePrefix = `/table/${tableMatch[1]}`;
+  }
 
-  if (isCustomerRoute) {
-    const currentPath = window.location.pathname;
-    const branchMatch = currentPath.match(/\/branch\/([^/]+)/);
-    const tableMatch = currentPath.match(/\/table\/([^/]+)/);
-    if (branchMatch) {
-      branchPrefix = `/branch/${branchMatch[1]}`;
-    }
-    if (tableMatch) {
-      tablePrefix = `/table/${tableMatch[1]}`;
-    }
+  if (normalizedPath.startsWith("/admin")) {
+    const subAdminPath =
+      normalizedPath === "/admin"
+        ? ""
+        : normalizedPath.replace(/^\/admin/, "");
+    return prependAppBasePath(
+      `/${tenant.tenantSlug}/${tenant.tenantKey}${branchPrefix}/admin${subAdminPath}`,
+    );
   }
 
   if (normalizedPath === "/" && isCustomerRoute) {
@@ -126,14 +138,19 @@ export const stripTenantPrefix = (pathname = "") => {
 };
 export const stripAdminRoutePrefix = (pathname = "") => {
   const strippedPath = stripTenantPrefix(pathname);
-  if (strippedPath.startsWith("/admin")) {
-    return normalizePath(strippedPath.slice("/admin".length) || "/");
+  const cleanPath = strippedPath.replace(/^\/branch\/[^/]+/, "");
+  if (cleanPath.startsWith("/admin")) {
+    return normalizePath(cleanPath.slice("/admin".length) || "/");
   }
-  return strippedPath;
+  return normalizePath(cleanPath);
 };
-export const isTenantAdminPath = (pathname = "") =>
-  stripTenantPrefix(pathname).startsWith("/admin") ||
-  stripAppBasePath(pathname).startsWith("/admin");
+export const isTenantAdminPath = (pathname = "") => {
+  const cleanPath = stripTenantPrefix(pathname).replace(/^\/branch\/[^/]+/, "");
+  return (
+    cleanPath.startsWith("/admin") ||
+    stripAppBasePath(pathname).startsWith("/admin")
+  );
+};
 export const isSuperAdminPath = (pathname = "") =>
   stripAppBasePath(pathname).startsWith("/super-admin");
 export const isTenantContextPath = (pathname = "") =>
