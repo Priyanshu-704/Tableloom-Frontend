@@ -120,7 +120,7 @@ const LOCATIONS = [
 const CAPACITIES = ["All", "2", "4", "6", "8+"];
 
 export function TableManagement() {
-  const PAGE_SIZE = 12;
+  const [pageSize, setPageSize] = useState(12);
   const { tables, dispatch, user, confirmAction } = useAdmin();
   const { hasPermission } = useAuth();
   const isMonitoringMode = useMonitoringMode();
@@ -232,7 +232,7 @@ export function TableManagement() {
         queryParams.capacity = capacityFilter;
       }
       queryParams.page = currentPage;
-      queryParams.limit = PAGE_SIZE;
+      queryParams.limit = pageSize;
 
       const response = await tableService.getTables(queryParams);
       if (response.success) {
@@ -271,6 +271,7 @@ export function TableManagement() {
   }, [
     capacityFilter,
     currentPage,
+    pageSize,
     dispatch,
     locationFilter,
     searchTerm,
@@ -788,9 +789,14 @@ export function TableManagement() {
         page={pagination.page}
         totalPages={pagination.pages}
         totalItems={pagination.total}
-        pageSize={PAGE_SIZE}
+        pageSize={pageSize}
+        pageSizeOptions={[6, 12, 24, 48, 100]}
         itemLabel="tables"
         onPageChange={setCurrentPage}
+        onPageSizeChange={(newSize) => {
+          setPageSize(newSize);
+          setCurrentPage(1);
+        }}
       />
 
       {/* Empty State */}

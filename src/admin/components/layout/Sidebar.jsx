@@ -206,36 +206,7 @@ export function Sidebar({
     </nav>
   );
   const renderNavigation = ({ compact = false } = {}) => (
-    <div className={`pb-10 ${compact ? "space-y-4" : "space-y-6"}`}>
-      <div
-        className={`rounded-3xl border border-slate-200 bg-white shadow-sm ${compact ? "p-3" : "p-4"}`}
-      >
-        <div
-          className={`flex items-center ${compact ? "justify-center" : "gap-3"}`}
-        >
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-slate-100 ring-1 ring-slate-200">
-            <img
-              src={
-                settings?.restaurant?.logoThumbnail ||
-                settings?.restaurant?.logo ||
-                "/tableloom-mark.svg"
-              }
-              alt={settings?.restaurant?.name || "Tableloom"}
-              className="h-8 w-8 object-contain"
-              loading="lazy"
-            />
-          </div>
-          <div className={`min-w-0 ${compact ? "hidden" : ""}`}>
-            <p className="truncate text-sm font-bold text-slate-900">
-              {settings?.restaurant?.name || "Tableloom"}
-            </p>
-            <p className="mt-1 truncate text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">
-              {activeItem?.label || "Admin Navigation"}
-            </p>
-          </div>
-        </div>
-      </div>
-
+    <div className="pb-10">
       {compact ? renderCompactNavigation() : renderExpandedNavigation()}
     </div>
   );

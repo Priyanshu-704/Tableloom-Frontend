@@ -130,6 +130,13 @@ export function TenantManagement() {
   const [healthRefreshing, setHealthRefreshing] = useState(false);
   const [lastHealthCheck, setLastHealthCheck] = useState(new Date().toLocaleTimeString());
 
+  const [requestPage, setRequestPage] = useState(1);
+  const REQUEST_PAGE_SIZE = 10;
+  const [subscriptionPage, setSubscriptionPage] = useState(1);
+  const SUBSCRIPTION_PAGE_SIZE = 10;
+  const [healthPage, setHealthPage] = useState(1);
+  const HEALTH_PAGE_SIZE = 10;
+
   const handleRefreshHealth = () => {
     setHealthRefreshing(true);
     setTimeout(() => {
@@ -203,56 +210,12 @@ export function TenantManagement() {
   }, [supportRequests, requestSearch, requestCategoryFilter, requestStatusFilter]);
 
   const filteredPendingTenants = useMemo(() => {
-    return pendingTenants.filter((tenant) => {
-      const query = pendingSearch.toLowerCase().trim();
-      if (!query) return true;
-      const nameMatch = tenant.name?.toLowerCase().includes(query);
-      const adminMatch = (
-        tenant.requestedAdmin?.name ||
-        tenant.adminUser?.name ||
-        ""
-      ).toLowerCase().includes(query);
-      const emailMatch = (
-        tenant.requestedAdmin?.email ||
-        tenant.contact?.email ||
-        ""
-      ).toLowerCase().includes(query);
-      const phoneMatch = (
-        tenant.requestedAdmin?.phone ||
-        tenant.contact?.phone ||
-        ""
-      ).toLowerCase().includes(query);
-      return nameMatch || adminMatch || emailMatch || phoneMatch;
-    });
-  }, [pendingTenants, pendingSearch]);
+    return pendingTenants;
+  }, [pendingTenants]);
 
   const filteredRegisteredTenants = useMemo(() => {
-    return registeredTenants.filter((tenant) => {
-      const query = registeredSearch.toLowerCase().trim();
-      const nameMatch = tenant.name?.toLowerCase().includes(query);
-      const emailMatch = (
-        tenant.contact?.email ||
-        tenant.requestedAdmin?.email ||
-        ""
-      ).toLowerCase().includes(query);
-      const slugMatch = tenant.slug?.toLowerCase().includes(query);
-      const keyMatch = tenant.key?.toLowerCase().includes(query);
-      const matchesSearch =
-        !query || nameMatch || emailMatch || slugMatch || keyMatch;
-
-      const tenantStatus = tenant.status?.toLowerCase() || "";
-      const matchesStatus =
-        registeredStatusFilter === "all" ||
-        tenantStatus === registeredStatusFilter.toLowerCase();
-
-      const tenantPlan = tenant.subscription?.plan?.toLowerCase() || "starter";
-      const matchesPlan =
-        registeredPlanFilter === "all" ||
-        tenantPlan === registeredPlanFilter.toLowerCase();
-
-      return matchesSearch && matchesStatus && matchesPlan;
-    });
-  }, [registeredTenants, registeredSearch, registeredStatusFilter, registeredPlanFilter]);
+    return registeredTenants;
+  }, [registeredTenants]);
 
   const filteredSubscriptionTenants = useMemo(() => {
     if (!subscriptionReport?.tenants) return [];
@@ -288,6 +251,42 @@ export function TenantManagement() {
       return matchesSearch && matchesStatus;
     });
   }, [subscriptionReport, subscriptionSearch, subscriptionStatusFilter]);
+
+  const paginatedSupportRequests = useMemo(() => {
+    const startIndex = (requestPage - 1) * REQUEST_PAGE_SIZE;
+    return filteredSupportRequests.slice(
+      startIndex,
+      startIndex + REQUEST_PAGE_SIZE,
+    );
+  }, [filteredSupportRequests, requestPage]);
+
+  const paginatedSubscriptionTenants = useMemo(() => {
+    const startIndex = (subscriptionPage - 1) * SUBSCRIPTION_PAGE_SIZE;
+    return filteredSubscriptionTenants.slice(
+      startIndex,
+      startIndex + SUBSCRIPTION_PAGE_SIZE,
+    );
+  }, [filteredSubscriptionTenants, subscriptionPage]);
+
+  const healthDiagnosticsList = useMemo(
+    () => [
+      { name: "Authentication REST API", endpoint: "/api/v1/auth", latency: "14ms", status: "Optimal" },
+      { name: "MongoDB Atlas Primary", endpoint: "mongodb+srv://primary", latency: "8ms", status: "Optimal" },
+      { name: "Socket.io WebSocket Server", endpoint: "wss://socket.tableloom.app", latency: "11ms", status: "Optimal" },
+      { name: "Cloudinary Image CDN", endpoint: "https://res.cloudinary.com", latency: "32ms", status: "Optimal" },
+      { name: "SMTP Email Gateway", endpoint: "smtp.gmail.com:587", latency: "45ms", status: "Operational" },
+      { name: "Super Admin Audit Log Engine", endpoint: "/api/v1/admin/logs", latency: "6ms", status: "Optimal" },
+    ],
+    [],
+  );
+
+  const paginatedHealthServices = useMemo(() => {
+    const startIndex = (healthPage - 1) * HEALTH_PAGE_SIZE;
+    return healthDiagnosticsList.slice(
+      startIndex,
+      startIndex + HEALTH_PAGE_SIZE,
+    );
+  }, [healthDiagnosticsList, healthPage]);
 
   const copyTenantRoute = (tenant) => {
     const route = getTenantWorkspacePath(tenant);
@@ -355,12 +354,29 @@ export function TenantManagement() {
     }
   };
 
-  const loadTenantSection = async (section, page) => {
+  const loadTenantSection = async (section, page, filters = {}) => {
+    setLoading(true);
     try {
+      const search =
+        section === "registered"
+          ? (filters.registeredSearch !== undefined ? filters.registeredSearch : registeredSearch)
+          : (filters.pendingSearch !== undefined ? filters.pendingSearch : pendingSearch);
+      const status =
+        section === "registered"
+          ? (filters.registeredStatusFilter !== undefined ? filters.registeredStatusFilter : registeredStatusFilter)
+          : "all";
+      const plan =
+        section === "registered"
+          ? (filters.registeredPlanFilter !== undefined ? filters.registeredPlanFilter : registeredPlanFilter)
+          : "all";
+
       const response = await tenantService.getTenants({
         section,
         page,
         limit: TENANT_PAGE_SIZE,
+        search,
+        status,
+        plan,
       });
       const items = Array.isArray(response?.data) ? response.data : [];
       const pagination = {
@@ -380,20 +396,11 @@ export function TenantManagement() {
       const message = loadError?.message || "Failed to load tenants";
       setError(message);
       addNotification(message, "error");
-    }
-  };
-  const loadTenants = async () => {
-    setLoading(true);
-    try {
-      await Promise.all([
-        loadTenantSection("registered", registeredPage),
-        loadTenantSection("pending", pendingPage),
-        loadSubscriptionReport(),
-      ]);
     } finally {
       setLoading(false);
     }
   };
+
   const loadSupportRequests = async () => {
     try {
       const response = await supportService.getSupportRequests();
@@ -404,14 +411,34 @@ export function TenantManagement() {
       addNotification(message, "error");
     }
   };
+
   useEffect(() => {
-    loadTenants();
+    if (activeTab === "registered") {
+      loadTenantSection("registered", registeredPage);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [registeredPage, pendingPage]);
+  }, [activeTab, registeredPage, registeredSearch, registeredStatusFilter, registeredPlanFilter]);
+
   useEffect(() => {
-    loadSupportRequests();
+    if (activeTab === "pending") {
+      loadTenantSection("pending", pendingPage);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [activeTab, pendingPage, pendingSearch]);
+
+  useEffect(() => {
+    if (activeTab === "subscriptions") {
+      loadSubscriptionReport();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (activeTab === "requests") {
+      loadSupportRequests();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab]);
   useEffect(() => {
     setResponseDrafts((current) =>
       supportRequests.reduce((next, request) => {
@@ -852,7 +879,10 @@ export function TenantManagement() {
                     <input
                       type="text"
                       value={pendingSearch}
-                      onChange={(e) => setPendingSearch(e.target.value)}
+                      onChange={(e) => {
+                        setPendingSearch(e.target.value);
+                        setPendingPage(1);
+                      }}
                       placeholder="Search pending by restaurant, admin name, email, or phone..."
                       className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-8 text-sm text-slate-800 placeholder-slate-400 transition-all focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
                     />
@@ -1133,14 +1163,20 @@ export function TenantManagement() {
                   <input
                     type="text"
                     value={registeredSearch}
-                    onChange={(e) => setRegisteredSearch(e.target.value)}
+                    onChange={(e) => {
+                      setRegisteredSearch(e.target.value);
+                      setRegisteredPage(1);
+                    }}
                     placeholder="Search by restaurant name, email, or route..."
                     className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-8 text-sm text-slate-800 placeholder-slate-400 transition-all focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
                   />
                   {registeredSearch ? (
                     <button
                       type="button"
-                      onClick={() => setRegisteredSearch("")}
+                      onClick={() => {
+                        setRegisteredSearch("");
+                        setRegisteredPage(1);
+                      }}
                       className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
                     >
                       <XCircle className="h-3.5 w-3.5" />
@@ -1152,7 +1188,10 @@ export function TenantManagement() {
                   <div className="relative">
                     <select
                       value={registeredStatusFilter}
-                      onChange={(e) => setRegisteredStatusFilter(e.target.value)}
+                      onChange={(e) => {
+                        setRegisteredStatusFilter(e.target.value);
+                        setRegisteredPage(1);
+                      }}
                       className="rounded-xl border border-slate-200 bg-white py-2 pl-3 pr-8 text-sm font-medium text-slate-700 transition-all focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
                     >
                       <option value="all">All Statuses</option>
@@ -1164,7 +1203,10 @@ export function TenantManagement() {
                   <div className="relative">
                     <select
                       value={registeredPlanFilter}
-                      onChange={(e) => setRegisteredPlanFilter(e.target.value)}
+                      onChange={(e) => {
+                        setRegisteredPlanFilter(e.target.value);
+                        setRegisteredPage(1);
+                      }}
                       className="rounded-xl border border-slate-200 bg-white py-2 pl-3 pr-8 text-sm font-medium text-slate-700 transition-all focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
                     >
                       <option value="all">All Plans</option>
@@ -1619,14 +1661,20 @@ export function TenantManagement() {
                 <input
                   type="text"
                   value={subscriptionSearch}
-                  onChange={(e) => setSubscriptionSearch(e.target.value)}
+                  onChange={(e) => {
+                    setSubscriptionSearch(e.target.value);
+                    setSubscriptionPage(1);
+                  }}
                   placeholder="Search by tenant, route, or admin email..."
                   className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-8 text-sm text-slate-800 placeholder-slate-400 transition-all focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
                 />
                 {subscriptionSearch ? (
                   <button
                     type="button"
-                    onClick={() => setSubscriptionSearch("")}
+                    onClick={() => {
+                      setSubscriptionSearch("");
+                      setSubscriptionPage(1);
+                    }}
                     className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
                   >
                     <XCircle className="h-3.5 w-3.5" />
@@ -1637,7 +1685,10 @@ export function TenantManagement() {
               <div className="flex flex-wrap items-center gap-2">
                 <select
                   value={subscriptionStatusFilter}
-                  onChange={(e) => setSubscriptionStatusFilter(e.target.value)}
+                  onChange={(e) => {
+                    setSubscriptionStatusFilter(e.target.value);
+                    setSubscriptionPage(1);
+                  }}
                   className="rounded-xl border border-slate-200 bg-white py-2 pl-3 pr-8 text-sm font-medium text-slate-700 transition-all focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
                 >
                   <option value="all">All Subscription States</option>
@@ -1652,6 +1703,7 @@ export function TenantManagement() {
                     onClick={() => {
                       setSubscriptionSearch("");
                       setSubscriptionStatusFilter("all");
+                      setSubscriptionPage(1);
                     }}
                     className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors"
                   >
@@ -1674,7 +1726,7 @@ export function TenantManagement() {
                   No subscriptions found matching your query.
                 </div>
               ) : null}
-              {!loadingReport && filteredSubscriptionTenants.map((row) => {
+              {!loadingReport && paginatedSubscriptionTenants.map((row) => {
                 const daysRemaining = row.subscription?.daysRemaining;
                 const isExpired = row.subscription?.status === "expired" || (daysRemaining !== null && daysRemaining < 0);
                 const isExpiringSoon = !isExpired && daysRemaining !== null && daysRemaining <= 7 && daysRemaining >= 0;
@@ -1825,7 +1877,7 @@ export function TenantManagement() {
                         </td>
                       </tr>
                     ) : (
-                      filteredSubscriptionTenants.map((row) => {
+                      paginatedSubscriptionTenants.map((row) => {
                         const daysRemaining = row.subscription?.daysRemaining;
                         const isExpired = row.subscription?.status === "expired" || (daysRemaining !== null && daysRemaining < 0);
                         const isExpiringSoon = !isExpired && daysRemaining !== null && daysRemaining <= 7 && daysRemaining >= 0;
@@ -1923,6 +1975,18 @@ export function TenantManagement() {
                 </table>
               </div>
             </div>
+
+            {/* Pagination */}
+            <div className="mt-4">
+              <AdminPagination
+                page={subscriptionPage}
+                totalPages={Math.ceil(filteredSubscriptionTenants.length / SUBSCRIPTION_PAGE_SIZE) || 1}
+                totalItems={filteredSubscriptionTenants.length}
+                pageSize={SUBSCRIPTION_PAGE_SIZE}
+                itemLabel="subscriptions"
+                onPageChange={setSubscriptionPage}
+              />
+            </div>
           </div>
         </section>
       ) : activeTab === "requests" ? (
@@ -1958,14 +2022,20 @@ export function TenantManagement() {
                 <input
                   type="text"
                   value={requestSearch}
-                  onChange={(e) => setRequestSearch(e.target.value)}
+                  onChange={(e) => {
+                    setRequestSearch(e.target.value);
+                    setRequestPage(1);
+                  }}
                   placeholder="Search by subject, message, tenant name, or admin email..."
                   className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-8 text-sm text-slate-800 placeholder-slate-400 transition-all focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
                 />
                 {requestSearch && (
                   <button
                     type="button"
-                    onClick={() => setRequestSearch("")}
+                    onClick={() => {
+                      setRequestSearch("");
+                      setRequestPage(1);
+                    }}
                     className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
                   >
                     <XCircle className="h-3.5 w-3.5" />
@@ -1976,7 +2046,10 @@ export function TenantManagement() {
               <div className="flex flex-wrap items-center gap-2">
                 <select
                   value={requestCategoryFilter}
-                  onChange={(e) => setRequestCategoryFilter(e.target.value)}
+                  onChange={(e) => {
+                    setRequestCategoryFilter(e.target.value);
+                    setRequestPage(1);
+                  }}
                   className="rounded-xl border border-slate-200 bg-white py-2 pl-3 pr-8 text-sm font-medium text-slate-700 transition-all focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
                 >
                   <option value="all">All Categories</option>
@@ -1990,7 +2063,10 @@ export function TenantManagement() {
 
                 <select
                   value={requestStatusFilter}
-                  onChange={(e) => setRequestStatusFilter(e.target.value)}
+                  onChange={(e) => {
+                    setRequestStatusFilter(e.target.value);
+                    setRequestPage(1);
+                  }}
                   className="rounded-xl border border-slate-200 bg-white py-2 pl-3 pr-8 text-sm font-medium text-slate-700 transition-all focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
                 >
                   <option value="all">All Statuses</option>
@@ -2006,6 +2082,7 @@ export function TenantManagement() {
                       setRequestSearch("");
                       setRequestCategoryFilter("all");
                       setRequestStatusFilter("all");
+                      setRequestPage(1);
                     }}
                     className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors"
                   >
@@ -2049,7 +2126,7 @@ export function TenantManagement() {
                 </button>
               </div>
             ) : (
-              filteredSupportRequests.map((request) => {
+              paginatedSupportRequests.map((request) => {
                 const responseDraft =
                   responseDrafts[request._id] ?? request.responseMessage ?? "";
                 const responseChanged =
@@ -2230,6 +2307,18 @@ export function TenantManagement() {
               })
             )}
           </div>
+
+          {/* Pagination */}
+          <div className="mt-4">
+            <AdminPagination
+              page={requestPage}
+              totalPages={Math.ceil(filteredSupportRequests.length / REQUEST_PAGE_SIZE) || 1}
+              totalItems={filteredSupportRequests.length}
+              pageSize={REQUEST_PAGE_SIZE}
+              itemLabel="admin requests"
+              onPageChange={setRequestPage}
+            />
+          </div>
         </section>
       ) : activeTab === "health" ? (
         <section className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-6 space-y-6">
@@ -2366,14 +2455,7 @@ export function TenantManagement() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-sm">
-                  {[
-                    { name: "Authentication REST API", endpoint: "/api/v1/auth", latency: "14ms", status: "Optimal" },
-                    { name: "MongoDB Atlas Primary", endpoint: "mongodb+srv://primary", latency: "8ms", status: "Optimal" },
-                    { name: "Socket.io WebSocket Server", endpoint: "wss://socket.tableloom.app", latency: "11ms", status: "Optimal" },
-                    { name: "Cloudinary Image CDN", endpoint: "https://res.cloudinary.com", latency: "32ms", status: "Optimal" },
-                    { name: "SMTP Email Gateway", endpoint: "smtp.gmail.com:587", latency: "45ms", status: "Operational" },
-                    { name: "Super Admin Audit Log Engine", endpoint: "/api/v1/admin/logs", latency: "6ms", status: "Optimal" },
-                  ].map((srv, idx) => (
+                  {paginatedHealthServices.map((srv, idx) => (
                     <tr key={idx} className="hover:bg-slate-50/80 transition-colors">
                       <td className="px-5 py-4 align-middle">
                         <div className="font-semibold text-slate-900">{srv.name}</div>
@@ -2400,6 +2482,18 @@ export function TenantManagement() {
                 </tbody>
               </table>
             </div>
+          </div>
+
+          {/* Pagination */}
+          <div className="mt-4">
+            <AdminPagination
+              page={healthPage}
+              totalPages={Math.ceil(healthDiagnosticsList.length / HEALTH_PAGE_SIZE) || 1}
+              totalItems={healthDiagnosticsList.length}
+              pageSize={HEALTH_PAGE_SIZE}
+              itemLabel="services"
+              onPageChange={setHealthPage}
+            />
           </div>
         </section>
       ) : null}
